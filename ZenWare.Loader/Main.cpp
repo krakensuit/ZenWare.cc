@@ -51,7 +51,7 @@ static COLORREF Hsv(float h, float s, float v){
 }
 Theme_t g_theme = MakeTheme(true);
 HWND g_hMain=nullptr, g_hInject=nullptr, g_hStatus=nullptr, g_hLaunch=nullptr;
-static bool g_bExternal=false, g_bModeHov=false;
+static bool g_bExternal=true, g_bModeHov=false;
 static RECT g_rcMode={0,0,0,0};
 HBRUSH g_brBg=nullptr,g_brCtl=nullptr,g_brBorder=nullptr;
 HFONT g_fUI=nullptr,g_fTitle=nullptr,g_fSmall=nullptr;
@@ -267,12 +267,15 @@ static constexpr int SPL_W=560, SPL_H=300;
 static constexpr ULONGLONG SPLASH_MS=2800;
 static HWND g_hSplash=nullptr;
 static ULONGLONG g_splashT0=0;
+static ULONGLONG g_splashQ[6]={};
 struct SplashP_t{ float x0,y0,x1,y1,dl; int sz; };
 static SplashP_t g_parts[130];
 struct SplashD_t{ float x,y,ph,sp; };
 static SplashD_t g_dust[45];
 static Gdiplus::Image* g_splashImg=nullptr;
 static Gdiplus::Bitmap* g_splashGlow=nullptr;
+static Gdiplus::Bitmap* g_logoBase=nullptr;
+static ULONGLONG g_nQ2=0;
 static unsigned SplashRnd(unsigned& s){ s^=s<<13; s^=s>>17; s^=s<<5; return s; }
 static float SplashEase(float t){ if(t<0) t=0; if(t>1) t=1; return t*t*(3.0f-2.0f*t); }
 LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
@@ -307,6 +310,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    static BYTE lastA=0; if(a!=lastA){ SetLayeredWindowAttributes(h,0,a,LWA_ALPHA); lastA=a; }
   }
   const COLORREF bg=RGB(8,10,9);
+  ULONGLONG q0=GetTickCount64(); ULONGLONG q2mark=0;
   HBRUSH bb=CreateSolidBrush(bg); RECT rc={0,0,SPL_W,SPL_H}; FillRect(dc,&rc,bb); DeleteObject(bb);
   const float el=(GetTickCount64()-g_splashT0)/1000.0f;
   const float hue=fmodf((float)GetTickCount64()/38.0f,360.0f);
@@ -357,6 +361,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     SelectObject(dc,onb); SelectObject(dc,ogr); DeleteObject(rp);
    }
   }
+   g_splashQ[0]+=GetTickCount64()-q0; ULONGLONG q1=GetTickCount64();
    // эмблема: настоящий логотип со свечением, ESP-уголками и сканлайном
    float la=SplashEase((el-0.15f)/0.6f);
    const int LCX=SPL_W/2, LCY=89, LSZ=150;
@@ -365,22 +370,11 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
      Gdiplus::Graphics gd(dc);
      gd.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
      gd.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBilinear);
-     int gs=LSZ+68+(int)(20*sinf(el*4.0f));
-     int gpa=(int)(la*(150+70*sinf(el*4.0f))); if(gpa<0)gpa=0; if(gpa>220)gpa=220;
-     if(g_splashGlow){
-      Gdiplus::ColorMatrix gm={1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,(float)gpa/255.0f,0, 0,0,0,0,1};
-      Gdiplus::ImageAttributes gat; gat.SetColorMatrix(&gm,Gdiplus::ColorMatrixFlagsDefault,Gdiplus::ColorAdjustTypeBitmap);
-      gd.DrawImage(g_splashGlow,Gdiplus::Rect(LCX-gs/2,LCY-gs/2,gs,gs),0,0,240,240,Gdiplus::UnitPixel,&gat);
-     }
-     float sc2=0.75f+0.25f*SplashEase(el/0.9f);
-     int L=(int)(LSZ*sc2);
-     Gdiplus::ColorMatrix cm={1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,la,0, 0,0,0,0,1};
-     Gdiplus::ImageAttributes at; at.SetColorMatrix(&cm,Gdiplus::ColorMatrixFlagsDefault,Gdiplus::ColorAdjustTypeBitmap);
-     int iw=(int)g_splashImg->GetWidth(), ih=(int)g_splashImg->GetHeight();
-     gd.TranslateTransform((Gdiplus::REAL)LCX,(Gdiplus::REAL)LCY);
-     gd.RotateTransform(2.0f*sinf(el*1.3f));
-     gd.DrawImage(g_splashImg,Gdiplus::Rect(-L/2,-L/2,L,L),0,0,iw,ih,Gdiplus::UnitPixel,&at);
-     gd.ResetTransform();
+     int bob=(int)(4.0f*sinf(el*1.8f));
+     int gs=LSZ+68+(int)(8*sinf(el*4.0f));
+     if(g_splashGlow) gd.DrawImage(g_splashGlow,LCX-gs/2,LCY+bob-gs/2,gs,gs);
+     int L=(el<1.0f)?(int)(LSZ*(0.75f+0.25f*SplashEase(el/0.9f))):LSZ;
+     if(g_logoBase) gd.DrawImage(g_logoBase,LCX-L/2,LCY+bob-L/2,L,L);
      float bt=SplashEase((el-0.5f)/0.7f);
      if(bt>0){
       int mg=14+(int)(40*(1.0f-bt));
@@ -393,17 +387,29 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
       MoveToEx(dc,bx0+bl,by1,nullptr); LineTo(dc,bx0,by1); LineTo(dc,bx0,by1-bl);
       SelectObject(dc,oh); DeleteObject(hp);
      }
+     { // орбита из пунктирных дуг вокруг эмблемы
+      float oa=el*0.9f;
+      int orad=LSZ/2+30;
+      HPEN op=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,(int)(la*130))); auto oo=SelectObject(dc,op);
+      for(int k2=0;k2<24;k2+=2){
+       float a0=oa+k2*0.2618f, a1=a0+0.16f;
+       MoveToEx(dc,LCX+(int)(orad*cosf(a0)),LCY+(int)(orad*sinf(a0)),nullptr);
+       LineTo(dc,LCX+(int)(orad*cosf(a1)),LCY+(int)(orad*sinf(a1)));
+      }
+      SelectObject(dc,oo); DeleteObject(op);
+     }
      if(el>0.7f&&el<1.9f){
       int sy2=(LCY-LSZ/2)+(int)(LSZ*((el-0.7f)/1.2f));
       HBRUSH sb=CreateSolidBrush(Mix2(bg,g_theme.accent,(int)(la*90))); RECT sr={LCX-LSZ/2,sy2,LCX+LSZ/2,sy2+2}; FillRect(dc,&sr,sb); DeleteObject(sb);
      }
     }
+    g_splashQ[1]+=GetTickCount64()-q1; q2mark=GetTickCount64();
     const wchar_t* txt=L"ZenWare.cc";
    auto of=SelectObject(dc,g_fTitle); SetBkMode(dc,TRANSPARENT);
    SIZE sz={0,0}; GetTextExtentPoint32W(dc,txt,(int)wcslen(txt),&sz);
     int x0=(SPL_W-sz.cx)/2, y0=g_splashImg?172:104;
    int k=(int)(la*255);
-   for(int dx=-2;dx<=2;dx+=2) for(int dy=-2;dy<=2;dy+=2){
+   for(int dx=-2;dx<=2;dx+=4) for(int dy=-2;dy<=2;dy+=4){
     if(!dx&&!dy) continue;
     SetTextColor(dc,Mix2(bg,Hsv(hue,0.9f,0.35f),k));
     TextOutW(dc,x0+dx,y0+dy,txt,(int)wcslen(txt));
@@ -437,6 +443,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    }
    SelectObject(dc,of);
   }
+  if(q2mark){ g_splashQ[2]+=GetTickCount64()-q2mark; g_nQ2++; } ULONGLONG q3=GetTickCount64();
   // прогресс-бар
   {
    float f=el/2.6f; if(f>1) f=1;
@@ -448,7 +455,9 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   auto os2=SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
   RECT hr={0,272,SPL_W-16,292}; DrawTextW(dc,LoaderUtil::SW(L"клик — пропустить",L"click to skip"),-1,&hr,DT_RIGHT|DT_SINGLELINE);
   SelectObject(dc,os2);
+  g_splashQ[3]+=GetTickCount64()-q3; ULONGLONG q4=GetTickCount64();
   BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
+  g_splashQ[4]+=GetTickCount64()-q4;
   SelectObject(mem,obm); DeleteObject(bmp); DeleteDC(mem);
   EndPaint(h,&ps);
   break;
@@ -478,6 +487,12 @@ void RunSplash(HINSTANCE hi){
   g_splashImg=Gdiplus::Image::FromFile(lp);
   if(g_splashImg&&g_splashImg->GetLastStatus()!=Gdiplus::Ok){ delete g_splashImg; g_splashImg=nullptr; }
  }
+ if(g_splashImg){ // логотип один раз в готовый спрайт, в кадре только быстрый блит
+  g_logoBase=new Gdiplus::Bitmap(150,150,PixelFormat32bppPARGB);
+  Gdiplus::Graphics gl(g_logoBase);
+  gl.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+  gl.DrawImage(g_splashImg,0,0,150,150);
+ }
  // свечение предрендерим один раз в спрайт, а не считаем градиент каждый кадр
  g_splashGlow=new Gdiplus::Bitmap(240,240,PixelFormat32bppPARGB);
  {
@@ -494,16 +509,27 @@ void RunSplash(HINSTANCE hi){
  if(hw){
   InitFonts(hw);
   timeBeginPeriod(1);
+  int nFrames=0; ULONGLONG msPaint=0; const ULONGLONG tFps0=GetTickCount64();
   for(;;){ // vsync-цикл вместо таймера: кадр рисуется синхронно и ждёт вертикалку
    MSG m{};
    while(PeekMessageW(&m,nullptr,0,0,PM_REMOVE)){ TranslateMessage(&m); DispatchMessageW(&m); }
    if(!IsWindow(hw)) break;
    if(GetTickCount64()-g_splashT0>=SPLASH_MS){ DestroyWindow(hw); break; }
+   ULONGLONG p0=GetTickCount64();
    RedrawWindow(hw,nullptr,nullptr,RDW_INVALIDATE|RDW_UPDATENOW|RDW_NOCHILDREN);
+   msPaint+=GetTickCount64()-p0;
+   nFrames++;
    if(FAILED(DwmFlush())) Sleep(16);
   }
   timeEndPeriod(1);
+  { // диагностика: средний fps и стоимость кадра в файл
+   wchar_t fp[MAX_PATH]={}; GetTempPathW(MAX_PATH,fp); wcscat_s(fp,L"ZenWare.splash_fps.txt");
+   char buf[256]={}; sprintf_s(buf,"frames=%d totalMs=%llu paintAvgMs=%.2f qBgPart=%.2f qLogo=%.2f qTitle=%.2f qBar=%.2f qBlt=%.2f\r\n",nFrames,GetTickCount64()-tFps0,nFrames?(double)msPaint/nFrames:0.0,nFrames?(double)g_splashQ[0]/nFrames:0.0,nFrames?(double)g_splashQ[1]/nFrames:0.0,g_nQ2?(double)g_splashQ[2]/g_nQ2:0.0,nFrames?(double)g_splashQ[3]/nFrames:0.0,nFrames?(double)g_splashQ[4]/nFrames:0.0);
+   HANDLE hf=CreateFileW(fp,GENERIC_WRITE,0,nullptr,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
+   if(hf!=INVALID_HANDLE_VALUE){ DWORD wr=0; WriteFile(hf,buf,(DWORD)strlen(buf),&wr,nullptr); CloseHandle(hf); }
+  }
  }
+ if(g_logoBase){ delete g_logoBase; g_logoBase=nullptr; }
  if(g_splashImg){ delete g_splashImg; g_splashImg=nullptr; }
  if(g_splashGlow){ delete g_splashGlow; g_splashGlow=nullptr; }
  Gdiplus::GdiplusShutdown(tok);
@@ -514,7 +540,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  case WM_CREATE:{
   g_hMain=h; InitFonts(h); RefreshTheme();
    CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ЗАПУСТИТЬ ИГРУ",L"LAUNCH GAME"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,92,580,36,h,(HMENU)IDC_LAUNCH,nullptr,nullptr);
-   g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ИНЖЕКТ",L"INJECT"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
+   g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
    g_hStatus=CreateWindowExW(0,L"STATIC",LoaderUtil::SW(L"Готов",L"Ready"),WS_CHILD|WS_VISIBLE,44,204,556,20,h,(HMENU)IDC_STATUS,nullptr,nullptr);
     SendMessageW(g_hStatus,WM_SETFONT,(WPARAM)g_fUI,TRUE);
    // Autopoisk DLL moved into FindDll()

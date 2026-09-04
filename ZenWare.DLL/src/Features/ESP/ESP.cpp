@@ -94,16 +94,34 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 	{
 		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 		G::Draw.OutlinedRect(x, y, w, h, clrTeam);
+		//Corner ticks outside the box.
+		const int nTick = U::Math.Clamp(w / 4, 6, 16);
+		G::Draw.Line(x - 3, y - 3, x - 3 + nTick, y - 3, clrTeam);
+		G::Draw.Line(x - 3, y - 3, x - 3, y - 3 + nTick, clrTeam);
+		G::Draw.Line(x + w + 3 - nTick, y - 3, x + w + 3, y - 3, clrTeam);
+		G::Draw.Line(x + w + 3, y - 3, x + w + 3, y - 3 + nTick, clrTeam);
+		G::Draw.Line(x - 3, y + h + 3 - nTick, x - 3, y + h + 3, clrTeam);
+		G::Draw.Line(x - 3, y + h + 3, x - 3 + nTick, y + h + 3, clrTeam);
+		G::Draw.Line(x + w + 3, y + h + 3 - nTick, x + w + 3, y + h + 3, clrTeam);
+		G::Draw.Line(x + w + 3 - nTick, y + h + 3, x + w + 3, y + h + 3, clrTeam);
 	}
+
+	//Snapline from the bottom of the screen.
+	if (Vars::ESP::bSnaplines)
+		G::Draw.Line(G::Draw.m_nScreenW / 2, G::Draw.m_nScreenH, x + (w / 2), y + h, clrTeam);
 
 	//Vertical health bar on the left side of the box (red -> green).
 	if (Vars::ESP::bHealthBar)
 	{
 		constexpr int nBarW = 4;
 		const int nBarH = static_cast<int>((h * nHealth) / 100.0f);
+		const int nBarTop = (y + h) - nBarH;
 
 		G::Draw.Rect(x - nBarW - 3, y - 1, nBarW + 2, h + 2, { 10, 10, 12, 200 });
-		G::Draw.Rect(x - nBarW - 2, (y + h) - nBarH, nBarW, nBarH, clrHP);
+		G::Draw.OutlinedRect(x - nBarW - 3, y - 1, nBarW + 2, h + 2, { 0, 0, 0, 160 });
+		G::Draw.Rect(x - nBarW - 2, nBarTop, nBarW, nBarH / 2,
+			{ clrHP.r() + 60 > 255 ? 255 : clrHP.r() + 60, clrHP.g() + 60 > 255 ? 255 : clrHP.g() + 60, clrHP.b(), 255 });
+		G::Draw.Rect(x - nBarW - 2, nBarTop + nBarH / 2, nBarW, nBarH - nBarH / 2, clrHP);
 	}
 
 	//Nickname (+distance) and HP text above the box.
@@ -235,6 +253,15 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 		wcscat_s(wszLine, wszDist);
 	}
 
+	const int nTick = 5;
+	G::Draw.Line(x, y, x + nTick, y, clrItem);
+	G::Draw.Line(x, y, x, y + nTick, clrItem);
+	G::Draw.Line(x + w - nTick, y, x + w, y, clrItem);
+	G::Draw.Line(x + w, y, x + w, y + nTick, clrItem);
+	G::Draw.Line(x, y + h - nTick, x, y + h, clrItem);
+	G::Draw.Line(x, y + h, x + nTick, y + h, clrItem);
+	G::Draw.Line(x + w, y + h - nTick, x + w, y + h, clrItem);
+	G::Draw.Line(x + w - nTick, y + h, x + w, y + h, clrItem);
 	G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItem, TXT_CENTERXY, wszLine);
 }
 
@@ -255,6 +282,7 @@ void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
 		return;
 
 	const Color clrCommon(170, 60, 60, 220);
+	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrCommon);
 }
 

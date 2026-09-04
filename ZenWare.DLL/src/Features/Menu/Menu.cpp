@@ -58,6 +58,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"ESP distance","ESP distance","Distance in meters next to the name."},
 		{"ESP items","ESP items","Highlights ground weapons, meds and throwables."},
 		{"ESP commons","ESP commons","Draws boxes around common infected."},
+		{"Snaplines","Snaplines","Line from the bottom of the screen to each player box."},
 		{"Chams","Chams","Flat materials on player models, visible through walls."},
 		{"Chams through walls","Chams through walls","Ignores depth check so chams show through walls."},
 		{"Chams palette >","Chams palette","Cycles 5 enemy and ally color presets."},
@@ -194,7 +195,8 @@ void CFeatures_Menu::Render(){
    Checkbox(mouse,"ESP name",&Vars::ESP::bName);
    Checkbox(mouse,"ESP distance",&Vars::ESP::bDistance);
    Checkbox(mouse,"ESP items",&Vars::ESP::bItems);
-   Checkbox(mouse,"ESP commons",&Vars::ESP::bCommon);
+    Checkbox(mouse,"ESP commons",&Vars::ESP::bCommon);
+    Checkbox(mouse,"Snaplines",&Vars::ESP::bSnaplines);
    Checkbox(mouse,"Chams",&Vars::Chams::bEnabled);
    Checkbox(mouse,"Chams through walls",&Vars::Chams::bThroughWalls);
    Button(mouse,"Chams palette >",[](){ Vars::Chams::nPalette=(Vars::Chams::nPalette+1)%5; });
@@ -254,6 +256,13 @@ void CFeatures_Menu::Render(){
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
  G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"drag header | WASD free | F11 unload");
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
+ {
+  const float ehue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+  const int epulse=25+(int)(20*sinf((GetTickCount64()%6283)/1000.0f));
+  Color edge=HsvToColor(ehue,0.9f,0.55f);
+  edge.SetColor(edge.r(),edge.g(),edge.b(),epulse);
+  G::Draw.OutlinedRect(m_rc.nX+1,m_rc.nY+1,m_rc.nW-2,m_rc.nH-2,edge);
+ }
  DrawHelpPopup(mouse);
 }
 bool CFeatures_Menu::ShouldBlockInput(unsigned int uMsg){

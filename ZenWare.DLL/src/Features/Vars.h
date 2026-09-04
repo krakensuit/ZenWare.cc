@@ -76,6 +76,7 @@ namespace Vars
 		inline bool bDistance = true;
 		inline bool bItems = true;      //ground weapons / meds / throwables
 		inline bool bCommon = true;    //common infected boxes
+		inline bool bSnaplines = false; //line from screen bottom to each box
 	}
 
 	namespace Visuals
