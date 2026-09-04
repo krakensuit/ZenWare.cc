@@ -147,15 +147,24 @@ void ToggleMode(){
 void LaunchExternal(){
  wchar_t dir[MAX_PATH]={}; GetModuleFileNameW(NULL,dir,MAX_PATH);
  wchar_t* s=wcsrchr(dir,L'\\'); if(s) *s=0;
- const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe",L"C:\\Users\\ilya\\Desktop\\ZenWare.cc\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
+ const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe",L"C:\\Users\\ilya\\Desktop\\ZenWare.cc\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
  wchar_t goods[MAX_PATH]={};
- for(auto rel:cands){
+ wchar_t tried[3][MAX_PATH]={};
+ for(int i=0;i<3;i++){
   wchar_t t[MAX_PATH]={}, f[MAX_PATH]={};
-  wcscpy_s(t,dir); wcscat_s(t,rel);
+  const wchar_t* rel=cands[i];
+  if((rel[0]==L'\\'&&rel[1]==L'\\')||rel[1]==L':') wcscpy_s(t,rel);
+  else { wcscpy_s(t,dir); wcscat_s(t,rel); }
   GetFullPathNameW(t,MAX_PATH,f,nullptr);
+  wcscpy_s(tried[i],f);
   if(GetFileAttributesW(f)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(goods,MAX_PATH,f); break; }
  }
- if(!goods[0]){ LoaderUtil::Status(g_hMain,LoaderUtil::S("External не найден — собери проект","External not found — build it")); return; }
+ if(!goods[0]){
+  LoaderUtil::Status(g_hMain,LoaderUtil::S("External не найден — собери проект","External not found — build it"));
+  LoaderUtil::Log(g_hMain,"[!] External exe not found, tried:");
+  for(int i=0;i<3;i++){ char nb[MAX_PATH*2]={}; WideCharToMultiByte(CP_ACP,0,tried[i],-1,nb,sizeof(nb),nullptr,nullptr); LoaderUtil::Log(g_hMain,"[?] %s",nb); }
+  return;
+ }
  ShellExecuteW(nullptr,L"open",goods,nullptr,nullptr,SW_SHOWNORMAL);
  LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched"));
 }
