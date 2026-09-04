@@ -7,6 +7,8 @@
 #include "../../Util/Anim/Anim.h"
 #include "../../external/Icons/IconsFontAwesome6.h"
 #include <cmath>
+#include <map>
+#include <string>
 static const Color CLR_SHADOW(0,0,0,80);
 static const Color CLR_BG(14,16,15,248);
 static const Color CLR_HEADER(18,21,20,255);
@@ -160,6 +162,7 @@ void CFeatures_Menu::Render(){
  bool bOpen = HandleOpenState();
  float dt = I::GlobalVars ? I::GlobalVars->frametime : 0.016f;
  if(dt <= 0 || dt > 0.1f) dt = 0.016f;
+ m_flDt = dt;
  s_alpha = Anim::Approach(s_alpha, bOpen ? 1.0f : 0.0f, dt, 9.0f);
  if(s_alpha < 0.01f){
   static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
@@ -177,7 +180,7 @@ void CFeatures_Menu::Render(){
  if(!mouse.bDown) m_bDragging=false;
  if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY; }
  Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f;
- m_rc.nX=m_nPosX; m_rc.nY=m_nPosY; m_rc.nW=PANEL_W; m_rc.nH=PANEL_H;
+ m_rc.nX=m_nPosX; m_rc.nY=m_nPosY-(int)((1.0f-s_alpha)*16); m_rc.nW=PANEL_W; m_rc.nH=PANEL_H;
  G::Draw.Rect(m_rc.nX+5,m_rc.nY+6,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+3,m_rc.nY+4,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+1,m_rc.nY+2,m_rc.nW,m_rc.nH,CLR_SHADOW);
@@ -246,6 +249,8 @@ void CFeatures_Menu::Render(){
    m_nItemY+=26; break;
   }
  }
+ const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+ G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
  G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"drag header | WASD free | F11 unload");
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
@@ -329,16 +334,28 @@ void CFeatures_Menu::DrawPanel(){
 void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
  const char* szTabs[]={"Visuals","Move","View","Combat","Misc"};
  const int nTabW=(m_rc.nW-20)/5;
+ static float s_pill=0.0f;
+ s_pill=Anim::Approach(s_pill,(float)m_nTab,m_flDt,10.0f);
+ const int nTabY=m_rc.nY+52; constexpr int nTabH=22;
+ const int nPillX=m_rc.nX+10+(int)(s_pill*(float)nTabW);
+ G::Draw.Rect(nPillX,nTabY,nTabW-6,nTabH,CLR_ACCENT);
+ G::Draw.Rect(nPillX,nTabY+nTabH-2,nTabW-6,2,CLR_ACCENT_SOFT);
  for(int n=0;n<5;n++){
   int nX=m_rc.nX+10+(n*nTabW); int nY=m_rc.nY+52; constexpr int nH=22;
   bool bActive=(m_nTab==n); bool bHover=Hovered(mouse.pt,nX,nY,nTabW-6,nH);
   Color clrText=bActive?Color(8,14,11,255):(bHover?CLR_TEXT_ON:CLR_TEXT_OFF);
-  if(bActive){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ACCENT); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
-  else if(bHover){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ROW_HOVER); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
+  if(!bActive&&bHover){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ROW_HOVER); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
   G::Draw.String(EFonts::MENU_TAHOMA,nX+((nTabW-6)/2),nY+4,clrText,TXT_CENTERXY,szTabs[n]);
   if(bHover&&mouse.bClicked) m_nTab=n;
  } nTab=m_nTab;
 }
+static Color LerpC(const Color& a,const Color& b,float t){
+ int ar,ag,ab,aa,br,bg2,bb2,ba;
+ a.GetColor(ar,ag,ab,aa); b.GetColor(br,bg2,bb2,ba);
+ if(t<0) t=0; if(t>1) t=1;
+ return Color(ar+(int)((br-ar)*t),ag+(int)((bg2-ag)*t),ab+(int)((bb2-ab)*t),255);
+}
+static std::map<std::string,float> s_tog;
 void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool* pValue){
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
@@ -347,13 +364,15 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
  constexpr int nTogW=30, nTogH=14;
  int nTogX=nRowX+nRowW-nTogW-10;
  int nTogY=m_nItemY+(nRowH-nTogH)/2;
- Color trackClr=*pValue?CLR_ACCENT:CLR_OUTLINE;
+ float &flTog=s_tog[szLabel];
+ flTog=Anim::Approach(flTog,*pValue?1.0f:0.0f,m_flDt,12.0f);
+ Color trackClr=LerpC(CLR_OUTLINE,CLR_ACCENT,flTog);
  G::Draw.Rect(nTogX,nTogY,nTogW,nTogH,trackClr);
- G::Draw.OutlinedRect(nTogX,nTogY,nTogW,nTogH,*pValue?CLR_ACCENT:CLR_OUTLINE_SOFT);
+ G::Draw.OutlinedRect(nTogX,nTogY,nTogW,nTogH,LerpC(CLR_OUTLINE_SOFT,CLR_ACCENT,flTog));
  // knob
- int nKnobX=*pValue? nTogX+nTogW-7 : nTogX+7;
+ int nKnobX=nTogX+7+(int)((nTogW-14)*flTog);
  G::Draw.Circle(nKnobX,nTogY+nTogH/2,5,16,Color(245,255,250,255));
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12,m_nItemY+6,*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(bHover?2:0),m_nItemY+6,*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
   const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szLabel)+7;
@@ -380,7 +399,7 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12,m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(bHover?2:0),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,szLabel);
  char szVal[32]={};
  if(s_pCapturing==pValue){
   strcpy_s(szVal,"[press key]");
@@ -413,6 +432,7 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
  float flFrac=((*pValue-nMin)/static_cast<float>(nMax-nMin)); int nFillW=int(nW*flFrac);
  G::Draw.Rect(nX,m_nItemY,nW,nTrackH,CLR_HEADER);
  G::Draw.Rect(nX,m_nItemY,nFillW,nTrackH,CLR_ACCENT);
+ G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,nKnobR+4,14,Color(0,255,171,35));
  G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,nKnobR,14,CLR_ACCENT);
  if(mouse.bDown&&Hovered(mouse.pt,nX-8,m_nItemY-8,nW+16,nTrackH+16)){
   float flNew=U::Math.Clamp((mouse.pt.x-nX)/static_cast<float>(nW),0.0f,1.0f);

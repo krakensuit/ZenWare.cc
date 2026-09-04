@@ -50,6 +50,8 @@ static COLORREF Hsv(float h, float s, float v){
 }
 Theme_t g_theme = MakeTheme(true);
 HWND g_hMain=nullptr, g_hInject=nullptr, g_hStatus=nullptr, g_hLaunch=nullptr;
+static bool g_bExternal=false, g_bModeHov=false;
+static RECT g_rcMode={0,0,0,0};
 HBRUSH g_brBg=nullptr,g_brCtl=nullptr,g_brBorder=nullptr;
 HFONT g_fUI=nullptr,g_fTitle=nullptr,g_fSmall=nullptr;
 bool g_busy=false;
@@ -134,6 +136,27 @@ static bool FindDll(wchar_t* out){
   if(GetFileAttributesW(f)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,f); return true; }
  }
  return false;
+}
+void ToggleMode(){
+ g_bExternal=!g_bExternal;
+ SetWindowTextW(g_hInject,LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"));
+ LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)"));
+ RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(g_hMain,&hdr,FALSE);
+}
+void LaunchExternal(){
+ wchar_t dir[MAX_PATH]={}; GetModuleFileNameW(NULL,dir,MAX_PATH);
+ wchar_t* s=wcsrchr(dir,L'\\'); if(s) *s=0;
+ const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe",L"C:\\Users\\ilya\\Desktop\\ZenWare.cc\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
+ wchar_t goods[MAX_PATH]={};
+ for(auto rel:cands){
+  wchar_t t[MAX_PATH]={}, f[MAX_PATH]={};
+  wcscpy_s(t,dir); wcscat_s(t,rel);
+  GetFullPathNameW(t,MAX_PATH,f,nullptr);
+  if(GetFileAttributesW(f)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(goods,MAX_PATH,f); break; }
+ }
+ if(!goods[0]){ LoaderUtil::Status(g_hMain,LoaderUtil::S("External не найден — собери проект","External not found — build it")); return; }
+ ShellExecuteW(nullptr,L"open",goods,nullptr,nullptr,SW_SHOWNORMAL);
+ LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched"));
 }
 void StartInject(){
  wchar_t p[MAX_PATH]={};
@@ -244,7 +267,9 @@ static constexpr ULONGLONG SPLASH_MS=2800;
 static HWND g_hSplash=nullptr;
 static ULONGLONG g_splashT0=0;
 struct SplashP_t{ float x0,y0,x1,y1,dl; int sz; };
-static SplashP_t g_parts[70];
+static SplashP_t g_parts[130];
+struct SplashD_t{ float x,y,ph,sp; };
+static SplashD_t g_dust[45];
 static Gdiplus::Image* g_splashImg=nullptr;
 static unsigned SplashRnd(unsigned& s){ s^=s<<13; s^=s>>17; s^=s<<5; return s; }
 static float SplashEase(float t){ if(t<0) t=0; if(t>1) t=1; return t*t*(3.0f-2.0f*t); }
@@ -253,15 +278,18 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
  case WM_CREATE:{
   g_hSplash=h; g_splashT0=GetTickCount64();
   unsigned s=(unsigned)GetTickCount64()|1u;
-  for(int i=0;i<70;i++){
+  for(int i=0;i<130;i++){
    int e=SplashRnd(s)%4; float ex,ey;
    if(e==0){ ex=(float)(SplashRnd(s)%SPL_W); ey=-12; }
    else if(e==1){ ex=(float)(SplashRnd(s)%SPL_W); ey=SPL_H+12; }
    else if(e==2){ ex=-12; ey=(float)(SplashRnd(s)%SPL_H); }
    else { ex=SPL_W+12; ey=(float)(SplashRnd(s)%SPL_H); }
-   g_parts[i]={ex,ey,(float)(SPL_W/2+(int)(SplashRnd(s)%170)-85),(float)(150+(int)(SplashRnd(s)%90)-45),(SplashRnd(s)%600)/1000.0f,2+(int)(SplashRnd(s)%2)};
+   g_parts[i]={ex,ey,(float)(SPL_W/2+(int)(SplashRnd(s)%170)-85),(float)(89+(int)(SplashRnd(s)%90)-45),(SplashRnd(s)%600)/1000.0f,2+(int)(SplashRnd(s)%2)};
   }
-  SetTimer(h,1,30,nullptr);
+  for(int i=0;i<45;i++){
+   g_dust[i]={(float)(SplashRnd(s)%SPL_W),(float)(SplashRnd(s)%SPL_H),(SplashRnd(s)%628)/100.0f,0.4f+(SplashRnd(s)%100)/140.0f};
+  }
+  SetTimer(h,1,16,nullptr); // ~60fps для плавности
   SetLayeredWindowAttributes(h,0,0,LWA_ALPHA);
   break;
  }
@@ -285,16 +313,52 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   HBRUSH bb=CreateSolidBrush(bg); RECT rc={0,0,SPL_W,SPL_H}; FillRect(dc,&rc,bb); DeleteObject(bb);
   const float el=(GetTickCount64()-g_splashT0)/1000.0f;
   const float hue=fmodf((float)GetTickCount64()/38.0f,360.0f);
-  // частицы слетаются к центру
-  for(int i=0;i<70;i++){
+  // сетка
+  {
+   int gk=(int)(SplashEase(el/1.2f)*26);
+   if(gk>0){
+    HPEN gp2=CreatePen(PS_SOLID,1,Mix2(bg,RGB(34,48,40),gk)); auto og2=SelectObject(dc,gp2);
+    for(int gx=20;gx<SPL_W;gx+=40){ MoveToEx(dc,gx,0,nullptr); LineTo(dc,gx,SPL_H); }
+    for(int gy=20;gy<SPL_H;gy+=40){ MoveToEx(dc,0,gy,nullptr); LineTo(dc,SPL_W,gy); }
+    SelectObject(dc,og2); DeleteObject(gp2);
+   }
+  }
+  // пыль
+  for(int i=0;i<45;i++){
+   const SplashD_t& d=g_dust[i];
+   float dyy=d.y-el*9.0f*d.sp; dyy=dyy-(int)(dyy/SPL_H)*SPL_H; if(dyy<0)dyy+=SPL_H;
+   float dxx=d.x+sinf(el*0.7f+d.ph)*8.0f;
+   int da=18+(int)(16*sinf(el*d.sp*2.0f+d.ph*3.0f));
+   if(da<4) continue;
+   HBRUSH db=CreateSolidBrush(Mix2(bg,g_theme.dim,da));
+   RECT dr={(int)dxx,(int)dyy,(int)dxx+2,(int)dyy+2}; FillRect(dc,&dr,db); DeleteObject(db);
+  }
+  // частицы со шлейфами
+  for(int i=0;i<130;i++){
    const SplashP_t& p=g_parts[i];
    float t=SplashEase((el-p.dl)/1.1f);
    if(t<=0||t>=1) continue;
-   float px=p.x0+(p.x1-p.x0)*t, py=p.y0+(p.y1-p.y0)*t;
-   COLORREF c=Mix2(bg,Hsv(hue+i*3.0f,0.85f,1.0f),(int)(220*(1.0f-t)+35));
-   HBRUSH pb=CreateSolidBrush(c);
-   RECT pr={(int)px-p.sz/2,(int)py-p.sz/2,(int)px+p.sz/2+1,(int)py+p.sz/2+1};
-   FillRect(dc,&pr,pb); DeleteObject(pb);
+   for(int s2=0;s2<3;s2++){
+    float tt=t-s2*0.035f; if(tt<=0) continue;
+    float px=p.x0+(p.x1-p.x0)*tt, py=p.y0+(p.y1-p.y0)*tt;
+    int a2=(int)((220*(1.0f-t)+35)/(s2*2+1));
+    int sh=p.sz-s2; if(sh<1) sh=1;
+    HBRUSH pb=CreateSolidBrush(Mix2(bg,Hsv(hue+i*3.0f,0.85f,1.0f),a2));
+    RECT pr={(int)px-sh/2,(int)py-sh/2,(int)px+sh/2+1,(int)py+sh/2+1};
+    FillRect(dc,&pr,pb); DeleteObject(pb);
+   }
+  }
+  // ударные кольца
+  for(int r2=0;r2<2;r2++){
+   float rt0=r2?1.9f:1.2f;
+   float rt=(el-rt0)/0.7f;
+   if(rt>0&&rt<1){
+    int rr=(int)(20+rt*260);
+    HPEN rp=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,(int)(110*(1.0f-rt)))); auto ogr=SelectObject(dc,rp);
+    HGDIOBJ onb=SelectObject(dc,GetStockObject(NULL_BRUSH));
+    Ellipse(dc,SPL_W/2-rr,89-rr,SPL_W/2+rr,89+rr);
+    SelectObject(dc,onb); SelectObject(dc,ogr); DeleteObject(rp);
+   }
   }
    // эмблема: настоящий логотип со свечением, ESP-уголками и сканлайном
    float la=SplashEase((el-0.15f)/0.6f);
@@ -316,7 +380,10 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
      Gdiplus::ColorMatrix cm={1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,la,0, 0,0,0,0,1};
      Gdiplus::ImageAttributes at; at.SetColorMatrix(&cm,Gdiplus::ColorMatrixFlagsDefault,Gdiplus::ColorAdjustTypeBitmap);
      int iw=(int)g_splashImg->GetWidth(), ih=(int)g_splashImg->GetHeight();
-     gd.DrawImage(g_splashImg,Gdiplus::Rect(LCX-L/2,LCY-L/2,L,L),0,0,iw,ih,Gdiplus::UnitPixel,&at);
+     gd.TranslateTransform((Gdiplus::REAL)LCX,(Gdiplus::REAL)LCY);
+     gd.RotateTransform(2.0f*sinf(el*1.3f));
+     gd.DrawImage(g_splashImg,Gdiplus::Rect(-L/2,-L/2,L,L),0,0,iw,ih,Gdiplus::UnitPixel,&at);
+     gd.ResetTransform();
      float bt=SplashEase((el-0.5f)/0.7f);
      if(bt>0){
       int mg=14+(int)(40*(1.0f-bt));
@@ -345,9 +412,16 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     TextOutW(dc,x0+dx,y0+dy,txt,(int)wcslen(txt));
    }
    int cx=x0;
+   float swx=(el-1.6f)/0.8f;
    for(const wchar_t* p=txt;*p;++p){
     int idx=(int)(p-txt);
-    SetTextColor(dc,Mix2(bg,Hsv(hue+idx*5.0f,0.85f,1.0f),k));
+    COLORREF lc=Mix2(bg,Hsv(hue+idx*5.0f,0.85f,1.0f),k);
+    if(swx>0&&swx<1.4f){
+     float dd=idx-(swx*12.0f-1.0f);
+     float bb2=expf(-dd*dd/1.5f);
+     if(bb2>0.03f) lc=Mix2(lc,RGB(255,255,255),(int)(bb2*150));
+    }
+    SetTextColor(dc,lc);
     wchar_t ch[2]={*p,0}; SIZE cs={0,0}; GetTextExtentPoint32W(dc,ch,1,&cs);
     TextOutW(dc,cx,y0,ch,1); cx+=cs.cx;
    }
@@ -370,7 +444,9 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   {
    float f=el/2.6f; if(f>1) f=1;
    RECT tr={80,252,480,256}; HBRUSH tb=CreateSolidBrush(g_theme.ctl); FillRect(dc,&tr,tb); DeleteObject(tb);
-   if(f>0){ RECT fl={80,252,80+(int)(400*f),256}; HBRUSH fb=CreateSolidBrush(g_theme.accent); FillRect(dc,&fl,fb); DeleteObject(fb); }
+   if(f>0){ RECT fl={80,252,80+(int)(400*f),256}; HBRUSH fb=CreateSolidBrush(g_theme.accent); FillRect(dc,&fl,fb); DeleteObject(fb);
+    int hx=80+(int)(400*f);
+    HBRUSH hb=CreateSolidBrush(Mix2(g_theme.accent,RGB(255,255,255),120)); RECT hr2={hx-12,251,hx,257}; FillRect(dc,&hr2,hb); DeleteObject(hb); }
   }
   auto os2=SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
   RECT hr={0,272,SPL_W-16,292}; DrawTextW(dc,LoaderUtil::SW(L"клик — пропустить",L"click to skip"),-1,&hr,DT_RIGHT|DT_SINGLELINE);
@@ -475,13 +551,25 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    for(int b:{IDC_LAUNCH,IDC_INJECT}){ HWND bh=GetDlgItem(h,b);
    RECT r; GetWindowRect(bh,&r); MapWindowPoints(HWND_DESKTOP,h,(POINT*)&r,2);
    InvalidateRect(h,&r,FALSE); }
-  (void)id;
-   if(id==IDC_INJECT||id==IDC_LAUNCH){
+   (void)id;
+   {
+    POINT mp{GET_X_LPARAM(l),GET_Y_LPARAM(l)};
+    bool mh=PtInRect(&g_rcMode,mp)!=FALSE;
+    if(mh!=g_bModeHov){ g_bModeHov=mh; InvalidateRect(h,&g_rcMode,FALSE); }
+    if(mh) SetCursor(LoadCursorW(nullptr,IDC_HAND));
+   }
+    if(id==IDC_INJECT||id==IDC_LAUNCH){
    TRACKMOUSEEVENT tme{sizeof(tme),TME_LEAVE,h,0}; TrackMouseEvent(&tme);
   }
   break;
  }
- case WM_MOUSELEAVE:{
+  case WM_LBUTTONDOWN:{
+   int x=GET_X_LPARAM(l), y=GET_Y_LPARAM(l);
+   POINT cp{x,y};
+   if(PtInRect(&g_rcMode,cp)) ToggleMode();
+   break;
+  }
+  case WM_MOUSELEAVE:{
   RECT rc; GetClientRect(h,&rc); InvalidateRect(h,&rc,FALSE);
   break;
  }
@@ -504,14 +592,15 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   SelectObject(dc,ol); DeleteObject(lp);
   // радужный логотип
   DrawRgbLogo(dc,22,8);
-  // пилюля справа
-  RECT vr={rc.right-170,16,rc.right-20,42};
-  HBRUSH vb=CreateSolidBrush(g_theme.dark?RGB(6,14,11):RGB(255,255,255)); HPEN vp=CreatePen(PS_SOLID,1,g_theme.border);
-  auto vo1=SelectObject(dc,vb); auto vo2=SelectObject(dc,vp);
-  RoundRect(dc,vr.left,vr.top,vr.right,vr.bottom,12,12);
-  SelectObject(dc,vo1); SelectObject(dc,vo2); DeleteObject(vb); DeleteObject(vp);
-  SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT); SetTextColor(dc,g_theme.dark?g_theme.accent:g_theme.accent2);
-  DrawTextW(dc,L"EXTERNAL • x86",-1,&vr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+   // пилюля-кнопка режима справа
+   RECT vr={rc.right-170,16,rc.right-20,42}; g_rcMode=vr;
+   COLORREF mfill=g_bModeHov?Mix2(g_theme.ctl,g_theme.accent,40):(g_theme.dark?RGB(6,14,11):RGB(255,255,255));
+   HBRUSH vb=CreateSolidBrush(mfill); HPEN vp=CreatePen(PS_SOLID,1,g_bModeHov?g_theme.accent:g_theme.border);
+   auto vo1=SelectObject(dc,vb); auto vo2=SelectObject(dc,vp);
+   RoundRect(dc,vr.left,vr.top,vr.right,vr.bottom,12,12);
+   SelectObject(dc,vo1); SelectObject(dc,vo2); DeleteObject(vb); DeleteObject(vp);
+   SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT); SetTextColor(dc,g_theme.dark?g_theme.accent:g_theme.accent2);
+   DrawTextW(dc,g_bExternal?L"EXTERNAL • x86":L"INTERNAL • x86",-1,&vr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
   // подписи секций
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
 
@@ -554,7 +643,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   if(HIWORD(w)==BN_CLICKED){
    switch(LOWORD(w)){
          case 0xBEEF: break; // IDC_BROWSE removed
-     case IDC_INJECT: StartInject(); SetFocus(h); break;
+      case IDC_INJECT: if(g_bExternal) LaunchExternal(); else StartInject(); SetFocus(h); break;
      case IDC_LAUNCH: LaunchGame(); SetFocus(h); break;
     }
    }

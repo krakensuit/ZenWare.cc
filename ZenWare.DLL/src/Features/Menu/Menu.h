@@ -54,6 +54,7 @@ private:
 
 	Layout_t m_rc = { };
 	int m_nItemY = 0;
+	float m_flDt = 0.016f;
 
 	int m_nPosX = 0;
 	int m_nPosY = 0;
