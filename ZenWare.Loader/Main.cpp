@@ -13,6 +13,7 @@
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "msimg32.lib")
 #pragma comment(lib, "gdiplus.lib")
+#pragma comment(lib, "winmm.lib")
 
 namespace {
 constexpr int WINDOW_W = 620;
@@ -271,6 +272,7 @@ static SplashP_t g_parts[130];
 struct SplashD_t{ float x,y,ph,sp; };
 static SplashD_t g_dust[45];
 static Gdiplus::Image* g_splashImg=nullptr;
+static Gdiplus::Bitmap* g_splashGlow=nullptr;
 static unsigned SplashRnd(unsigned& s){ s^=s<<13; s^=s>>17; s^=s<<5; return s; }
 static float SplashEase(float t){ if(t<0) t=0; if(t>1) t=1; return t*t*(3.0f-2.0f*t); }
 LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
@@ -289,18 +291,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   for(int i=0;i<45;i++){
    g_dust[i]={(float)(SplashRnd(s)%SPL_W),(float)(SplashRnd(s)%SPL_H),(SplashRnd(s)%628)/100.0f,0.4f+(SplashRnd(s)%100)/140.0f};
   }
-  SetTimer(h,1,16,nullptr); // ~60fps для плавности
   SetLayeredWindowAttributes(h,0,0,LWA_ALPHA);
-  break;
- }
- case WM_TIMER:{
-  ULONGLONG el=GetTickCount64()-g_splashT0;
-  BYTE a=255;
-  if(el<300) a=(BYTE)(el*255/300);
-  else if(el>SPLASH_MS-400) a=(el>=SPLASH_MS)?0:(BYTE)((SPLASH_MS-el)*255/400);
-  SetLayeredWindowAttributes(h,0,a,LWA_ALPHA);
-  InvalidateRect(h,nullptr,FALSE);
-  if(el>=SPLASH_MS){ KillTimer(h,1); DestroyWindow(h); }
   break;
  }
  case WM_PAINT:{
@@ -309,6 +300,12 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   HBITMAP bmp=CreateCompatibleBitmap(hdc,SPL_W,SPL_H);
   HGDIOBJ obm=SelectObject(mem,bmp);
   HDC dc=mem;
+  { // fade поверх кадра, альфу дёргаем только при изменении
+   ULONGLONG elA=GetTickCount64()-g_splashT0; BYTE a=255;
+   if(elA<300) a=(BYTE)(elA*255/300);
+   else if(elA>SPLASH_MS-400) a=(elA>=SPLASH_MS)?0:(BYTE)((SPLASH_MS-elA)*255/400);
+   static BYTE lastA=0; if(a!=lastA){ SetLayeredWindowAttributes(h,0,a,LWA_ALPHA); lastA=a; }
+  }
   const COLORREF bg=RGB(8,10,9);
   HBRUSH bb=CreateSolidBrush(bg); RECT rc={0,0,SPL_W,SPL_H}; FillRect(dc,&rc,bb); DeleteObject(bb);
   const float el=(GetTickCount64()-g_splashT0)/1000.0f;
@@ -367,14 +364,14 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     if(g_splashImg){
      Gdiplus::Graphics gd(dc);
      gd.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
-     gd.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
-     int gr=LSZ/2+34+(int)(10*sinf(el*4.0f));
-     Gdiplus::GraphicsPath gp; gp.AddEllipse(LCX-gr,LCY-gr,gr*2,gr*2);
-     Gdiplus::PathGradientBrush pb(&gp);
-     int ga=46+(int)(26*sinf(el*4.0f)); if(ga<0)ga=0; if(ga>120)ga=120;
-     pb.SetCenterColor(Gdiplus::Color((BYTE)ga,0,255,171));
-     Gdiplus::Color sc(0,0,0,0); int sn=1; pb.SetSurroundColors(&sc,&sn);
-     gd.FillEllipse(&pb,LCX-gr,LCY-gr,gr*2,gr*2);
+     gd.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBilinear);
+     int gs=LSZ+68+(int)(20*sinf(el*4.0f));
+     int gpa=(int)(la*(150+70*sinf(el*4.0f))); if(gpa<0)gpa=0; if(gpa>220)gpa=220;
+     if(g_splashGlow){
+      Gdiplus::ColorMatrix gm={1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,(float)gpa/255.0f,0, 0,0,0,0,1};
+      Gdiplus::ImageAttributes gat; gat.SetColorMatrix(&gm,Gdiplus::ColorMatrixFlagsDefault,Gdiplus::ColorAdjustTypeBitmap);
+      gd.DrawImage(g_splashGlow,Gdiplus::Rect(LCX-gs/2,LCY-gs/2,gs,gs),0,0,240,240,Gdiplus::UnitPixel,&gat);
+     }
      float sc2=0.75f+0.25f*SplashEase(el/0.9f);
      int L=(int)(LSZ*sc2);
      Gdiplus::ColorMatrix cm={1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,la,0, 0,0,0,0,1};
@@ -481,14 +478,34 @@ void RunSplash(HINSTANCE hi){
   g_splashImg=Gdiplus::Image::FromFile(lp);
   if(g_splashImg&&g_splashImg->GetLastStatus()!=Gdiplus::Ok){ delete g_splashImg; g_splashImg=nullptr; }
  }
+ // свечение предрендерим один раз в спрайт, а не считаем градиент каждый кадр
+ g_splashGlow=new Gdiplus::Bitmap(240,240,PixelFormat32bppPARGB);
+ {
+  Gdiplus::Graphics gg(g_splashGlow);
+  Gdiplus::GraphicsPath gp; gp.AddEllipse(0,0,240,240);
+  Gdiplus::PathGradientBrush pb(&gp);
+  pb.SetCenterPoint(Gdiplus::PointF(120,120));
+  pb.SetCenterColor(Gdiplus::Color(255,0,255,171));
+  Gdiplus::Color sc0(0,0,0,0); int sn0=1; pb.SetSurroundColors(&sc0,&sn0);
+  gg.FillRectangle(&pb,0,0,240,240);
+ }
  int sx=GetSystemMetrics(SM_CXSCREEN), sy=GetSystemMetrics(SM_CYSCREEN);
  HWND hw=CreateWindowExW(WS_EX_TOPMOST|WS_EX_TOOLWINDOW|WS_EX_LAYERED,L"ZwSplash",L"ZenWare",WS_POPUP|WS_VISIBLE,(sx-SPL_W)/2,(sy-SPL_H)/2,SPL_W,SPL_H,nullptr,nullptr,hi,nullptr);
  if(hw){
   InitFonts(hw);
-  MSG m{};
-  while(IsWindow(hw)&&GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m); }
+  timeBeginPeriod(1);
+  for(;;){ // vsync-цикл вместо таймера: кадр рисуется синхронно и ждёт вертикалку
+   MSG m{};
+   while(PeekMessageW(&m,nullptr,0,0,PM_REMOVE)){ TranslateMessage(&m); DispatchMessageW(&m); }
+   if(!IsWindow(hw)) break;
+   if(GetTickCount64()-g_splashT0>=SPLASH_MS){ DestroyWindow(hw); break; }
+   RedrawWindow(hw,nullptr,nullptr,RDW_INVALIDATE|RDW_UPDATENOW|RDW_NOCHILDREN);
+   if(FAILED(DwmFlush())) Sleep(16);
+  }
+  timeEndPeriod(1);
  }
  if(g_splashImg){ delete g_splashImg; g_splashImg=nullptr; }
+ if(g_splashGlow){ delete g_splashGlow; g_splashGlow=nullptr; }
  Gdiplus::GdiplusShutdown(tok);
 }
 } // namespace
@@ -528,7 +545,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    }
   }
    #endif
-   ApplyCtrlTheme(); SetTimer(h,1,30,nullptr); break;
+   ApplyCtrlTheme(); SetTimer(h,1,16,nullptr); break;
  }
  case WM_TIMER:
   if(w==1){
