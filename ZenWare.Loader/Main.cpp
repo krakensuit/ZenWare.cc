@@ -4,6 +4,7 @@
 #include <dwmapi.h>
 #include <uxtheme.h>
 #include <windowsx.h>
+#include <gdiplus.h>
 #include "ManualMapper.h"
 #include "Utils.h"
 #include "resource.h"
@@ -11,6 +12,7 @@
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "msimg32.lib")
+#pragma comment(lib, "gdiplus.lib")
 
 namespace {
 constexpr int WINDOW_W = 620;
@@ -243,6 +245,7 @@ static HWND g_hSplash=nullptr;
 static ULONGLONG g_splashT0=0;
 struct SplashP_t{ float x0,y0,x1,y1,dl; int sz; };
 static SplashP_t g_parts[70];
+static Gdiplus::Image* g_splashImg=nullptr;
 static unsigned SplashRnd(unsigned& s){ s^=s<<13; s^=s>>17; s^=s<<5; return s; }
 static float SplashEase(float t){ if(t<0) t=0; if(t>1) t=1; return t*t*(3.0f-2.0f*t); }
 LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
@@ -293,13 +296,48 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    RECT pr={(int)px-p.sz/2,(int)py-p.sz/2,(int)px+p.sz/2+1,(int)py+p.sz/2+1};
    FillRect(dc,&pr,pb); DeleteObject(pb);
   }
-  // логотип проявляется из темноты
-  float la=SplashEase((el-0.35f)/0.6f);
-  if(la>0){
-   const wchar_t* txt=L"ZenWare.cc";
+   // эмблема: настоящий логотип со свечением, ESP-уголками и сканлайном
+   float la=SplashEase((el-0.15f)/0.6f);
+   const int LCX=SPL_W/2, LCY=89, LSZ=150;
+   if(la>0){
+    if(g_splashImg){
+     Gdiplus::Graphics gd(dc);
+     gd.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+     gd.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+     int gr=LSZ/2+34+(int)(10*sinf(el*4.0f));
+     Gdiplus::GraphicsPath gp; gp.AddEllipse(LCX-gr,LCY-gr,gr*2,gr*2);
+     Gdiplus::PathGradientBrush pb(&gp);
+     int ga=46+(int)(26*sinf(el*4.0f)); if(ga<0)ga=0; if(ga>120)ga=120;
+     pb.SetCenterColor(Gdiplus::Color((BYTE)ga,0,255,171));
+     Gdiplus::Color sc(0,0,0,0); int sn=1; pb.SetSurroundColors(&sc,&sn);
+     gd.FillEllipse(&pb,LCX-gr,LCY-gr,gr*2,gr*2);
+     float sc2=0.75f+0.25f*SplashEase(el/0.9f);
+     int L=(int)(LSZ*sc2);
+     Gdiplus::ColorMatrix cm={1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,la,0, 0,0,0,0,1};
+     Gdiplus::ImageAttributes at; at.SetColorMatrix(&cm,Gdiplus::ColorMatrixFlagsDefault,Gdiplus::ColorAdjustTypeBitmap);
+     int iw=(int)g_splashImg->GetWidth(), ih=(int)g_splashImg->GetHeight();
+     gd.DrawImage(g_splashImg,Gdiplus::Rect(LCX-L/2,LCY-L/2,L,L),0,0,iw,ih,Gdiplus::UnitPixel,&at);
+     float bt=SplashEase((el-0.5f)/0.7f);
+     if(bt>0){
+      int mg=14+(int)(40*(1.0f-bt));
+      int bx0=LCX-LSZ/2-mg, bx1=LCX+LSZ/2+mg, by0=LCY-LSZ/2-mg, by1=LCY+LSZ/2+mg;
+      int bl=30, bk=(int)(bt*255);
+      HPEN hp=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,bk)); auto oh=SelectObject(dc,hp);
+      MoveToEx(dc,bx0,by0+bl,nullptr); LineTo(dc,bx0,by0); LineTo(dc,bx0+bl,by0);
+      MoveToEx(dc,bx1-bl,by0,nullptr); LineTo(dc,bx1,by0); LineTo(dc,bx1,by0+bl);
+      MoveToEx(dc,bx1,by1-bl,nullptr); LineTo(dc,bx1,by1); LineTo(dc,bx1-bl,by1);
+      MoveToEx(dc,bx0+bl,by1,nullptr); LineTo(dc,bx0,by1); LineTo(dc,bx0,by1-bl);
+      SelectObject(dc,oh); DeleteObject(hp);
+     }
+     if(el>0.7f&&el<1.9f){
+      int sy2=(LCY-LSZ/2)+(int)(LSZ*((el-0.7f)/1.2f));
+      HBRUSH sb=CreateSolidBrush(Mix2(bg,g_theme.accent,(int)(la*90))); RECT sr={LCX-LSZ/2,sy2,LCX+LSZ/2,sy2+2}; FillRect(dc,&sr,sb); DeleteObject(sb);
+     }
+    }
+    const wchar_t* txt=L"ZenWare.cc";
    auto of=SelectObject(dc,g_fTitle); SetBkMode(dc,TRANSPARENT);
    SIZE sz={0,0}; GetTextExtentPoint32W(dc,txt,(int)wcslen(txt),&sz);
-   int x0=(SPL_W-sz.cx)/2, y0=104;
+    int x0=(SPL_W-sz.cx)/2, y0=g_splashImg?172:104;
    int k=(int)(la*255);
    for(int dx=-2;dx<=2;dx+=2) for(int dy=-2;dy<=2;dy+=2){
     if(!dx&&!dy) continue;
@@ -316,13 +354,14 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    // раскрывающаяся линия + подпись
    float lw=SplashEase((el-0.9f)/0.8f);
    if(lw>0){
-    int hw2=(int)(200*lw);
-    HPEN lp=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,(int)(la*255))); auto ol=SelectObject(dc,lp);
-    MoveToEx(dc,SPL_W/2-hw2,196,nullptr); LineTo(dc,SPL_W/2+hw2,196);
+     int hw2=(int)(200*lw);
+     int ly=g_splashImg?214:196;
+     HPEN lp=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,(int)(la*255))); auto ol=SelectObject(dc,lp);
+     MoveToEx(dc,SPL_W/2-hw2,ly,nullptr); LineTo(dc,SPL_W/2+hw2,ly);
     SelectObject(dc,ol); DeleteObject(lp);
     auto os=SelectObject(dc,g_fSmall);
     SetTextColor(dc,Mix2(bg,g_theme.dim,(int)(la*255)));
-    RECT vr={0,204,SPL_W,224}; DrawTextW(dc,L"LOADER v3.2  •  EXTERNAL x86",-1,&vr,DT_CENTER|DT_SINGLELINE);
+     RECT vr={0,ly+8,SPL_W,ly+28}; DrawTextW(dc,L"LOADER v3.2  •  EXTERNAL x86",-1,&vr,DT_CENTER|DT_SINGLELINE);
     SelectObject(dc,os);
    }
    SelectObject(dc,of);
@@ -349,13 +388,32 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
  }
  return 0;
 }
+static bool FindLogo(wchar_t* out){
+ wchar_t dir[MAX_PATH]={};
+ GetModuleFileNameW(NULL,dir,MAX_PATH);
+ wchar_t* s=wcsrchr(dir,L'\\'); if(s) *s=0;
+ wchar_t t[MAX_PATH]={};
+ wcscpy_s(t,dir); wcscat_s(t,L"\\zenwareLOGO.png");
+ if(GetFileAttributesW(t)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,t); return true; }
+ if(GetFileAttributesW(L"zenwareLOGO.png")!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,L"zenwareLOGO.png"); return true; }
+ return false;
+}
 void RunSplash(HINSTANCE hi){
+ ULONG_PTR tok=0; Gdiplus::GdiplusStartupInput si; Gdiplus::GdiplusStartup(&tok,&si,nullptr);
+ wchar_t lp[MAX_PATH]={};
+ if(FindLogo(lp)){
+  g_splashImg=Gdiplus::Image::FromFile(lp);
+  if(g_splashImg&&g_splashImg->GetLastStatus()!=Gdiplus::Ok){ delete g_splashImg; g_splashImg=nullptr; }
+ }
  int sx=GetSystemMetrics(SM_CXSCREEN), sy=GetSystemMetrics(SM_CYSCREEN);
  HWND hw=CreateWindowExW(WS_EX_TOPMOST|WS_EX_TOOLWINDOW|WS_EX_LAYERED,L"ZwSplash",L"ZenWare",WS_POPUP|WS_VISIBLE,(sx-SPL_W)/2,(sy-SPL_H)/2,SPL_W,SPL_H,nullptr,nullptr,hi,nullptr);
- if(!hw) return;
- InitFonts(hw);
- MSG m{};
- while(IsWindow(hw)&&GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m); }
+ if(hw){
+  InitFonts(hw);
+  MSG m{};
+  while(IsWindow(hw)&&GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m); }
+ }
+ if(g_splashImg){ delete g_splashImg; g_splashImg=nullptr; }
+ Gdiplus::GdiplusShutdown(tok);
 }
 } // namespace
 LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
@@ -515,9 +573,12 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  WNDCLASSEXW ws{sizeof(ws),CS_HREDRAW|CS_VREDRAW,SplashProc,0,0,hi,LoadIconW(hi,MAKEINTRESOURCEW(IDI_MAINICON)),LoadCursorW(nullptr,IDC_ARROW),nullptr,nullptr,L"ZwSplash",nullptr};
  RegisterClassExW(&ws);
  RunSplash(hi);
- HWND hw=CreateWindowExW(0,wc.lpszClassName,L"ZenWare.cc Loader v3.2",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, CW_USEDEFAULT,CW_USEDEFAULT, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  RECT rc{0,0,WINDOW_W,WINDOW_H}; AdjustWindowRect(&rc,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN,FALSE);
- SetWindowPos(hw,nullptr,0,0,rc.right-rc.left,rc.bottom-rc.top,SWP_NOMOVE|SWP_NOZORDER);
+ int ww=rc.right-rc.left, wh=rc.bottom-rc.top;
+ // главное окно открывается ровно там же, где был сплэш — бесшовный переход
+ int wx=(GetSystemMetrics(SM_CXSCREEN)-ww)/2, wy=(GetSystemMetrics(SM_CYSCREEN)-wh)/2;
+ HWND hw=CreateWindowExW(0,wc.lpszClassName,L"ZenWare.cc Loader v3.2",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
+ SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
  ShowWindow(hw,cmd); UpdateWindow(hw);
  MSG m{}; while(GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m);} return (int)m.wParam;
 }
