@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A1111111-1111-4111-8111-111111111111}</ProjectGuid>
+    <RootNamespace>ZenWareDLL</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>bin\$(Configuration)\</OutDir>
+    <IntDir>obj\$(Configuration)\</IntDir>
+    <TargetName>ZenWare</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link><SubSystem>Windows</SubSystem></Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\DllMain.cpp" />
+    <ClCompile Include="src\Entry\Entry.cpp" />
+    <ClCompile Include="src\Features\Aimbot\Aimbot.cpp" />
+    <ClCompile Include="src\Features\AutoPistol\AutoPistol.cpp" />
+    <ClCompile Include="src\Features\AutoShove\AutoShove.cpp" />
+    <ClCompile Include="src\Features\AutoStrafe\AutoStrafe.cpp" />
+    <ClCompile Include="src\Features\BunnyHop\BunnyHop.cpp" />
+    <ClCompile Include="src\Features\Chams\Chams.cpp" />
+    <ClCompile Include="src\Features\Config\Config.cpp" />
+    <ClCompile Include="src\Features\EnginePrediction\EnginePrediction.cpp" />
+    <ClCompile Include="src\Features\ESP\ESP.cpp" />
+    <ClCompile Include="src\Features\Menu\Menu.cpp" />
+    <ClCompile Include="src\Features\NoSpread\NoSpread.cpp" />
+    <ClCompile Include="src\Features\Killfeed\Killfeed.cpp" />
+    <ClCompile Include="src\Features\JumpStats\JumpStats.cpp" />
+    <ClCompile Include="src\Features\TriggerBot\TriggerBot.cpp" />
+    <ClCompile Include="src\Features\Vars.cpp" />
+    <ClCompile Include="src\Features\VisualRecoil\VisualRecoil.cpp" />
+    <ClCompile Include="src\Features\Visuals\Visuals.cpp" />
+    <ClCompile Include="src\Hooks\BaseClient\BaseClient.cpp" />
+    <ClCompile Include="src\Hooks\BasePlayer\BasePlayer.cpp" />
+    <ClCompile Include="src\Hooks\CL_Main\CL_Main.cpp" />
+    <ClCompile Include="src\Hooks\ClientMode\ClientMode.cpp" />
+    <ClCompile Include="src\Hooks\ClientPrediction\ClientPrediction.cpp" />
+    <ClCompile Include="src\Hooks\EngineVGui\EngineVGui.cpp" />
+    <ClCompile Include="src\Hooks\Hooks.cpp" />
+    <ClCompile Include="src\Hooks\ModelRender\ModelRender.cpp" />
+    <ClCompile Include="src\Hooks\ModelRenderSystem\ModelRenderSystem.cpp" />
+    <ClCompile Include="src\Hooks\SequenceTransitioner\SequenceTransitioner.cpp" />
+    <ClCompile Include="src\Hooks\TerrorGameRules\TerrorGameRules.cpp" />
+    <ClCompile Include="src\Hooks\TerrorPlayer\TerrorPlayer.cpp" />
+    <ClCompile Include="src\Hooks\WndProc\WndProc.cpp" />
+    <ClCompile Include="src\SDK\DrawManager\DrawManager.cpp" />
+    <ClCompile Include="src\SDK\GameUtil\GameUtil.cpp" />
+    <ClCompile Include="src\SDK\KeyValues\KeyValues.cpp" />
+    <ClCompile Include="src\SDK\L4D2\Includes\basehandle.cpp" />
+    <ClCompile Include="src\SDK\L4D2\Includes\checksum_md5.cpp" />
+    <ClCompile Include="src\SDK\SDK.cpp" />
+    <ClCompile Include="src\Util\Hook\MinHook\buffer.c" />
+    <ClCompile Include="src\Util\Hook\MinHook\hde\hde32.c" />
+    <ClCompile Include="src\Util\Hook\MinHook\hde\hde64.c" />
+    <ClCompile Include="src\Util\Hook\MinHook\hook.c" />
+    <ClCompile Include="src\Util\Hook\MinHook\trampoline.c" />
+    <ClCompile Include="src\Util\Interface\Interface.cpp" />
+    <ClCompile Include="src\Util\Logger\Logger.cpp" />
+    <ClCompile Include="src\Util\Math\Math.cpp" />
+    <ClCompile Include="src\Util\NetVarManager\NetVarManager.cpp" />
+    <ClCompile Include="src\Util\Offsets\Offsets.cpp" />
+    <ClCompile Include="src\Util\Pattern\Pattern.cpp" />
+    <ClCompile Include="src\Util\Util.cpp" />
+    <ClCompile Include="src\Util\VFunc\VFunc.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Entry\Entry.h" />
+    <ClInclude Include="src\Features\Aimbot\Aimbot.h" />
+    <ClInclude Include="src\Features\AutoPistol\AutoPistol.h" />
+    <ClInclude Include="src\Features\AutoShove\AutoShove.h" />
+    <ClInclude Include="src\Features\AutoStrafe\AutoStrafe.h" />
+    <ClInclude Include="src\Features\BunnyHop\BunnyHop.h" />
+    <ClInclude Include="src\Features\Chams\Chams.h" />
+    <ClInclude Include="src\Features\Config\Config.h" />
+    <ClInclude Include="src\Features\EnginePrediction\EnginePrediction.h" />
+    <ClInclude Include="src\Features\ESP\ESP.h" />
+    <ClInclude Include="src\Features\Menu\Menu.h" />
+    <ClInclude Include="src\Features\NoSpread\NoSpread.h" />
+    <ClInclude Include="src\Features\Killfeed\Killfeed.h" />
+    <ClInclude Include="src\Features\JumpStats\JumpStats.h" />
+    <ClInclude Include="src\Features\TriggerBot\TriggerBot.h" />
+    <ClInclude Include="src\Features\Vars.h" />
+    <ClInclude Include="src\Util\Anim\Anim.h" />
+    <ClInclude Include="external\Icons\IconsFontAwesome6.h" />
+    <ClInclude Include="src\Features\VisualRecoil\VisualRecoil.h" />
+    <ClInclude Include="src\Features\Visuals\Visuals.h" />
+    <ClInclude Include="src\Hooks\BaseClient\BaseClient.h" />
+    <ClInclude Include="src\Hooks\BasePlayer\BasePlayer.h" />
+    <ClInclude Include="src\Hooks\CL_Main\CL_Main.h" />
+    <ClInclude Include="src\Hooks\ClientMode\ClientMode.h" />
+    <ClInclude Include="src\Hooks\ClientPrediction\ClientPrediction.h" />
+    <ClInclude Include="src\Hooks\EngineVGui\EngineVGui.h" />
+    <ClInclude Include="src\Hooks\Hooks.h" />
+    <ClInclude Include="src\Hooks\ModelRender\ModelRender.h" />
+    <ClInclude Include="src\Hooks\ModelRenderSystem\ModelRenderSystem.h" />
+    <ClInclude Include="src\Hooks\SequenceTransitioner\SequenceTransitioner.h" />
+    <ClInclude Include="src\Hooks\TerrorGameRules\TerrorGameRules.h" />
+    <ClInclude Include="src\Hooks\TerrorPlayer\TerrorPlayer.h" />
+    <ClInclude Include="src\Hooks\WndProc\WndProc.h" />
+    <ClInclude Include="src\SDK\DrawManager\DrawManager.h" />
+    <ClInclude Include="src\SDK\GameUtil\GameUtil.h" />
+    <ClInclude Include="src\SDK\KeyValues\KeyValues.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_BaseAnimating.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_BaseEntity.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_BasePlayer.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_CSPlayer.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_DynamicProp.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_Infected.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_TerrorPlayer.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_TerrorWeapon.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\C_WeaponCSBase.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\IClientEntity.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\IClientNetworkable.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\IClientRenderable.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\IClientThinkable.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\IClientUnknown.h" />
+    <ClInclude Include="src\SDK\L4D2\Entities\IHandleEntity.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\appsystem.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\basehandle.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\checksum_md5.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\client_class.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\color.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\const.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\dt_common.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\dt_recv.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\ehandle.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\globalvars_base.h" />
+    <ClInclude Include="src\SDK\L4D2\Includes\usercmd.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\BaseClientDLL.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\ClientEntityList.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\DebugOverlay.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\EngineClient.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\EngineTrace.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\EngineVGui.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\GameMovement.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\MaterialSystem.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\MatRenderContext.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\MatSystemSurface.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\ModelInfo.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\ModelRender.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\MoveHelper.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\Prediction.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\RenderView.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\VGuiPanel.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\VGuiSurface.h" />
+    <ClInclude Include="src\SDK\SDK.h" />
+    <ClInclude Include="src\Util\Hook\Hook.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\buffer.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\hde\hde32.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\hde\hde64.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\hde\pstdint.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\hde\table32.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\hde\table64.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\MinHook.h" />
+    <ClInclude Include="src\Util\Hook\MinHook\trampoline.h" />
+    <ClInclude Include="src\Util\Interface\Interface.h" />
+    <ClInclude Include="src\Util\Logger\Logger.h" />
+    <ClInclude Include="src\Util\Math\Math.h" />
+    <ClInclude Include="src\Util\Math\Vector\Vector.h" />
+    <ClInclude Include="src\Util\Math\Vector\Vector2D.h" />
+    <ClInclude Include="src\Util\NetVarManager\NetVarManager.h" />
+    <ClInclude Include="src\Util\Offsets\Offsets.h" />
+    <ClInclude Include="src\Util\Pattern\Pattern.h" />
+    <ClInclude Include="src\Util\Util.h" />
+    <ClInclude Include="src\Util\VFunc\VFunc.h" />
+    <ClInclude Include="src\Util\XorString\XorString.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

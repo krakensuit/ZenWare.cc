@@ -1,0 +1,35 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+*.exe
+*.dll
+!ZenWare.DLL/
+*.ilk
+*.pdb
+*.iobj
+*.ipdb
+*.lib
+*.exp
+*.res
+*.tlog
+*.lastbuildstate
+*.recipe
+*.Build.CppClean.log
+*.vcxproj.FileListAbsolute.txt
+
+# Logs next to sources
+*.log
+
+# OS junk
+Thumbs.db
+Desktop.ini

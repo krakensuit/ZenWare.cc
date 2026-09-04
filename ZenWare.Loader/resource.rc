@@ -1,0 +1,4 @@
+#include "resource.h"
+#include <windows.h>
+IDI_MAINICON ICON "icon.ico"
+IDR_ZENWARE_DLL RCDATA "..\\ZenWare.DLL\\bin\\Release\\ZenWare.dll"
