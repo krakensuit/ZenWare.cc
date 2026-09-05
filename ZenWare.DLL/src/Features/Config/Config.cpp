@@ -70,29 +70,31 @@ namespace
 			{ "chams.enemy", &Vars::Chams::clrEnemy },
 			{ "chams.ally", &Vars::Chams::clrAlly },
 
-			//ESP
-			{ "esp.enabled", &Vars::ESP::bEnabled },
-			{ "esp.box", &Vars::ESP::bBox },
-			{ "esp.healthbar", &Vars::ESP::bHealthBar },
-			{ "esp.name", &Vars::ESP::bName },
-			{ "esp.distance", &Vars::ESP::bDistance },
-			{ "esp.items", &Vars::ESP::bItems },
-			{ "esp.common", &Vars::ESP::bCommon },
-			{ "esp.filled", &Vars::ESP::bFilled },
+		//ESP
+		{ "esp.enabled", &Vars::ESP::bEnabled },
+		{ "esp.box", &Vars::ESP::bBox },
+		{ "esp.healthbar", &Vars::ESP::bHealthBar },
+		{ "esp.name", &Vars::ESP::bName },
+		{ "esp.distance", &Vars::ESP::bDistance },
+		{ "esp.items", &Vars::ESP::bItems },
+		{ "esp.common", &Vars::ESP::bCommon },
+		{ "esp.filled", &Vars::ESP::bFilled },
+		{ "esp.snaplines", &Vars::ESP::bSnaplines },
 
-			//Visuals
-			{ "visuals.nofog", &Vars::Visuals::bNoFog },
-			{ "visuals.viewfov", &Vars::Visuals::flViewFOV },
-			{ "visuals.crosshair", &Vars::Visuals::bCrosshair },
-			{ "visuals.chsize", &Vars::Visuals::nCrosshairSize },
-			{ "visuals.overlay", &Vars::Visuals::bOverlay },
-			{ "visuals.crosshair", &Vars::Visuals::clrCrosshair },
+		//Visuals
+		{ "visuals.nofog", &Vars::Visuals::bNoFog },
+		{ "visuals.viewfov", &Vars::Visuals::flViewFOV },
+		{ "visuals.crosshair", &Vars::Visuals::bCrosshair },
+		{ "visuals.chsize", &Vars::Visuals::nCrosshairSize },
+		{ "visuals.overlay", &Vars::Visuals::bOverlay },
+		{ "visuals.chcolor", &Vars::Visuals::clrCrosshair },
 
 			//Recoil
 			{ "norecoil.visual", &Vars::VisualRecoil::bEnabled },
 
-			//Menu style
-			{ "menu.accent", &Vars::Menu::clrAccent },
+		//Menu style
+		{ "menu.accent", &Vars::Menu::clrAccent },
+		{ "menu.key", &Vars::Menu::nKey },
 		};
 	}
 }

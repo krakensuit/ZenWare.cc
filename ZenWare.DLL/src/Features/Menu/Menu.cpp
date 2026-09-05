@@ -279,8 +279,12 @@ void CFeatures_Menu::Render(){
    break;
   }
   default:{
-   Button(mouse,"Save config",[](){F::Config.Save();});
-   Button(mouse,"Load config",[](){F::Config.Load();});
+    Button(mouse,"Save config",[](){F::Config.Save();});
+    Button(mouse,"Load config",[](){F::Config.Load();
+     // слайдеры - источник правды для меню, подтянем их из загруженных float
+     Vars::Aimbot::nFOVSlider=U::Math.Clamp((int)(Vars::Aimbot::flFOV*10.0f),5,300);
+     Vars::Aimbot::nSmoothSlider=U::Math.Clamp((int)Vars::Aimbot::flSmoothing,0,60);
+     Vars::Visuals::nViewFOVSlider=U::Math.Clamp((int)(Vars::Visuals::flViewFOV*100.0f),50,300);});
     BindRow(mouse,"Menu key",&Vars::Menu::nKey);
     SectionLabel("STYLE");
     ColorSwatches(mouse,"Menu accent",&Vars::Menu::clrAccent);

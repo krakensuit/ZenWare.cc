@@ -40,7 +40,15 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 	if (Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd))
 		I::Prediction->SetLocalViewAngles(cmd->viewangles);
 
-	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TerrorPlayer*>();
+ C_TerrorPlayer* pLocal = nullptr;
+ {
+  const int nLocalIdx = I::EngineClient->GetLocalPlayer();
+  if (nLocalIdx >= 0)
+  {
+   IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
+   if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+  }
+ }
 
 	if (pLocal && !pLocal->deadflag())
 	{

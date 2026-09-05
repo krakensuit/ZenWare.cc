@@ -14,12 +14,20 @@ void CFeatures_Visuals::DrawCrosshair()
 	const int nS = U::Math.Clamp(Vars::Visuals::nCrosshairSize, 2, 40);
 	const Color& clr = Vars::Visuals::clrCrosshair;
 
-	//Gap breathes with movement speed.
-	float flSpeed = 0.0f;
-	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TerrorPlayer*>();
+ //Gap breathes with movement speed.
+ float flSpeed = 0.0f;
+ C_TerrorPlayer* pLocal = nullptr;
+ {
+  const int nLocalIdx = I::EngineClient->GetLocalPlayer();
+  if (nLocalIdx >= 0)
+  {
+   IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
+   if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+  }
+ }
 
-	if (pLocal)
-		flSpeed = pLocal->m_vecVelocity().Lenght2D();
+ if (pLocal)
+  flSpeed = pLocal->m_vecVelocity().Lenght2D();
 
 	const int nGap = 4 + U::Math.Clamp((int)(flSpeed / 50.0f), 0, 12);
 	constexpr int nThick = 2;
@@ -36,10 +44,18 @@ void CFeatures_Visuals::DrawOverlay()
 	if (!I::EngineClient->IsInGame())
 		return;
 
-	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TerrorPlayer*>();
+ C_TerrorPlayer* pLocal = nullptr;
+ {
+  const int nLocalIdx = I::EngineClient->GetLocalPlayer();
+  if (nLocalIdx >= 0)
+  {
+   IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
+   if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+  }
+ }
 
-	if (!pLocal)
-		return;
+ if (!pLocal)
+  return;
 
 	static float s_flFpsAvg = 0.0f;
 	const float flFps = (I::GlobalVars->frametime > 0.0f) ? (1.0f / I::GlobalVars->frametime) : 0.0f;
