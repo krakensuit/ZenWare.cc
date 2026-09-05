@@ -45,8 +45,8 @@
       <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link><SubSystem>Windows</SubSystem></Link>
-    <PostBuildEvent><Command>copy /Y "$(ProjectDir)zenwareLOGO.png" "$(OutDir)zenwareLOGO.png"
-if exist "$(SolutionDir)ZenWare.External\bin\$(Configuration)\ZenWare.External.exe" copy /Y "$(SolutionDir)ZenWare.External\bin\$(Configuration)\ZenWare.External.exe" "$(OutDir)ZenWare.External.exe"</Command></PostBuildEvent>
+    <PostBuildEvent><Command>copy /Y "$(ProjectDir)zenwareLOGO.png" "$(ProjectDir)$(OutDir)zenwareLOGO.png"
+if exist "$(ProjectDir)..\ZenWare.External\bin\$(Configuration)\ZenWare.External.exe" copy /Y "$(ProjectDir)..\ZenWare.External\bin\$(Configuration)\ZenWare.External.exe" "$(ProjectDir)$(OutDir)ZenWare.External.exe"</Command></PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />

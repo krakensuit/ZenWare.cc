@@ -43,6 +43,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 
 	bool bEsp = true;
 	int staleFrames = 0;
+	bool bWasInGame = false;
 
 	for (;;)
 	{
@@ -66,6 +67,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 		ESP::Snap snap;
 
 		// --- главный цикл, пока живо окно игры ---
+		bWasInGame = true;
 		while (FindWindowW(L"Valve001", nullptr))
 		{
 			Pump();
@@ -135,11 +137,20 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 			Sleep(2);
 		}
 
-		// Игра закрылась: отпустить все зажатые нами клавиши и ждать заново.
+		// Игра закрылась: отпустить все зажатые нами клавиши.
 		mv.Reset();
 		drawList.clear();
 		staleFrames = 0;
 		mem.Close();
+		// Была игра и пропала — выходим вслед за ней (с паузой на переходные состояния).
+		if (bWasInGame)
+		{
+			Sleep(1500);
+			Memory probe;
+			if (!FindWindowW(L"Valve001", nullptr) && !probe.Attach(Off::kProc))
+				return 0;
+			probe.Close();
+		}
 		Sleep(500);
 	}
 }
