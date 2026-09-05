@@ -101,6 +101,7 @@ namespace
 		//Menu style
 		{ "menu.accent", &Vars::Menu::clrAccent },
 		{ "menu.key", &Vars::Menu::nKey },
+		{ "menu.russian", &Vars::Menu::bRussian },
 		};
 	}
 }

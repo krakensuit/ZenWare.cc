@@ -9,7 +9,7 @@
 // прозрачный оверлей + эмуляция ввода (SendInput). В игру ничего не
 // пишется, не инжектится и не хукается.
 //
-// Управление: INS = ESP вкл/выкл, F8 = bhop, F10 = strafe assist,
+// Управление: INS = ESP вкл/выкл, F7 = язык RU/EN, F8 = bhop, F10 = strafe assist,
 // F9 = панель статистики, END = выход.
 
 static bool KeyPressed(int vk)
@@ -44,6 +44,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 	bool bEsp = true;
 	int staleFrames = 0;
 	bool bWasInGame = false;
+	bool bRu = (PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_RUSSIAN); // F7 переключает
 
 	for (;;)
 	{
@@ -73,6 +74,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 			Pump();
 
 			if (KeyPressed(VK_INSERT)) bEsp = !bEsp;
+			if (KeyPressed(VK_F7)) bRu = !bRu;
 			if (KeyPressed(VK_F8)) mv.bBhop = !mv.bBhop;
 			if (KeyPressed(VK_F10)) mv.bStrafe = !mv.bStrafe;
 			if (KeyPressed(VK_F9)) mv.bStats = !mv.bStats;
@@ -108,16 +110,20 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 				lastDraw = now;
 				o.BeginFrame();
 
-				wchar_t st[192];
-				swprintf_s(st, L"ZenWare.External | ESP[INS]:%s BHOP[F8]:%s STRAFE[F10]:%s STATS[F9]:%s | END=exit",
-					bEsp ? L"on" : L"off", mv.bBhop ? L"on" : L"off",
-					mv.bStrafe ? L"on" : L"off", mv.bStats ? L"on" : L"off");
+				wchar_t st[224];
+				const wchar_t* on = bRu ? L"вкл" : L"on";
+				const wchar_t* off = bRu ? L"выкл" : L"off";
+				swprintf_s(st, L"ZenWare.External | ESP[INS]:%s BHOP[F8]:%s STRAFE[F10]:%s STATS[F9]:%s LANG[F7]:%s | END=%s",
+					bEsp ? on : off, mv.bBhop ? on : off,
+					mv.bStrafe ? on : off, mv.bStats ? on : off,
+					bRu ? L"RU" : L"EN", bRu ? L"выход" : L"exit");
 				o.Text(10, 8, RGB(0, 255, 171), L"%s", st);
 
 				if (staleFrames > 20)
 				{
 					o.Text(10, 30, RGB(255, 90, 90),
-						L"offsets stale - update Offsets.h (see comments)");
+						bRu ? L"офсеты протухли - обнови Offsets.h (см. комментарии)"
+						    : L"offsets stale - update Offsets.h (see comments)");
 				}
 				else
 				{

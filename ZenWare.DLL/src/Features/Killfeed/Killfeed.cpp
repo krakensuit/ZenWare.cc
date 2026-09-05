@@ -1,4 +1,5 @@
 #include "Killfeed.h"
+#include "../Lang/Lang.h"
 #include "../../SDK/DrawManager/DrawManager.h"
 #include "../../Util/Anim/Anim.h"
 
@@ -43,7 +44,7 @@ void CFeatures_Killfeed::Draw() {
         G::Draw.Rect(ix, iy, 3, h, border);
         // Name rendering via G::Draw
         G::Draw.String(EFonts::ESP_NAME, ix + 10, iy + 6, Color(0,255,171,(int)(255*alpha)), TXT_DEFAULT, "%s", e.killer.c_str());
-        G::Draw.String(EFonts::ESP, ix + 110, iy + 7, Color(255,255,255,(int)(230*alpha)), TXT_DEFAULT, "killed");
+        G::Draw.String(EFonts::ESP, ix + 110, iy + 7, Color(255,255,255,(int)(230*alpha)), TXT_DEFAULT, "%s", Lang::T("killed"));
         G::Draw.String(EFonts::ESP, ix + 160, iy + 7, Color(255,80,80,(int)(255*alpha)), TXT_DEFAULT, "%s", e.victim.c_str());
         y += 34.0f;
     }

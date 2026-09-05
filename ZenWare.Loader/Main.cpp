@@ -59,6 +59,8 @@ static float g_flModeT=0.0f, g_flModeTarget=0.0f; // 0=external мятный, 1=
 HWND g_hMain=nullptr, g_hInject=nullptr, g_hStatus=nullptr, g_hLaunch=nullptr;
 static bool g_bExternal=true, g_bModeHov=false;
 static RECT g_rcMode={0,0,0,0};
+static bool g_bLangHov=false;
+static RECT g_rcLang={0,0,0,0};
 // dt-анимации: экспоненциальное сглаживание вместо фиксированного шага
 static float g_flHovLaunch=0.0f, g_flHovInject=0.0f; // подсветка кнопок под курсором
 static float g_flPressMode=0.0f; // тактильный отклик пилюли режима
@@ -158,12 +160,33 @@ static bool FindDll(wchar_t* out){
  }
  return false;
 }
+void RefreshInjectText(){
+ SetWindowTextW(g_hInject,LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"));
+}
 void ToggleMode(){
  g_bExternal=!g_bExternal;
  g_flModeTarget=g_bExternal?0.0f:1.0f;
- SetWindowTextW(g_hInject,LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"));
+ RefreshInjectText();
  LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)"));
  RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(g_hMain,&hdr,FALSE);
+}
+// Язык UI: 0=авто (система), 1=RU, 2=EN. Хранится в реестре, переживает обновления exe.
+static void LoadLang(){
+ DWORD v=0, s=sizeof(v);
+ LONG r=RegGetValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",RRF_RT_REG_DWORD,nullptr,&v,&s);
+ if(r==ERROR_SUCCESS&&(v==1||v==2)){ LoaderUtil::g_bRuLang=(v==1); return; }
+ LoaderUtil::g_bRuLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN);
+}
+static void SaveLang(){
+ DWORD v=LoaderUtil::g_bRuLang?1:2;
+ RegSetKeyValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",REG_DWORD,&v,sizeof(v));
+}
+void ToggleLang(){
+ LoaderUtil::g_bRuLang=!LoaderUtil::g_bRuLang;
+ SaveLang();
+ RefreshInjectText();
+ LoaderUtil::Status(g_hMain,LoaderUtil::S("Язык: Русский","Language: English"));
+ if(g_hMain){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(g_hMain,&all,FALSE); }
 }
 void LaunchExternal(){
  wchar_t dir[MAX_PATH]={}; GetModuleFileNameW(NULL,dir,MAX_PATH);
@@ -700,7 +723,9 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     POINT mp{GET_X_LPARAM(l),GET_Y_LPARAM(l)};
     bool mh=PtInRect(&g_rcMode,mp)!=FALSE;
     if(mh!=g_bModeHov){ g_bModeHov=mh; InvalidateRect(h,&g_rcMode,FALSE); }
-    if(mh) SetCursor(LoadCursorW(nullptr,IDC_HAND));
+    bool lh=PtInRect(&g_rcLang,mp)!=FALSE;
+    if(lh!=g_bLangHov){ g_bLangHov=lh; InvalidateRect(h,&g_rcLang,FALSE); }
+    if(mh||lh) SetCursor(LoadCursorW(nullptr,IDC_HAND));
    }
     if(id==IDC_INJECT||id==IDC_LAUNCH){
    TRACKMOUSEEVENT tme{sizeof(tme),TME_LEAVE,h,0}; TrackMouseEvent(&tme);
@@ -711,6 +736,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    int x=GET_X_LPARAM(l), y=GET_Y_LPARAM(l);
    POINT cp{x,y};
     if(PtInRect(&g_rcMode,cp)){ g_flPressMode=1.0f; ToggleMode(); }
+    else if(PtInRect(&g_rcLang,cp)){ ToggleLang(); }
    {
     RECT lr={22,8,220,50};
     static DWORD slc=0; static int sln=0;
@@ -812,9 +838,24 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     Ellipse(dc,22,206,32,216);
     SelectObject(dc,od1); SelectObject(dc,od2); DeleteObject(db); DeleteObject(dp);
    }
-  // футер
+  // футер + переключатель языка справа
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
-  RECT fr={20,306,600,326}; DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log"),-1,&fr,DT_LEFT|DT_VCENTER|DT_SINGLELINE);
+  RECT fr={20,306,600,326};
+  {
+   RECT frT={20,306,536,326};
+   DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log"),-1,&frT,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+  }
+  {
+   RECT lr={rc.right-72,304,rc.right-20,326}; g_rcLang=lr;
+   COLORREF lfill=g_bLangHov?Mix2(g_theme.ctl,Acc(),60):g_theme.bg;
+   HBRUSH lb=CreateSolidBrush(lfill); HPEN lp2=CreatePen(PS_SOLID,1,g_bLangHov?Acc():g_theme.border);
+   auto lo1=SelectObject(dc,lb); auto lo2=SelectObject(dc,lp2);
+   RoundRect(dc,lr.left,lr.top,lr.right,lr.bottom,8,8);
+   SelectObject(dc,lo1); SelectObject(dc,lo2); DeleteObject(lb); DeleteObject(lp2);
+   SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT);
+   SetTextColor(dc,g_bLangHov?Acc():g_theme.dim);
+   DrawTextW(dc,LoaderUtil::g_bRuLang?L"RU":L"EN",-1,&lr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+  }
   BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
   SelectObject(mem,oldBmp); DeleteObject(bmp); DeleteDC(mem);
   EndPaint(h,&ps);
@@ -856,6 +897,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
 }
 int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  LoaderUtil::g_bRuLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN);
+ LoadLang(); // выбор из реестра поверх системного, если язык уже переключали
  LoaderUtil::InitFileLog();
  LoaderUtil::CleanupOldTempExtracts(); // подчистить старые распаковки из %TEMP%
  WNDCLASSEXW wc{sizeof(wc),CS_HREDRAW|CS_VREDRAW,WndProc,0,0,hi,LoadIconW(hi,MAKEINTRESOURCEW(IDI_MAINICON)),LoadCursorW(nullptr,IDC_ARROW),nullptr,nullptr,L"Zw3Wnd",(HICON)LoadImageW(hi,MAKEINTRESOURCEW(IDI_MAINICON),IMAGE_ICON,GetSystemMetrics(SM_CXSMICON),GetSystemMetrics(SM_CYSMICON),0)};

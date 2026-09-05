@@ -1,5 +1,17 @@
 #include "DrawManager.h"
 
+namespace {
+	// Наши литералы — валидный UTF-8 (/utf-8). Ники из движка — ANSI.
+	// Пробуем UTF-8 строго, иначе откатываемся на системную кодовую страницу.
+	void ToWide(const char* src, wchar_t* dst, int dstLen)
+	{
+		if (!src || !src[0]) { if (dstLen > 0) dst[0] = L'\0'; return; }
+		if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, src, -1, dst, dstLen) > 0)
+			return;
+		MultiByteToWideChar(CP_ACP, 0, src, -1, dst, dstLen);
+	}
+}
+
 void CGlobal_DrawManager::Init()
 {
 	m_Fonts[EFonts::DEBUG]         = { "Consolas",  16, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
@@ -26,7 +38,8 @@ void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& 
 	vsprintf_s(cbuffer, str, va_alist);
 	va_end(va_alist);
 
-	wsprintfW(wstr, _(L"%hs"), cbuffer);
+	// Литералы в исходниках — UTF-8 (/utf-8), конвертим явно: не зависит от локали Windows.
+	ToWide(cbuffer, wstr, 1024);
 
 	const HFont fnt = m_Fonts[font].m_hFont;
 
@@ -152,7 +165,7 @@ int CGlobal_DrawManager::GetTextWidth(const EFonts& font, const char* const str)
 		return 0;
 
 	wchar_t wstr[1024] = { L'\0' };
-	wsprintfW(wstr, _(L"%hs"), str);
+	ToWide(str, wstr, 1024);
 
 	int w = 0, h = 0;
 	I::MatSystemSurface->GetTextSize(m_Fonts[font].m_hFont, wstr, w, h);

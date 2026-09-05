@@ -1,5 +1,6 @@
 #include "Menu.h"
 #include "../Vars.h"
+#include "../Lang/Lang.h"
 #include "../Config/Config.h"
 #include "../Chams/Chams.h"
 #include "../../Entry/Entry.h"
@@ -49,83 +50,87 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		sprintf_s(b,"VK_%d",vk); return b;
 	}
 
-	struct HelpEntry_t { const char* label; const char* title; const char* text; };
+	struct HelpEntry_t { const char* label; const char* title; const char* text; const char* ruTitle; const char* ruText; };
 	static const HelpEntry_t kHelp[] = {
-		{"ESP","ESP","Master switch for player ESP. Shows boxes, health and names through walls."},
-		{"ESP box","ESP box","2D bounding box around each player, colored by team."},
-		{"ESP health bar","ESP health bar","Vertical bar left of the box. Green is full HP, red is low."},
-		{"ESP name","ESP name","Player nickname drawn above the box."},
-		{"ESP distance","ESP distance","Distance in meters next to the name."},
-		{"ESP items","ESP items","Highlights ground weapons, meds and throwables."},
-		{"ESP commons","ESP commons","Draws boxes around common infected."},
-	{"ESP special infected","ESP special infected","Boxes and names for hunter/smoker/jockey/spitter/charger/tank."},
-	{"ESP witch","ESP witch","Purple box around the witch."},
-	{"HP text near bar","HP text near bar","Prints the HP number left of the health bar."},
-	{"Weapon text","Weapon text","Active weapon name under the nickname."},
-	{"Hitbox: Head >","Hitbox","Where the aimbot aims: head or body center."},
-	{"Hitbox: Center >","Hitbox","Where the aimbot aims: head or body center."},
-	{"Priority: FOV >","Target priority","FOV picks the closest to the crosshair, Distance the nearest player."},
-	{"Priority: Distance >","Target priority","FOV picks the closest to the crosshair, Distance the nearest player."},
-	{"Visible only","Visible only","Only aim at targets with a clear line of sight."},
-	{"Skip incapped","Skip incapped","Ignore players who are incapacitated."},
-	{"Trigger visible only","Trigger visible only","Trigger only fires when the target is visible (no walls)."},
-		{"Snaplines","Snaplines","Line from the bottom of the screen to each player box."},
-		{"Filled boxes","Filled boxes","Translucent team-colored fill inside ESP boxes."},
-		{"Chams","Chams","Flat materials on player models, visible through walls."},
-		{"Chams through walls","Chams through walls","Ignores depth check so chams show through walls."},
-		{"Chams palette >","Chams palette","Cycles 5 enemy and ally color presets."},
-		{"No visual recoil","No visual recoil","Removes screen punch locally. Server spread is untouched."},
-		{"Bunny hop","Bunny hop","Auto-jump on landing. Hold SPACE while moving."},
-		{"Bhop: Perfect >","Bhop style","Perfect forces a jump every tick. Legit only uses your own keypress."},
-		{"Bhop: Legit >","Bhop style","Perfect forces a jump every tick. Legit only uses your own keypress."},
-		{"Auto strafe","Auto strafe","Automatic air strafing. Pick a style below."},
-		{"Strafe: Legit >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D."},
-		{"Strafe: Rage >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D."},
-		{"Strafe: W-Only >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D."},
-		{"Strafe: Directional >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D."},
-		{"Bhop delay","Bhop delay","Minimum ticks between jumps. 0 is the fastest."},
-		{"Edge jump","Edge jump","Auto-jumps when you walk off a ledge while holding jump."},
-		{"Edge bug","Edge bug","Ducks before hard landings to keep your speed."},
-		{"Jump bug","Jump bug","Duck-taps landings to negate fall damage. Releases duck on ground."},
-		{"Null movement","Null movement","Cancels opposite keys (A+D, W+S) for clean strafes."},
-		{"Fast stop","Fast stop","Counter-strafes to a full stop when no keys are held."},
-		{"Speed HUD","Speed HUD","Shows current velocity under the crosshair."},
-		{"Jump stats","Jump stats","KZ-style panel: distance, prestrafe, max speed, strafes, sync, edge and EB marks."},
-		{"Auto duck","Auto duck","Holds duck through the whole airtime for longer jumps and duck-landings."},
-		{"Prestrafe","Prestrafe","Forces full forward speed on ground jumps."},
-		{"Long jump helper","Long jump helper","Auto-ducks on jump for extra longjump distance."},
-	{"FOV x100 (view+model)","FOV","Field of view multiplier: world camera and viewmodel."},
-	{"Third person","Third person","Camera behind the back (local server). Set the distance below."},
-	{"3rd person distance","3rd person distance","How far the camera sits behind you."},
-	{"No fog","No fog","Disables world fog."},
-		{"Crosshair","Crosshair","Custom center crosshair."},
-		{"Crosshair size","Crosshair size","Crosshair arm length in pixels."},
-		{"FPS / pos overlay","FPS overlay","FPS and position readout in the bottom-left corner."},
-		{"Aimbot","Aimbot","Silent aim at head or center within FOV. Hold the aim key."},
-		{"Auto shoot","Auto shoot","Fires automatically while a target is locked."},
-		{"Silent aim","Silent aim","The server sees aimed angles, your screen stays still."},
-		{"Target commons","Target commons","Aimbot and triggerbot also lock common infected and the witch, not just specials."},
-		{"Target specials","Target specials","Aimbot and triggerbot also lock hunters, smokers, jockeys, spitters, chargers and the tank."},
-		{"Aim FOV x10","Aim FOV","Target search radius around the crosshair, in 0.1 degrees."},
-		{"Smoothing","Smoothing","0 snaps instantly. Higher values look more human."},
-		{"Aimbot key","Aimbot key","Hold to enable the aimbot. Click to rebind, ESC clears."},
-		{"Trigger bot","Trigger bot","Shoots when the crosshair is on a visible enemy."},
-		{"Trigger key","Trigger key","Hold to enable the triggerbot. Click to rebind."},
-		{"Auto pistol","Auto pistol","Re-clicks semi-auto pistols for hold-to-fire."},
-		{"Auto shove","Auto shove","Auto-shoves tongue and pounce attackers off teammates."},
-		{"Save config","Save config","Writes all settings to ZenWare.cfg."},
-		{"Load config","Load config","Reads settings back from ZenWare.cfg."},
-		{"Menu key","Menu key","Opens and closes this menu. Click to rebind."},
-		{"Menu accent","Menu accent","Main accent color of the whole menu."},
-		{"ESP enemy","ESP enemy","Box color for enemies and specials."},
-		{"ESP ally","ESP ally","Box color for teammates."},
-		{"Crosshair","Crosshair","Color of the custom crosshair."},
+		{"ESP","ESP","Master switch for player ESP. Shows boxes, health and names through walls.","ESP","Главный выключатель ESP. Боксы, HP и ники сквозь стены."},
+		{"ESP box","ESP box","2D bounding box around each player, colored by team.","ESP бокс","2D-бокс вокруг игрока, цвет по команде."},
+		{"ESP health bar","ESP health bar","Vertical bar left of the box. Green is full HP, red is low.","ESP полоса HP","Вертикальная полоса слева от бокса. Зелёная — полное HP, красная — низкое."},
+		{"ESP name","ESP name","Player nickname drawn above the box.","ESP ники","Ник игрока над боксом."},
+		{"ESP distance","ESP distance","Distance in meters next to the name.","ESP дистанция","Дистанция в метрах рядом с ником."},
+		{"ESP items","ESP items","Highlights ground weapons, meds and throwables.","ESP предметы","Подсветка оружия, аптечек и гранат на земле."},
+		{"ESP commons","ESP commons","Draws boxes around common infected.","ESP обычные","Боксы вокруг обычных заражённых."},
+		{"ESP special infected","ESP special infected","Boxes and names for hunter/smoker/jockey/spitter/charger/tank.","ESP особые","Боксы и имена охотника, курильщика, жокея, плевальщицы, громилы и танка."},
+		{"ESP witch","ESP witch","Purple box around the witch.","ESP ведьма","Фиолетовый бокс вокруг ведьмы."},
+		{"HP text near bar","HP text near bar","Prints the HP number left of the health bar.","HP текст","Число HP слева от полосы здоровья."},
+		{"Weapon text","Weapon text","Active weapon name under the nickname.","Текст оружия","Название оружия в руках под ником."},
+		{"Hitbox: Head >","Hitbox","Where the aimbot aims: head or body center.","Хитбокс","Куда целится аимбот: голова или центр тела."},
+		{"Hitbox: Center >","Hitbox","Where the aimbot aims: head or body center.","Хитбокс","Куда целится аимбот: голова или центр тела."},
+		{"Priority: FOV >","Target priority","FOV picks the closest to the crosshair, Distance the nearest player.","Приоритет цели","FOV — ближайший к прицелу, Дистанция — ближайший игрок."},
+		{"Priority: Distance >","Target priority","FOV picks the closest to the crosshair, Distance the nearest player.","Приоритет цели","FOV — ближайший к прицелу, Дистанция — ближайший игрок."},
+		{"Visible only","Visible only","Only aim at targets with a clear line of sight.","Только видимые","Наведение только на цели на прямой видимости."},
+		{"Skip incapped","Skip incapped","Ignore players who are incapacitated.","Без лежачих","Игнорировать лежачих игроков без сознания."},
+		{"Trigger visible only","Trigger visible only","Trigger only fires when the target is visible (no walls).","Триггер видим. only","Триггер стреляет только по видимой цели, не сквозь стены."},
+		{"Snaplines","Snaplines","Line from the bottom of the screen to each player box.","Снаплайны","Линия от низа экрана к боксу игрока."},
+		{"Filled boxes","Filled boxes","Translucent team-colored fill inside ESP boxes.","Заливка боксов","Полупрозрачная заливка боксов цветом команды."},
+		{"Chams","Chams","Flat materials on player models, visible through walls.","Чамсы","Плоские материалы на моделях, видно сквозь стены."},
+		{"Chams through walls","Chams through walls","Ignores depth check so chams show through walls.","Чамсы сквозь стены","Отключает проверку глубины: чамсы видно сквозь стены."},
+		{"Chams palette >","Chams palette","Cycles 5 enemy and ally color presets.","Палитра чамсов","Перебор 5 пресетов цветов врагов и союзников."},
+		{"No visual recoil","No visual recoil","Removes screen punch locally. Server spread is untouched.","Без виз. отдачи","Убирает тряску экрана локально. Разброс сервера не трогает."},
+		{"Bunny hop","Bunny hop","Auto-jump on landing. Hold SPACE while moving.","Бхоп","Авто-прыжок при приземлении. Держи ПРОБЕЛ в движении."},
+		{"Bhop: Perfect >","Bhop style","Perfect forces a jump every tick. Legit only uses your own keypress.","Стиль бхопа","Идеал жмёт прыжок каждый тик. Легит использует только твоё нажатие."},
+		{"Bhop: Legit >","Bhop style","Perfect forces a jump every tick. Legit only uses your own keypress.","Стиль бхопа","Идеал жмёт прыжок каждый тик. Легит использует только твоё нажатие."},
+		{"Auto strafe","Auto strafe","Automatic air strafing. Pick a style below.","Авто-стрейф","Автоматические стрейфы в воздухе. Стиль выбери ниже."},
+		{"Strafe: Legit >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D.","Режим стрейфа","Легит идёт за мышью. Рейдж крутится по кругу. W-Only держит вперёд. Направл. слушает A и D."},
+		{"Strafe: Rage >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D.","Режим стрейфа","Легит идёт за мышью. Рейдж крутится по кругу. W-Only держит вперёд. Направл. слушает A и D."},
+		{"Strafe: W-Only >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D.","Режим стрейфа","Легит идёт за мышью. Рейдж крутится по кругу. W-Only держит вперёд. Направл. слушает A и D."},
+		{"Strafe: Directional >","Strafe mode","Legit follows your mouse. Rage circle-strafes. W-Only keeps forward. Directional respects A and D.","Режим стрейфа","Легит идёт за мышью. Рейдж крутится по кругу. W-Only держит вперёд. Направл. слушает A и D."},
+		{"Bhop delay","Bhop delay","Minimum ticks between jumps. 0 is the fastest.","Задержка бхопа","Минимум тиков между прыжками. 0 — самый быстрый."},
+		{"Edge jump","Edge jump","Auto-jumps when you walk off a ledge while holding jump.","Эдж-джамп","Авто-прыжок при сходе с края с зажатым прыжком."},
+		{"Edge bug","Edge bug","Ducks before hard landings to keep your speed.","Эджбаг","Присед перед жёсткой посадкой, чтобы сохранить скорость."},
+		{"Jump bug","Jump bug","Duck-taps landings to negate fall damage. Releases duck on ground.","Джампбаг","Короткий присед в посадке гасит урон от падения. На земле присед отпускается."},
+		{"Null movement","Null movement","Cancels opposite keys (A+D, W+S) for clean strafes.","Нулл-мувмент","Гасит противоположные клавиши (A+D, W+S) для чистых стрейфов."},
+		{"Fast stop","Fast stop","Counter-strafes to a full stop when no keys are held.","Быстрый стоп","Контр-стрейф до полной остановки, когда клавиши отпущены."},
+		{"Speed HUD","Speed HUD","Shows current velocity under the crosshair.","Скорость HUD","Показывает текущую скорость под прицелом."},
+		{"Jump stats","Jump stats","KZ-style panel: distance, prestrafe, max speed, strafes, sync, edge and EB marks.","Стата прыжка","Панель в стиле KZ: дистанция, престрейф, макс. скорость, стрейфы, синхрон, метки края и EB."},
+		{"Auto duck","Auto duck","Holds duck through the whole airtime for longer jumps and duck-landings.","Авто-присед","Держит присед весь полёт: прыжки дальше, посадки в приседе."},
+		{"Prestrafe","Prestrafe","Forces full forward speed on ground jumps.","Престрейф","Форсирует полную скорость вперёд на прыжках с земли."},
+		{"Long jump helper","Long jump helper","Auto-ducks on jump for extra longjump distance.","Лонгджамп","Авто-присед в прыжке для extra-дистанции лонга."},
+		{"FOV x100 (view+model)","FOV","Field of view multiplier: world camera and viewmodel.","FOV","Множитель обзора: камера мира и модель оружия."},
+		{"Third person","Third person","Camera behind the back (local server). Set the distance below.","3-е лицо","Камера за спиной (локальный сервер). Дистанция ниже."},
+		{"3rd person distance","3rd person distance","How far the camera sits behind you.","Дистанция камеры","Как далеко камера висит за спиной."},
+		{"No fog","No fog","Disables world fog.","Без тумана","Отключает туман мира."},
+		{"Crosshair","Crosshair","Custom center crosshair.","Прицел","Кастомный прицел по центру."},
+		{"Crosshair size","Crosshair size","Crosshair arm length in pixels.","Размер прицела","Длина рисок прицела в пикселях."},
+		{"FPS / pos overlay","FPS overlay","FPS and position readout in the bottom-left corner.","FPS / поз. оверлей","FPS и координаты в левом нижнем углу."},
+		{"Aimbot","Aimbot","Silent aim at head or center within FOV. Hold the aim key.","Аимбот","Сайлент-наведение в голову или центр в пределах FOV. Держи клавишу аима."},
+		{"Auto shoot","Auto shoot","Fires automatically while a target is locked.","Авто-огонь","Автоматический огонь при захвате цели."},
+		{"Silent aim","Silent aim","The server sees aimed angles, your screen stays still.","Сайлент-аим","Сервер видит наведённые углы, твой экран стоит на месте."},
+		{"Target commons","Target commons","Aimbot and triggerbot also lock common infected and the witch, not just specials.","Таргет: обычные","Аимбот и триггер берут обычных заражённых и ведьму, а не только особых."},
+		{"Target specials","Target specials","Aimbot and triggerbot also lock hunters, smokers, jockeys, spitters, chargers and the tank.","Таргет: особые","Аимбот и триггер берут охотников, курильщиков, жокеев, плевальщиц, громил и танка."},
+		{"Aim FOV x10","Aim FOV","Target search radius around the crosshair, in 0.1 degrees.","FOV аима","Радиус поиска цели вокруг прицела, десятые градуса."},
+		{"Smoothing","Smoothing","0 snaps instantly. Higher values look more human.","Сглаживание","0 — мгновенно. Выше — человечнее."},
+		{"Aimbot key","Aimbot key","Hold to enable the aimbot. Click to rebind, ESC clears.","Клавиша аима","Держи для работы аимбота. Клик — смена, ESC — сброс."},
+		{"Trigger bot","Trigger bot","Shoots when the crosshair is on a visible enemy.","Триггербот","Выстрел, когда прицел на видимом враге."},
+		{"Trigger key","Trigger key","Hold to enable the triggerbot. Click to rebind.","Клавиша триггера","Держи для работы триггера. Клик — смена."},
+		{"Auto pistol","Auto pistol","Re-clicks semi-auto pistols for hold-to-fire.","Авто-пистолет","Дожимает полуавто-пистолеты для огня с зажатой кнопкой."},
+		{"Auto shove","Auto shove","Auto-shoves tongue and pounce attackers off teammates.","Авто-толчок","Авто-толчок: сбрасывает язык и прыгунов с союзников."},
+		{"Save config","Save config","Writes all settings to ZenWare.cfg.","Сохранить конфиг","Пишет все настройки в ZenWare.cfg."},
+		{"Load config","Load config","Reads settings back from ZenWare.cfg.","Загрузить конфиг","Читает настройки обратно из ZenWare.cfg."},
+		{"Menu key","Menu key","Opens and closes this menu. Click to rebind.","Клавиша меню","Открывает и закрывает меню. Клик — смена."},
+		{"Language: English >","Language","Switches the whole menu between English and Russian.","Язык","Переключает всё меню между английским и русским."},
+		{"Language: Russian >","Language","Switches the whole menu between English and Russian.","Язык","Переключает всё меню между английским и русским."},
+		{"Menu accent","Menu accent","Main accent color of the whole menu.","Акцент меню","Главный акцентный цвет всего меню."},
+		{"ESP enemy","ESP enemy","Box color for enemies and specials.","ESP враги","Цвет боксов врагов и особых."},
+		{"ESP ally","ESP ally","Box color for teammates.","ESP союзники","Цвет боксов союзников."},
+		{"Crosshair","Crosshair","Color of the custom crosshair.","Прицел","Цвет кастомного прицела."},
 	};
 	static const HelpEntry_t* FindHelp(const char* szLabel){
 		for(size_t i=0;i<sizeof(kHelp)/sizeof(kHelp[0]);i++)
 			if(!strcmp(kHelp[i].label,szLabel)) return &kHelp[i];
 		return nullptr;
 	}
+	static const char* HelpTitle(const HelpEntry_t* he){ return (he&&Lang::IsRu()&&he->ruTitle)?he->ruTitle:(he?he->title:""); }
+	static const char* HelpText(const HelpEntry_t* he){ return (he&&Lang::IsRu()&&he->ruText)?he->ruText:(he?he->text:""); }
 }
 static std::map<std::string,float> s_tog;
 static std::map<std::string,float> s_hover; // плавный hover-отклик строк
@@ -194,6 +199,9 @@ bool CFeatures_Menu::HandleOpenState(){
  return Vars::Menu::bOpen;
 }
 void CFeatures_Menu::Render(){
+ // язык по умолчанию — системный (конфиг, если есть, уже применился при инжекте)
+ static bool s_bLangInit=false;
+ if(!s_bLangInit){ s_bLangInit=true; Vars::Menu::bRussian=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN); }
  // анимация появления (fade-in) - не блокирует логику открытия
  static float s_alpha = 0.0f;
  bool bOpen = HandleOpenState();
@@ -323,19 +331,21 @@ void CFeatures_Menu::Render(){
      Vars::Aimbot::nSmoothSlider=U::Math.Clamp((int)Vars::Aimbot::flSmoothing,0,60);
      Vars::Visuals::nViewFOVSlider=U::Math.Clamp((int)(Vars::Visuals::flViewFOV*100.0f),50,300);});
     BindRow(mouse,"Menu key",&Vars::Menu::nKey);
+    static char szLang[32]; sprintf_s(szLang,"Language: %s >",Vars::Menu::bRussian?"Russian":"English");
+    Button(mouse,szLang,[](){ Vars::Menu::bRussian=!Vars::Menu::bRussian; });
     SectionLabel("STYLE");
     ColorSwatches(mouse,"Menu accent",&Vars::Menu::clrAccent);
     ColorSwatches(mouse,"ESP enemy",&Vars::Chams::clrEnemy);
     ColorSwatches(mouse,"ESP ally",&Vars::Chams::clrAlly);
     ColorSwatches(mouse,"Crosshair",&Vars::Visuals::clrCrosshair);
-   G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,"F11 = unload cheat");
+   G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,Lang::T("F11 = unload cheat"));
    m_nItemY+=26; break;
   }
  }
  const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
- G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"drag header | WASD free | F11 unload | %d fps",(int)(1.0f/m_flDt));
+ G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(1.0f/m_flDt));
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
  {
   const float ehue=fmodf((float)GetTickCount64()/38.0f,360.0f);
@@ -422,7 +432,7 @@ void CFeatures_Menu::DrawHelpPopup(const MouseState_t& mouse){
   G::Draw.String(EFonts::MENU_TAHOMA,nX+14,nY+nTitleH+i*nLineH,CLR_TEXT_ON,TXT_DEFAULT,"%s",aLines[i]);
 }
 void CFeatures_Menu::SectionLabel(const char* const szLabel){
- G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,Lang::T(szLabel));
  m_nItemY+=20;
 }
 void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const szLabel,Color* pValue){
@@ -434,7 +444,7 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
   G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
   G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
  }
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,Lang::T(szLabel));
  int cr,cg,cb,ca; pValue->GetColor(cr,cg,cb,ca);
  int nX=nRowX+nRowW-10-10*20;
  for(int i=0;i<10;i++){
@@ -489,7 +499,7 @@ void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
   bool bActive=(m_nTab==n); bool bHover=Hovered(mouse.pt,nX,nY,nTabW-6,nH);
   Color clrText=bActive?Color(240,255,248,255):(bHover?CLR_TEXT_ON:CLR_TEXT_OFF);
   if(!bActive&&bHover){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ROW_HOVER); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
-  G::Draw.String(EFonts::MENU_TAHOMA,nX+((nTabW-6)/2),nY+4,clrText,TXT_CENTERXY,szTabs[n]);
+  G::Draw.String(EFonts::MENU_TAHOMA,nX+((nTabW-6)/2),nY+4,clrText,TXT_CENTERXY,Lang::T(szTabs[n]));
   if(bHover&&mouse.bClicked) m_nTab=n;
  } nTab=m_nTab;
 }
@@ -522,11 +532,12 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
  int nKnobR=(int)(5.0f-1.5f*flPress);
  if(flTog>0.3f) G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR+3,14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(35*flTog)));
  G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR,16,Color(245,255,250,255));
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6+(int)(1*flPress),*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ const char* szShow=Lang::T(szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6+(int)(1*flPress),*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szShow);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
-  const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szLabel)+7;
-  bHelp=HelpMark(mouse,he->label,he->title,he->text,nQX,m_nItemY+5);
+  const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szShow)+7;
+  bHelp=HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,m_nItemY+5);
  }
  if(bHover&&mouse.bClicked&&!bHelp) *pValue=!(*pValue);
  m_nItemY+=nRowH;
@@ -547,10 +558,10 @@ void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*
  if(flPress>0.01f) bg=LerpC(bg,CLR_ACCENT,0.5f*flPress);
  G::Draw.Rect(nRowX+8,m_nItemY+3+(int)(1*flPress),96,nRowH-7-(int)(1*flPress),bg);
  G::Draw.OutlinedRect(nRowX+8,m_nItemY+3+(int)(1*flPress),96,nRowH-7-(int)(1*flPress),(bHover||flPress>0.01f)?CLR_ACCENT:CLR_OUTLINE);
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+8+48,m_nItemY+7+(int)(1*flPress),bHover?CLR_ACCENT:CLR_TEXT_ON,TXT_CENTERXY,szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+8+48,m_nItemY+7+(int)(1*flPress),bHover?CLR_ACCENT:CLR_TEXT_ON,TXT_CENTERXY,Lang::T(szLabel));
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel))
-  bHelp=HelpIcon(mouse,he->label,he->title,he->text,nRowX,nRowW,m_nItemY,nRowH);
+  bHelp=HelpIcon(mouse,he->label,HelpTitle(he),HelpText(he),nRowX,nRowW,m_nItemY,nRowH);
  if(bClick&&!bHelp&&pfnAction) pfnAction();
  m_nItemY+=nRowH;
 }
@@ -563,25 +574,26 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
   G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
   G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
  }
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,Lang::T(szLabel));
  char szVal[32]={};
  if(s_pCapturing==pValue){
-  strcpy_s(szVal,"[press key]");
+  strcpy_s(szVal,Lang::T("[press key]"));
   for(int vk=0x08;vk<0xFE;vk++){ if(vk==VK_LBUTTON||vk==VK_RBUTTON||vk==VK_MBUTTON) continue; if(GetAsyncKeyState(vk)&0x8000){ if(vk==VK_ESCAPE) *pValue=0; else *pValue=vk; s_pCapturing=nullptr; break; } }
- } else { strcpy_s(szVal,"["); strcat_s(szVal,KeyName(*pValue)); strcat_s(szVal,"]"); }
+ } else if(!*pValue){ sprintf_s(szVal,"[%s]",Lang::T("off")); }
+ else { strcpy_s(szVal,"["); strcat_s(szVal,KeyName(*pValue)); strcat_s(szVal,"]"); }
  Color clrVal=(s_pCapturing==pValue)?CLR_ACCENT:CLR_TEXT_ON;
  if(s_pCapturing==pValue){ int pp=150+(int)(105*sinf((GetTickCount64()%6283)/1000.0f)); clrVal=Color(0,255,171,pp); }
  G::Draw.String(EFonts::MENU_TAHOMA,nRowX+nRowW-90,m_nItemY+6,clrVal,TXT_DEFAULT,szVal);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
-  const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szLabel)+7;
-  bHelp=HelpMark(mouse,he->label,he->title,he->text,nQX,m_nItemY+5);
+  const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,Lang::T(szLabel))+7;
+  bHelp=HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,m_nItemY+5);
  }
  if(bHover&&mouse.bClicked&&s_pCapturing!=pValue&&!bHelp) s_pCapturing=pValue;
  m_nItemY+=nRowH;
 }
 void CFeatures_Menu::LabelInt(const char* szLabel,const int nValue,int nRightPad){
- G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY,CLR_TEXT_ON,TXT_DEFAULT,"%s",szLabel);
+ G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY,CLR_TEXT_ON,TXT_DEFAULT,"%s",Lang::T(szLabel));
  char szVal[16]={}; sprintf_s(szVal,"%i",nValue);
  G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+m_rc.nW-44-nRightPad,m_nItemY,CLR_ACCENT,TXT_DEFAULT,szVal);
  m_nItemY+=G::Draw.GetFontHeight(EFonts::MENU_TAHOMA)+5;
@@ -590,8 +602,8 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
  const int nLblY=m_nItemY;
  LabelInt(szLabel,*pValue);
  if(const HelpEntry_t* he=FindHelp(szLabel)){
-  const int nQX=m_rc.nX+20+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szLabel)+7;
-  HelpMark(mouse,he->label,he->title,he->text,nQX,nLblY-1);
+  const int nQX=m_rc.nX+20+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,Lang::T(szLabel))+7;
+  HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,nLblY-1);
  }
  int nX=m_rc.nX+20, nW=m_rc.nW-40; constexpr int nTrackH=4, nKnobR=5;
  bool bOnTrack=Hovered(mouse.pt,nX-8,m_nItemY-8,nW+16,nTrackH+16);

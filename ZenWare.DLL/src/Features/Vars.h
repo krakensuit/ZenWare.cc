@@ -108,6 +108,7 @@ namespace Vars
 		inline bool bOpen = false;
 		inline int nKey = VK_INSERT;
 		inline Color clrAccent = { 0, 255, 171, 255 };
+		inline bool bRussian = false; // RU/EN всего меню (системный язык по умолчанию, хранится в конфиге)
 	}
 
 	namespace Killfeed

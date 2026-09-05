@@ -1,4 +1,5 @@
 #include "JumpStats.h"
+#include "../Lang/Lang.h"
 #include "../Vars.h"
 
 #ifndef FL_ONGROUND
@@ -136,8 +137,8 @@ void CFeatures_JumpStats::Draw()
 	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy, Color(235, 245, 240, 255), TXT_CENTERXY, szMain);
 
 	char szSub[64] = { };
-	sprintf_s(szSub, sizeof(szSub), "%d strafes  %d%% sync%s%s",
-		m_last.strafes, m_last.syncPct,
+	sprintf_s(szSub, sizeof(szSub), "%d %s  %d%% %s%s%s",
+		m_last.strafes, Lang::T("strafes"), m_last.syncPct, Lang::T("sync"),
 		m_last.edge ? "  [edge]" : "",
 		m_last.eb ? "  [eb]" : "");
 	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy + 16, clrVerdict, TXT_CENTERXY, szSub);
