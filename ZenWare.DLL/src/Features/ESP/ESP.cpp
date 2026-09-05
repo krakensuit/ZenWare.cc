@@ -122,6 +122,8 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			};
 		}
 
+		if (Vars::ESP::bFilled)
+			G::Draw.Rect(x, y, w, h, { clrBox.r(), clrBox.g(), clrBox.b(), 40 });
 		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 		G::Draw.OutlinedRect(x, y, w, h, clrBox);
 		G::Draw.OutlinedRect(x - 2, y - 2, w + 4, h + 4, { clrBox.r(), clrBox.g(), clrBox.b(), 40 });
@@ -313,6 +315,8 @@ void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
 		return;
 
 	const Color clrCommon(170, 60, 60, 220);
+	if (Vars::ESP::bFilled)
+		G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
 	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrCommon);
 }

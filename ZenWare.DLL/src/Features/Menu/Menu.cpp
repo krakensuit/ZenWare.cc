@@ -59,6 +59,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"ESP items","ESP items","Highlights ground weapons, meds and throwables."},
 		{"ESP commons","ESP commons","Draws boxes around common infected."},
 		{"Snaplines","Snaplines","Line from the bottom of the screen to each player box."},
+		{"Filled boxes","Filled boxes","Translucent team-colored fill inside ESP boxes."},
 		{"Chams","Chams","Flat materials on player models, visible through walls."},
 		{"Chams through walls","Chams through walls","Ignores depth check so chams show through walls."},
 		{"Chams palette >","Chams palette","Cycles 5 enemy and ally color presets."},
@@ -178,7 +179,7 @@ void CFeatures_Menu::Render(){
   m_szHelpId=nullptr; m_szHelpTitle=nullptr; m_szHelpText=nullptr;
   if(!Vars::Menu::bOpen && G::Draw.m_nScreenW > 0){
    const float whue=fmodf((float)GetTickCount64()/38.0f,360.0f);
-   G::Draw.String(EFonts::MENU_TAHOMA,G::Draw.m_nScreenW-118,G::Draw.m_nScreenH-26,HsvToColor(whue,0.7f,1.0f),TXT_DEFAULT,"ZenWare.cc");
+   G::Draw.String(EFonts::MENU_TAHOMA,G::Draw.m_nScreenW-178,G::Draw.m_nScreenH-26,HsvToColor(whue,0.7f,1.0f),TXT_DEFAULT,"ZenWare.cc | %d fps",(int)(1.0f/m_flDt));
   }
   return;
  }
@@ -193,7 +194,8 @@ void CFeatures_Menu::Render(){
  if(!mouse.bDown) m_bDragging=false;
  if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY; }
  Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f;
- m_rc.nX=m_nPosX; m_rc.nY=m_nPosY-(int)((1.0f-s_alpha)*16); m_rc.nW=PANEL_W; m_rc.nH=PANEL_H;
+ m_rc.nX=m_nPosX; m_rc.nY=m_nPosY-(int)((1.0f-Anim::EaseOutCubic(s_alpha))*16); m_rc.nW=PANEL_W; m_rc.nH=PANEL_H;
+ if(s_alpha > 0.02f) G::Draw.Rect(0,0,G::Draw.m_nScreenW,G::Draw.m_nScreenH,Color(0,0,0,(int)(70*s_alpha)));
  CLR_ACCENT = Vars::Menu::clrAccent;
  CLR_ACCENT_SOFT = Color(Vars::Menu::clrAccent.r(),Vars::Menu::clrAccent.g(),Vars::Menu::clrAccent.b(),45);
  G::Draw.Rect(m_rc.nX+5,m_rc.nY+6,m_rc.nW,m_rc.nH,CLR_SHADOW);
@@ -211,6 +213,7 @@ void CFeatures_Menu::Render(){
    Checkbox(mouse,"ESP items",&Vars::ESP::bItems);
     Checkbox(mouse,"ESP commons",&Vars::ESP::bCommon);
     Checkbox(mouse,"Snaplines",&Vars::ESP::bSnaplines);
+    Checkbox(mouse,"Filled boxes",&Vars::ESP::bFilled);
    Checkbox(mouse,"Chams",&Vars::Chams::bEnabled);
    Checkbox(mouse,"Chams through walls",&Vars::Chams::bThroughWalls);
    Button(mouse,"Chams palette >",[](){ Vars::Chams::nPalette=(Vars::Chams::nPalette+1)%5; });
@@ -392,7 +395,8 @@ void CFeatures_Menu::DrawPanel(){
  {
   int hlw = (int)((m_rc.nW - 2) * m_flAnim);
   int hlx = m_rc.nX + 1 + ((m_rc.nW - 2) - hlw) / 2;
-  if (hlw > 0) G::Draw.GradientRect(hlx,m_rc.nY+40,hlx+hlw,m_rc.nY+43,CLR_ACCENT,CLR_ACCENT_SOFT,false);
+  const float hhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+  if (hlw > 0) G::Draw.GradientRect(hlx,m_rc.nY+40,hlx+hlw,m_rc.nY+43,HsvToColor(hhue,0.85f,1.0f),HsvToColor(hhue+40.0f,0.85f,1.0f),false);
  }
  {
   float shx = fmodf((float)GetTickCount64() / 12.0f, (float)(m_rc.nW + 120)) - 60;

@@ -14,14 +14,21 @@ void CFeatures_Visuals::DrawCrosshair()
 	const int nS = U::Math.Clamp(Vars::Visuals::nCrosshairSize, 2, 40);
 	const Color& clr = Vars::Visuals::clrCrosshair;
 
-	//Gap + 4 ticks.
-	constexpr int nGap = 4;
+	//Gap breathes with movement speed.
+	float flSpeed = 0.0f;
+	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TerrorPlayer*>();
+
+	if (pLocal)
+		flSpeed = pLocal->m_vecVelocity().Lenght2D();
+
+	const int nGap = 4 + U::Math.Clamp((int)(flSpeed / 50.0f), 0, 12);
 	constexpr int nThick = 2;
 
 	G::Draw.Rect(nCX - nGap - nS, nCY - (nThick / 2), nS, nThick, clr);
 	G::Draw.Rect(nCX + nGap, nCY - (nThick / 2), nS, nThick, clr);
 	G::Draw.Rect(nCX - (nThick / 2), nCY - nGap - nS, nThick, nS, clr);
 	G::Draw.Rect(nCX - (nThick / 2), nCY + nGap, nThick, nS, clr);
+	G::Draw.Rect(nCX - 1, nCY - 1, 2, 2, clr);
 }
 
 void CFeatures_Visuals::DrawOverlay()

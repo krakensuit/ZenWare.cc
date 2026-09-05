@@ -78,6 +78,7 @@ namespace
 			{ "esp.distance", &Vars::ESP::bDistance },
 			{ "esp.items", &Vars::ESP::bItems },
 			{ "esp.common", &Vars::ESP::bCommon },
+			{ "esp.filled", &Vars::ESP::bFilled },
 
 			//Visuals
 			{ "visuals.nofog", &Vars::Visuals::bNoFog },
