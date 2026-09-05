@@ -96,13 +96,31 @@ void RefreshTheme(){
 void InitFonts(HWND hwnd){
  if(g_fUI)DeleteObject(g_fUI); if(g_fTitle)DeleteObject(g_fTitle); if(g_fSmall)DeleteObject(g_fSmall);
  g_fUI=g_fTitle=g_fSmall=nullptr;
+ // У друга кастомный шрифт: если Segoe UI нет/битый — откат на Tahoma (кириллица есть везде).
+ static const wchar_t* s_face=nullptr;
+ if(!s_face){
+  s_face=L"Tahoma";
+  HDC dc=GetDC(nullptr);
+  if(dc){
+   HDC mm=CreateCompatibleDC(dc);
+   for(auto cand:{L"Segoe UI",L"Tahoma",L"Arial"}){
+    HFONT f=CreateFontW(-11,0,0,0,400,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,cand);
+    HFONT o=(HFONT)SelectObject(mm,f);
+    wchar_t real[64]={}; GetTextFaceW(mm,64,real);
+    SelectObject(mm,o); DeleteObject(f);
+    if(!_wcsicmp(real,cand)){ s_face=cand; break; }
+   }
+   // Tahoma есть практически всегда; последний шанс — что нашлось
+   DeleteDC(mm); ReleaseDC(nullptr,dc);
+  }
+ }
  UINT dpi=GetDpiForWindow(hwnd); if(!dpi) dpi=96;
  int h1=-MulDiv(11,(int)dpi,96);
  int h2=-MulDiv(30,(int)dpi,96);
  int h3=-MulDiv(8,(int)dpi,96);
- g_fUI=CreateFontW(h1,0,0,0,600,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,L"Segoe UI");
- g_fTitle=CreateFontW(h2,0,0,0,800,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,L"Segoe UI Black");
- g_fSmall=CreateFontW(h3,0,0,0,600,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,L"Segoe UI");
+ g_fUI=CreateFontW(h1,0,0,0,600,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,s_face);
+ g_fTitle=CreateFontW(h2,0,0,0,800,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,s_face);
+ g_fSmall=CreateFontW(h3,0,0,0,600,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,s_face);
 }
 // Радужный неоновый логотип: свечение + переливающиеся буквы
 void DrawRgbLogo(HDC dc, int x, int y){

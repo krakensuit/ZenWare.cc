@@ -21,7 +21,23 @@ void CUtil_Logger::Init()
 
 	Open(szPath);
 
+	// TEMP занят/залочен (второй процесс, зависший хендл) — пишем в свой файл,
+	// иначе run вообще без лога и потом не понять, что произошло.
+	if (!m_pFile)
+	{
+		sprintf_s(szPath, "%sZenWare_%lu.log", szTempDir, GetCurrentProcessId());
+		Open(szPath);
+	}
+
+	char szMod[MAX_PATH] = { };
+	{
+		HMODULE hSelf = nullptr;
+		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+			(LPCWSTR)&CUtil_Logger::Init, &hSelf);
+		GetModuleFileNameA(hSelf, szMod, MAX_PATH);
+	}
 	U::Log.Write("=== ZenWare session started (early stage: interfaces are not up yet) ===");
+	U::Log.Write("[*] pid=%lu dll=\"%s\".", GetCurrentProcessId(), szMod);
 }
 
 static bool GetGameDirFromModule(char* szOut, size_t nOut)

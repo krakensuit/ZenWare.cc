@@ -51,6 +51,7 @@
     <ClCompile Include="src\Memory.cpp" />
     <ClCompile Include="src\Overlay.cpp" />
     <ClCompile Include="src\ESP.cpp" />
+    <ClCompile Include="src\Resolve.cpp" />
     <ClCompile Include="src\Movement.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -58,6 +59,7 @@
     <ClInclude Include="src\Offsets.h" />
     <ClInclude Include="src\Overlay.h" />
     <ClInclude Include="src\ESP.h" />
+    <ClInclude Include="src\Resolve.h" />
     <ClInclude Include="src\Movement.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

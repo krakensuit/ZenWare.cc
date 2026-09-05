@@ -199,6 +199,10 @@ bool CFeatures_Menu::HandleOpenState(){
  return Vars::Menu::bOpen;
 }
 void CFeatures_Menu::Render(){
+ // F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
+ // Работает и при закрытом меню: Render крутится каждый кадр.
+ static bool s_bPrevF7=false;
+ { const bool bF7=(GetAsyncKeyState(VK_F7)&0x8000)!=0; if(bF7&&!s_bPrevF7) Vars::Menu::bRussian=!Vars::Menu::bRussian; s_bPrevF7=bF7; }
  // язык по умолчанию — системный (конфиг, если есть, уже применился при инжекте)
  static bool s_bLangInit=false;
  if(!s_bLangInit){ s_bLangInit=true; Vars::Menu::bRussian=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN); }

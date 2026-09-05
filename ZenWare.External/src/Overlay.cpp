@@ -29,9 +29,30 @@ bool Overlay::Create()
 	m_mem = CreateCompatibleDC(scr);
 	ReleaseDC(nullptr, scr);
 
+	// Кастомные шрифты у пользователя: берём первый реально существующий.
+	const wchar_t* face = L"Consolas";
+	{
+		HDC dc = GetDC(nullptr);
+		HDC mm = CreateCompatibleDC(dc);
+		for (auto cand : { L"Consolas", L"Tahoma", L"Lucida Console", L"Arial" })
+		{
+			HFONT f = CreateFontW(15, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+				DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+				CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, cand);
+			HFONT o = (HFONT)SelectObject(mm, f);
+			wchar_t real[64] = { };
+			GetTextFaceW(mm, 64, real);
+			SelectObject(mm, o);
+			DeleteObject(f);
+			if (!_wcsicmp(real, cand)) { face = cand; break; }
+			face = cand; // хоть что-то
+		}
+		DeleteDC(mm);
+		ReleaseDC(nullptr, dc);
+	}
 	m_font = CreateFontW(15, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
 		DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-		CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Consolas");
+		CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, face);
 	ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
 	return true;
 }

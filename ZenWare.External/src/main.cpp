@@ -3,6 +3,7 @@
 #include "ESP.h"
 #include "Movement.h"
 #include "Offsets.h"
+#include "Resolve.h"
 #include <vector>
 
 // ZenWare.External: отдельный процесс, только чтение памяти (RPM) +
@@ -59,6 +60,13 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 			Sleep(500);
 			continue;
 		}
+
+		// Оффсеты под конкретный билд игры: сигнатуры/якорь, иначе хардкод.
+		Resolved_t res;
+		ResolveOffsets(mem, client, cb, engine, eb, res);
+		Off::dwLocalPlayer = res.local;
+		Off::dwEntityList = res.list;
+		Off::dwViewMatrix = res.mat;
 
 		if (!o.IsAlive() && !o.Create())
 			return 1;
@@ -119,9 +127,19 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 					bRu ? L"RU" : L"EN", bRu ? L"выход" : L"exit");
 				o.Text(10, 8, RGB(0, 255, 171), L"%s", st);
 
+				// Диагностика резолва: какие оффсеты откуда (sig/anchor/hard).
+				{
+					wchar_t dg[160];
+					swprintf_s(dg, L"LP:%05X(%hs) ENT:%05X(%hs) MAT:%05X(%hs mc=%d) stale=%d",
+						(unsigned)(res.local & 0xFFFFF), res.srcLocal,
+						(unsigned)(res.list & 0xFFFFF), res.srcList,
+						(unsigned)(res.mat & 0xFFFFF), res.srcMat, res.matCands, staleFrames);
+					o.Text(10, 24, RGB(120, 140, 132), L"%s", dg);
+				}
+
 				if (staleFrames > 20)
 				{
-					o.Text(10, 30, RGB(255, 90, 90),
+					o.Text(10, 40, RGB(255, 90, 90),
 						bRu ? L"офсеты протухли - обнови Offsets.h (см. комментарии)"
 						    : L"offsets stale - update Offsets.h (see comments)");
 				}
