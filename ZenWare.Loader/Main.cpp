@@ -1,4 +1,5 @@
-// ZenWare Loader v3.1 - clean dark UI, RGB glowing logo, Steam game launch.
+// ZenWare Loader - clean dark UI, RGB glowing logo, Steam game launch.
+// Версия задаётся в resource.h (ZENWARE_VER_STR), руками тут не править.
 #include <windows.h>
 #include <commdlg.h>
 #include <dwmapi.h>
@@ -15,6 +16,10 @@
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "winmm.lib")
 
+// Версия из resource.h в wide-строку для заголовков.
+#define ZW_WIDEN2(x) L##x
+#define ZW_WIDEN(x) ZW_WIDEN2(x)
+#define ZENWARE_VER_WSTR ZW_WIDEN(ZENWARE_VER_STR)
 namespace {
 constexpr int WINDOW_W = 620;
 constexpr int WINDOW_H = 300;
@@ -491,7 +496,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     SelectObject(dc,ol); DeleteObject(lp);
     auto os=SelectObject(dc,g_fSmall);
     SetTextColor(dc,Mix2(bg,g_theme.dim,(int)(la*255)));
-     RECT vr={0,ly+8,SPL_W,ly+28}; DrawTextW(dc,L"LOADER v3.2  •  EXTERNAL x86",-1,&vr,DT_CENTER|DT_SINGLELINE);
+     RECT vr={0,ly+8,SPL_W,ly+28}; wchar_t wszVerLine[64]={}; swprintf_s(wszVerLine,L"LOADER v%ls  •  EXTERNAL x86",ZENWARE_VER_WSTR); DrawTextW(dc,wszVerLine,-1,&vr,DT_CENTER|DT_SINGLELINE);
     SelectObject(dc,os);
    }
    SelectObject(dc,of);
@@ -862,7 +867,8 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  int ww=rc.right-rc.left, wh=rc.bottom-rc.top;
  // главное окно открывается ровно там же, где был сплэш — бесшовный переход
  int wx=(GetSystemMetrics(SM_CXSCREEN)-ww)/2, wy=(GetSystemMetrics(SM_CYSCREEN)-wh)/2;
- HWND hw=CreateWindowExW(WS_EX_LAYERED,wc.lpszClassName,L"ZenWare.cc Loader v3.2",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
+ wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
+ HWND hw=CreateWindowExW(WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
  ShowWindow(hw,cmd); UpdateWindow(hw);
  MSG m{}; while(GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m);} return (int)m.wParam;
