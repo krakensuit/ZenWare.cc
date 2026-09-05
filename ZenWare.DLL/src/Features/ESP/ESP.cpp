@@ -2,6 +2,8 @@
 
 #include "../Vars.h"
 
+#include <cmath>
+
 void CFeatures_ESP::Render()
 {
 	if (!Vars::ESP::bEnabled || !I::EngineClient->IsInGame() || I::EngineVGui->IsGameUIVisible())
@@ -89,11 +91,24 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 
 	player_info_t pi;
 
-	//Box outline around the model bounds.
+	//Box outline around the model bounds (pulses red on low HP).
 	if (Vars::ESP::bBox)
 	{
+		Color clrBox = clrTeam;
+
+		if (nHealth <= 25)
+		{
+			const float flPulse = 0.5f + 0.5f * sinf(static_cast<float>(GetTickCount64() % 6283) / 1000.0f);
+			clrBox = {
+				clrTeam.r() + static_cast<int>((255 - clrTeam.r()) * flPulse),
+				clrTeam.g() + static_cast<int>((0 - clrTeam.g()) * flPulse),
+				clrTeam.b() + static_cast<int>((0 - clrTeam.b()) * flPulse),
+				255
+			};
+		}
+
 		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
-		G::Draw.OutlinedRect(x, y, w, h, clrTeam);
+		G::Draw.OutlinedRect(x, y, w, h, clrBox);
 		//Corner ticks outside the box.
 		const int nTick = U::Math.Clamp(w / 4, 6, 16);
 		G::Draw.Line(x - 3, y - 3, x - 3 + nTick, y - 3, clrTeam);

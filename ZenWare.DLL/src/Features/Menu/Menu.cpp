@@ -169,12 +169,16 @@ void CFeatures_Menu::Render(){
  if(s_alpha < 0.01f){
   static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
   m_szHelpId=nullptr; m_szHelpTitle=nullptr; m_szHelpText=nullptr;
+  if(!Vars::Menu::bOpen && G::Draw.m_nScreenW > 0){
+   const float whue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+   G::Draw.String(EFonts::MENU_TAHOMA,G::Draw.m_nScreenW-118,G::Draw.m_nScreenH-26,HsvToColor(whue,0.7f,1.0f),TXT_DEFAULT,"ZenWare.cc");
+  }
   return;
  }
  if(!G::Draw.m_nScreenW||!G::Draw.m_nScreenH||!Hooks::WndProc::hwGame) return;
  if(I::VGuiSurface) I::VGuiSurface->UnlockCursor();
  if(I::MatSystemSurface) I::MatSystemSurface->UnlockCursor();
- while(ShowCursor(TRUE) < 0);
+ while(ShowCursor(FALSE) >= 0);
  const MouseState_t mouse=GetMouse();
  constexpr int HEADER_H=46, FOOTER_H=22;
  if(!m_bPosInit){ m_nPosX=(G::Draw.m_nScreenW-PANEL_W)/2; m_nPosY=(G::Draw.m_nScreenH-PANEL_H)/3; m_bPosInit=true; }
@@ -266,6 +270,12 @@ void CFeatures_Menu::Render(){
   G::Draw.OutlinedRect(m_rc.nX+1,m_rc.nY+1,m_rc.nW-2,m_rc.nH-2,edge);
  }
  DrawHelpPopup(mouse);
+ //custom crosshair cursor (OS cursor stays hidden while the menu is open)
+ G::Draw.Line(mouse.pt.x-7,mouse.pt.y,mouse.pt.x-2,mouse.pt.y,CLR_ACCENT);
+ G::Draw.Line(mouse.pt.x+2,mouse.pt.y,mouse.pt.x+7,mouse.pt.y,CLR_ACCENT);
+ G::Draw.Line(mouse.pt.x,mouse.pt.y-7,mouse.pt.x,mouse.pt.y-2,CLR_ACCENT);
+ G::Draw.Line(mouse.pt.x,mouse.pt.y+2,mouse.pt.x,mouse.pt.y+7,CLR_ACCENT);
+ G::Draw.Circle(mouse.pt.x,mouse.pt.y,1,8,CLR_ACCENT);
 }
 bool CFeatures_Menu::ShouldBlockInput(unsigned int uMsg){
  if(!Vars::Menu::bOpen) return false;
@@ -443,6 +453,7 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
  float flFrac=((*pValue-nMin)/static_cast<float>(nMax-nMin)); int nFillW=int(nW*flFrac);
  G::Draw.Rect(nX,m_nItemY,nW,nTrackH,CLR_HEADER);
  G::Draw.Rect(nX,m_nItemY,nFillW,nTrackH,CLR_ACCENT);
+ if(nFillW>2) G::Draw.Rect(nX+nFillW-6,m_nItemY,6,nTrackH,Color(200,255,240,255));
  G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,nKnobR+4,14,Color(0,255,171,35));
  G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,nKnobR,14,CLR_ACCENT);
  if(mouse.bDown&&Hovered(mouse.pt,nX-8,m_nItemY-8,nW+16,nTrackH+16)){

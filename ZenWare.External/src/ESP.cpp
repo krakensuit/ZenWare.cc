@@ -166,6 +166,15 @@ void ESP::Draw(Overlay& o, const Snap& snap, const std::vector<RawEnt>& ents)
 		int x = x1 - w / 2;
 
 		o.Rect(x, y1, w, h, e.color);
+		const int cl = 6;
+		o.Line(x - 1, y1 - 1, x + cl, y1 - 1, e.color);
+		o.Line(x - 1, y1 - 1, x - 1, y1 + cl, e.color);
+		o.Line(x + w - cl, y1 - 1, x + w + 1, y1 - 1, e.color);
+		o.Line(x + w + 1, y1 - 1, x + w + 1, y1 + cl, e.color);
+		o.Line(x - 1, y1 + h - cl, x - 1, y1 + h + 1, e.color);
+		o.Line(x - 1, y1 + h + 1, x + cl, y1 + h + 1, e.color);
+		o.Line(x + w + 1, y1 + h - cl, x + w + 1, y1 + h + 1, e.color);
+		o.Line(x + w - cl, y1 + h + 1, x + w + 1, y1 + h + 1, e.color);
 
 		int frac = e.hp > 100 ? 100 : e.hp;
 		int bh = h * frac / 100;

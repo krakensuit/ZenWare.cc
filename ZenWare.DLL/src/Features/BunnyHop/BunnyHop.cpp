@@ -40,6 +40,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	//JumpBug: duck-tap right before a hard landing to negate it,
 	//release the duck the moment we touch ground again.
+	static bool s_bJbDuck = false;
 	if (Vars::BunnyHop::bJumpBug)
 	{
 		if (!bOnGround)
@@ -56,14 +57,20 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 				G::Util.Trace(origin, down, MASK_PLAYERSOLID, &filter, &tr);
 
 				if (tr.fraction < 1.0f && !tr.startsolid)
+				{
 					cmd->buttons |= IN_DUCK;
+					s_bJbDuck = true;
+				}
 			}
 		}
-		else
+		else if (s_bJbDuck)
 		{
 			cmd->buttons &= ~IN_DUCK;
+			s_bJbDuck = false;
 		}
 	}
+	else
+		s_bJbDuck = false;
 
 	//Perfect style accepts any jump source (space / wheel / bound key);
 	//legit style only honors the game's own IN_JUMP bit for this tick.

@@ -7,6 +7,11 @@ using namespace Hooks;
 
 LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	//Instant menu toggle on the keydown event itself (shared edge detector
+	//with the Render fallback, so one press never toggles twice).
+	if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN)
+		F::Menu.PollMenuKey();
+
 	if (F::Menu.ShouldBlockInput(uMsg))
 	return 0;
 
