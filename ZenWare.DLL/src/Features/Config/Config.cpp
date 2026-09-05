@@ -38,6 +38,7 @@ namespace
 			{ "aimbot.smoothing", &Vars::Aimbot::flSmoothing },
 			{ "aimbot.key", &Vars::Aimbot::nKey },
 			{ "aimbot.commons", &Vars::Aimbot::bTargetCommons },
+			{ "aimbot.specials", &Vars::Aimbot::bTargetSpecials },
 
 			//Trigger / shove / pistol
 			{ "trigger.enabled", &Vars::TriggerBot::bEnabled },
@@ -65,6 +66,8 @@ namespace
 			{ "chams.enabled", &Vars::Chams::bEnabled },
 			{ "chams.throughwalls", &Vars::Chams::bThroughWalls },
 			{ "chams.palette", &Vars::Chams::nPalette },
+			{ "chams.enemy", &Vars::Chams::clrEnemy },
+			{ "chams.ally", &Vars::Chams::clrAlly },
 
 			//ESP
 			{ "esp.enabled", &Vars::ESP::bEnabled },
@@ -81,9 +84,13 @@ namespace
 			{ "visuals.crosshair", &Vars::Visuals::bCrosshair },
 			{ "visuals.chsize", &Vars::Visuals::nCrosshairSize },
 			{ "visuals.overlay", &Vars::Visuals::bOverlay },
+			{ "visuals.crosshair", &Vars::Visuals::clrCrosshair },
 
 			//Recoil
 			{ "norecoil.visual", &Vars::VisualRecoil::bEnabled },
+
+			//Menu style
+			{ "menu.accent", &Vars::Menu::clrAccent },
 		};
 	}
 }

@@ -13,6 +13,8 @@ private:
 	void DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, const int nEntityIndex);
 	void DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity);
 	void DrawCommon(C_BaseEntity* pEntity);
+	void DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const int nClassID);
+	void DrawBoss(C_BaseEntity* pEntity);
 };
 
 namespace F { inline CFeatures_ESP ESP; }

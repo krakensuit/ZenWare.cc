@@ -19,6 +19,7 @@ namespace Vars
 		inline int nSmoothSlider = 0;
 		inline int nKey = 0; // 0 = always on
 		inline bool bTargetCommons = true; //also lock common infected + witch
+		inline bool bTargetSpecials = true; //also lock hunters/smokers/.../tank
 	}
 
 	namespace TriggerBot
@@ -95,6 +96,7 @@ namespace Vars
 	{
 		inline bool bOpen = false;
 		inline int nKey = VK_INSERT;
+		inline Color clrAccent = { 0, 255, 171, 255 };
 	}
 
 	namespace Killfeed

@@ -65,6 +65,21 @@ void CFeatures_ESP::Render()
 
 				break;
 			}
+			case Hunter:
+			case Smoker:
+			case Jockey:
+			case Spitter:
+			case Charger:
+			case Tank:
+			{
+				DrawSpecial(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_ClassID);
+				break;
+			}
+			case Witch:
+			{
+				DrawBoss(pEntity->As<C_BaseEntity*>());
+				break;
+			}
 			default:
 				break;
 		}
@@ -299,6 +314,64 @@ void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
 	const Color clrCommon(170, 60, 60, 220);
 	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrCommon);
+}
+
+void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const int nClassID)
+{
+	if (!pLocal || !pEntity)
+		return;
+
+	int x, y, w, h;
+
+	if (!GetBounds(pEntity, x, y, w, h) || w <= 0 || h <= 0)
+		return;
+
+	//Light checks only (plain reads, never crash): dormant handled by caller.
+	C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
+
+	if (!pPl || pPl->m_lifeState() != 0)
+		return;
+
+	const int nTeam = pEntity->m_iTeamNum();
+
+	if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == pLocal->GetTeamNumber())
+		return;
+
+	const char* szName = "?";
+
+	switch (nClassID)
+	{
+		case Hunter: szName = "HUNTER"; break;
+		case Smoker: szName = "SMOKER"; break;
+		case Jockey: szName = "JOCKEY"; break;
+		case Spitter: szName = "SPITTER"; break;
+		case Charger: szName = "CHARGER"; break;
+		case Tank: szName = "TANK"; break;
+		default: break;
+	}
+
+	const Color& clrTeam = Vars::Chams::clrEnemy;
+	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
+	G::Draw.OutlinedRect(x, y, w, h, clrTeam);
+	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szName);
+}
+
+void CFeatures_ESP::DrawBoss(C_BaseEntity* pEntity)
+{
+	C_Infected* pInf = pEntity ? pEntity->As<C_Infected*>() : nullptr;
+
+	if (!pInf || !G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
+		return;
+
+	int x, y, w, h;
+
+	if (!GetBounds(pEntity, x, y, w, h) || w <= 0 || h <= 0)
+		return;
+
+	const Color clrBoss(200, 0, 255, 255);
+	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
+	G::Draw.OutlinedRect(x, y, w, h, clrBoss);
+	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrBoss, TXT_CENTERXY, "WITCH");
 }
 
 bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w, int& h)

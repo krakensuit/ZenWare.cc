@@ -43,6 +43,8 @@ private:
 	void Button(const MouseState_t& mouse, const char* const szLabel, void(*pfnAction)());
 	void BindRow(const MouseState_t& mouse, const char* const szLabel, int* pValue);
 	void LabelInt(const char* const szLabel, const int nValue, int nRightPad = 0);
+	void SectionLabel(const char* const szLabel);
+	void ColorSwatches(const MouseState_t& mouse, const char* const szLabel, Color* pValue);
 	void SliderInt(const MouseState_t& mouse, const char* const szLabel, int* pValue, const int nMin, const int nMax);
 	bool HelpIcon(const MouseState_t& mouse, const char* const szId, const char* const szTitle, const char* const szText, int nRowX, int nRowW, int nRowY, int nRowH);
 	bool HelpMark(const MouseState_t& mouse, const char* const szId, const char* const szTitle, const char* const szText, int nX, int nY);

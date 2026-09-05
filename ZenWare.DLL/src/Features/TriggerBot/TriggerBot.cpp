@@ -58,4 +58,27 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 				cmd->buttons |= IN_ATTACK;
 		}
 	}
+
+	if (Vars::Aimbot::bTargetSpecials)
+	{
+		ClientClass* pCC = pHit->GetClientClass();
+
+		if (pCC)
+		{
+			const int nID = pCC->m_ClassID;
+
+			if (nID == Hunter || nID == Smoker || nID == Jockey || nID == Spitter || nID == Charger || nID == Tank)
+			{
+				C_BasePlayer* pPl = pHit->As<C_BasePlayer*>();
+
+				if (pPl && pPl->m_lifeState() == 0)
+				{
+					const int nTeam = pHit->m_iTeamNum();
+
+					if ((nTeam == TEAM_SURVIVOR || nTeam == TEAM_INFECTED) && pLocal && nTeam != pLocal->GetTeamNumber())
+						cmd->buttons |= IN_ATTACK;
+				}
+			}
+		}
+	}
 }

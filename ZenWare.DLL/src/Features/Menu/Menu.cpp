@@ -14,8 +14,8 @@ static const Color CLR_BG(14,16,15,248);
 static const Color CLR_HEADER(18,21,20,255);
 static const Color CLR_FOOTER(11,12,12,255);
 static const Color CLR_ROW_HOVER(255,255,255,8);
-static const Color CLR_ACCENT(0,255,171,255);
-static const Color CLR_ACCENT_SOFT(0,255,171,45);
+static Color CLR_ACCENT(0,255,171,255);
+static Color CLR_ACCENT_SOFT(0,255,171,45);
 static const Color CLR_TITLE(238,252,247,255);
 static const Color CLR_TEXT_ON(235,245,240,255);
 static const Color CLR_TEXT_OFF(108,118,113,255);
@@ -90,6 +90,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Auto shoot","Auto shoot","Fires automatically while a target is locked."},
 		{"Silent aim","Silent aim","The server sees aimed angles, your screen stays still."},
 		{"Target commons","Target commons","Aimbot and triggerbot also lock common infected and the witch, not just specials."},
+		{"Target specials","Target specials","Aimbot and triggerbot also lock hunters, smokers, jockeys, spitters, chargers and the tank."},
 		{"Aim FOV x10","Aim FOV","Target search radius around the crosshair, in 0.1 degrees."},
 		{"Smoothing","Smoothing","0 snaps instantly. Higher values look more human."},
 		{"Aimbot key","Aimbot key","Hold to enable the aimbot. Click to rebind, ESC clears."},
@@ -100,6 +101,10 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Save config","Save config","Writes all settings to ZenWare.cfg."},
 		{"Load config","Load config","Reads settings back from ZenWare.cfg."},
 		{"Menu key","Menu key","Opens and closes this menu. Click to rebind."},
+		{"Menu accent","Menu accent","Main accent color of the whole menu."},
+		{"ESP enemy","ESP enemy","Box color for enemies and specials."},
+		{"ESP ally","ESP ally","Box color for teammates."},
+		{"Crosshair","Crosshair","Color of the custom crosshair."},
 	};
 	static const HelpEntry_t* FindHelp(const char* szLabel){
 		for(size_t i=0;i<sizeof(kHelp)/sizeof(kHelp[0]);i++)
@@ -187,6 +192,8 @@ void CFeatures_Menu::Render(){
  if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY; }
  Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f;
  m_rc.nX=m_nPosX; m_rc.nY=m_nPosY-(int)((1.0f-s_alpha)*16); m_rc.nW=PANEL_W; m_rc.nH=PANEL_H;
+ CLR_ACCENT = Vars::Menu::clrAccent;
+ CLR_ACCENT_SOFT = Color(Vars::Menu::clrAccent.r(),Vars::Menu::clrAccent.g(),Vars::Menu::clrAccent.b(),45);
  G::Draw.Rect(m_rc.nX+5,m_rc.nY+6,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+3,m_rc.nY+4,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+1,m_rc.nY+2,m_rc.nW,m_rc.nH,CLR_SHADOW);
@@ -240,6 +247,7 @@ void CFeatures_Menu::Render(){
    Checkbox(mouse,"Auto shoot",&Vars::Aimbot::bAutoShoot);
     Checkbox(mouse,"Silent aim",&Vars::Aimbot::bSilent);
     Checkbox(mouse,"Target commons",&Vars::Aimbot::bTargetCommons);
+    Checkbox(mouse,"Target specials",&Vars::Aimbot::bTargetSpecials);
    SliderInt(mouse,"Aim FOV x10",&Vars::Aimbot::nFOVSlider,5,300);
    SliderInt(mouse,"Smoothing",&Vars::Aimbot::nSmoothSlider,0,60);
    BindRow(mouse,"Aimbot key",&Vars::Aimbot::nKey);
@@ -252,7 +260,12 @@ void CFeatures_Menu::Render(){
   default:{
    Button(mouse,"Save config",[](){F::Config.Save();});
    Button(mouse,"Load config",[](){F::Config.Load();});
-   BindRow(mouse,"Menu key",&Vars::Menu::nKey);
+    BindRow(mouse,"Menu key",&Vars::Menu::nKey);
+    SectionLabel("STYLE");
+    ColorSwatches(mouse,"Menu accent",&Vars::Menu::clrAccent);
+    ColorSwatches(mouse,"ESP enemy",&Vars::Chams::clrEnemy);
+    ColorSwatches(mouse,"ESP ally",&Vars::Chams::clrAlly);
+    ColorSwatches(mouse,"Crosshair",&Vars::Visuals::clrCrosshair);
    G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,"F11 = unload cheat");
    m_nItemY+=26; break;
   }
@@ -346,6 +359,28 @@ void CFeatures_Menu::DrawHelpPopup(const MouseState_t& mouse){
  for(int i=0;i<n;i++)
   G::Draw.String(EFonts::MENU_TAHOMA,nX+14,nY+nTitleH+i*nLineH,CLR_TEXT_ON,TXT_DEFAULT,"%s",aLines[i]);
 }
+void CFeatures_Menu::SectionLabel(const char* const szLabel){
+ G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ m_nItemY+=20;
+}
+void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const szLabel,Color* pValue){
+ const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+ static Color kSw[]={ {0,255,171,255},{255,84,84,255},{255,170,0,255},{255,235,0,255},{120,255,120,255},{0,200,255,255},{90,140,255,255},{190,90,255,255},{255,90,200,255},{235,245,240,255} };
+ bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
+ if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12,m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ int cr,cg,cb,ca; pValue->GetColor(cr,cg,cb,ca);
+ int nX=nRowX+nRowW-10-10*20;
+ for(int i=0;i<10;i++){
+  bool bHov=Hovered(mouse.pt,nX+i*20,m_nItemY+5,16,14);
+  G::Draw.Rect(nX+i*20,m_nItemY+5,16,14,kSw[i]);
+  int sr,sg,sb,sa; kSw[i].GetColor(sr,sg,sb,sa);
+  if(cr==sr&&cg==sg&&cb==sb) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5,16,14,Color(255,255,255,255));
+  else if(bHov) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5,16,14,CLR_ACCENT);
+  if(bHov&&mouse.bClicked) *pValue=kSw[i];
+ }
+ m_nItemY+=nRowH;
+}
 void CFeatures_Menu::DrawPanel(){
  G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_BG);
  G::Draw.Rect(m_rc.nX,m_rc.nY,2,m_rc.nH,CLR_ACCENT_SOFT);
@@ -354,7 +389,10 @@ void CFeatures_Menu::DrawPanel(){
  G::Draw.GradientRect(m_rc.nX+2,m_rc.nY+40,m_rc.nX+m_rc.nW,m_rc.nY+43,CLR_ACCENT,CLR_ACCENT_SOFT,false);
  {
   float shx = fmodf((float)GetTickCount64() / 12.0f, (float)(m_rc.nW + 120)) - 60;
-  G::Draw.Rect(m_rc.nX + 2 + (int)shx, m_rc.nY, 60, 40, Color(255,255,255,10));
+  int sbx0 = m_rc.nX + 2 + (int)shx, sbx1 = sbx0 + 60;
+  if (sbx0 < m_rc.nX + 2) sbx0 = m_rc.nX + 2;
+  if (sbx1 > m_rc.nX + m_rc.nW - 2) sbx1 = m_rc.nX + m_rc.nW - 2;
+  if (sbx1 > sbx0) G::Draw.Rect(sbx0, m_rc.nY, sbx1 - sbx0, 40, Color(255,255,255,10));
  }
 }
 void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
@@ -364,12 +402,13 @@ void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
  s_pill=Anim::Approach(s_pill,(float)m_nTab,m_flDt,10.0f);
  const int nTabY=m_rc.nY+52; constexpr int nTabH=22;
  const int nPillX=m_rc.nX+10+(int)(s_pill*(float)nTabW);
+ G::Draw.Rect(nPillX-2,nTabY-2,nTabW-2,nTabH+4,CLR_ACCENT_SOFT);
  G::Draw.Rect(nPillX,nTabY,nTabW-6,nTabH,CLR_ACCENT);
  G::Draw.Rect(nPillX,nTabY+nTabH-2,nTabW-6,2,CLR_ACCENT_SOFT);
  for(int n=0;n<5;n++){
   int nX=m_rc.nX+10+(n*nTabW); int nY=m_rc.nY+52; constexpr int nH=22;
   bool bActive=(m_nTab==n); bool bHover=Hovered(mouse.pt,nX,nY,nTabW-6,nH);
-  Color clrText=bActive?Color(8,14,11,255):(bHover?CLR_TEXT_ON:CLR_TEXT_OFF);
+  Color clrText=bActive?Color(240,255,248,255):(bHover?CLR_TEXT_ON:CLR_TEXT_OFF);
   if(!bActive&&bHover){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ROW_HOVER); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
   G::Draw.String(EFonts::MENU_TAHOMA,nX+((nTabW-6)/2),nY+4,clrText,TXT_CENTERXY,szTabs[n]);
   if(bHover&&mouse.bClicked) m_nTab=n;
@@ -398,6 +437,7 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
  G::Draw.OutlinedRect(nTogX,nTogY,nTogW,nTogH,LerpC(CLR_OUTLINE_SOFT,CLR_ACCENT,flTog));
  // knob
  int nKnobX=nTogX+7+(int)((nTogW-14)*flTog);
+ if(*pValue) G::Draw.Circle(nKnobX,nTogY+nTogH/2,8,14,CLR_ACCENT_SOFT);
  G::Draw.Circle(nKnobX,nTogY+nTogH/2,5,16,Color(245,255,250,255));
  G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(bHover?2:0),m_nItemY+6,*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
  bool bHelp=false;

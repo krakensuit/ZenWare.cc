@@ -5,7 +5,7 @@
 
 namespace
 {
-	bool IsCommonVisible(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vAimPoint)
+	bool IsPointVisible(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vAimPoint)
 	{
 		trace_t tr;
 		CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
@@ -49,7 +49,70 @@ namespace
 			if ((vAim - vEyePos).LenghtSqr() < 1.0f)
 				continue;
 
-			if (Vars::Aimbot::bVisibleOnly && !IsCommonVisible(pLocal, vEyePos, vAim))
+			if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAim))
+				continue;
+
+			const float flFov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAim));
+
+			if (flFov > Vars::Aimbot::flFOV)
+				continue;
+
+			if (flFov < flBest)
+			{
+				flBest = flFov;
+				vOut = vAim;
+				bFound = true;
+			}
+		}
+
+		return bFound;
+	}
+
+	bool FindSpecialTarget(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vViewAngles, Vector& vOut)
+	{
+		bool bFound = false;
+		float flBest = 1e30f;
+		const int nLocalTeam = pLocal ? pLocal->GetTeamNumber() : 0;
+
+		for (int n = 1; n <= I::ClientEntityList->GetMaxEntities(); n++)
+		{
+			IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+
+			if (!pEntity || pEntity->IsDormant())
+				continue;
+
+			ClientClass* pCC = pEntity->GetClientClass();
+
+			if (!pCC)
+				continue;
+
+			const int nID = pCC->m_ClassID;
+
+			if (nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter && nID != Charger && nID != Tank)
+				continue;
+
+			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
+
+			if (!pEnt)
+				continue;
+
+			const int nTeam = pEnt->m_iTeamNum();
+
+			if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == nLocalTeam)
+				continue;
+
+			//Light alive check (plain read, fail-closed).
+			C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
+
+			if (!pPl || pPl->m_lifeState() != 0)
+				continue;
+
+			Vector vAim = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.85f);
+
+			if ((vAim - vEyePos).LenghtSqr() < 1.0f)
+				continue;
+
+			if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAim))
 				continue;
 
 			const float flFov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAim));
@@ -84,29 +147,50 @@ void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUse
 	Vector vCommonPoint;
 	bool bHaveCommon = (Vars::Aimbot::bTargetCommons && FindCommonTarget(pLocal, vEyePos, vViewAngles, vCommonPoint));
 
-	if (bHavePlayer && bHaveCommon)
+	Vector vSpecialPoint;
+	bool bHaveSpecial = (Vars::Aimbot::bTargetSpecials && FindSpecialTarget(pLocal, vEyePos, vViewAngles, vSpecialPoint));
+
+	float flBestPick = 1e30f;
+
+	if (bHavePlayer)
+		flBestPick = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAimPoint));
+
+	if (bHaveCommon)
 	{
-		const float flP = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAimPoint));
 		const float flC = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vCommonPoint));
 
-		if (flC < flP)
+		if (flC < flBestPick)
 		{
-			bHavePlayer = false;
+			flBestPick = flC;
+			vAimPoint = vCommonPoint;
 			pTarget = nullptr;
+			bHavePlayer = false;
 		}
 		else
 			bHaveCommon = false;
 	}
 
-	if (!bHavePlayer && !bHaveCommon)
+	if (bHaveSpecial)
+	{
+		const float flS = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vSpecialPoint));
+
+		if (flS < flBestPick)
+		{
+			vAimPoint = vSpecialPoint;
+			pTarget = nullptr;
+			bHavePlayer = false;
+			bHaveCommon = false;
+			ZTRACE_FIRST("Aimbot:special");
+		}
+		else
+			bHaveSpecial = false;
+	}
+
+	if (!bHavePlayer && !bHaveCommon && !bHaveSpecial)
 		return;
 
 	if (bHaveCommon)
-	{
-		vAimPoint = vCommonPoint;
-		pTarget = nullptr;
 		ZTRACE_FIRST("Aimbot:common");
-	}
 
 	//Guard against degenerate direction (NaN protection for GetAngleToPosition).
 	if ((vAimPoint - vEyePos).LenghtSqr() < 1.0f)

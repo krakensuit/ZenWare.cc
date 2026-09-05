@@ -128,7 +128,7 @@ bool CGlobal_GameUtil::IsValidTarget(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPl
 
 	ClientClass* pCC = pPlayer->GetClientClass();
 
-	if (!pCC || !U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot))
+	if (!pCC || !U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot, Tank))
 		return false;
 
 	const int nTeam = pPlayer->GetTeamNumber();
