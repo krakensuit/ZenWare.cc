@@ -114,6 +114,21 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		return nullptr;
 	}
 }
+static std::map<std::string,float> s_tog;
+static std::map<std::string,float> s_hover; // плавный hover-отклик строк
+static std::map<std::string,float> s_press; // тактильный press-отклик
+static float s_menuDt=0.016f; // обновляется в Render
+static float HoverAnim(const char* szKey,bool bTarget){
+ float& fl=s_hover[szKey];
+ fl=Anim::Approach(fl,bTarget?1.0f:0.0f,s_menuDt,18.0f);
+ return fl;
+}
+static float PressAnim(const char* szKey,bool bClicked){
+ float& fl=s_press[szKey];
+ if(bClicked) fl=1.0f;
+ fl=Anim::Approach(fl,0.0f,s_menuDt,14.0f);
+ return fl;
+}
 void CFeatures_Menu::Toggle(){
  SetOpen(!Vars::Menu::bOpen);
 }
@@ -171,7 +186,7 @@ void CFeatures_Menu::Render(){
  bool bOpen = HandleOpenState();
  float dt = I::GlobalVars ? I::GlobalVars->frametime : 0.016f;
  if(dt <= 0 || dt > 0.1f) dt = 0.016f;
- m_flDt = dt;
+ m_flDt = dt; s_menuDt = dt;
  m_flAnim = s_alpha;
  s_alpha = Anim::Approach(s_alpha, bOpen ? 1.0f : 0.0f, dt, 9.0f);
  if(s_alpha < 0.01f){
@@ -373,16 +388,23 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
  static Color kSw[]={ {0,255,171,255},{255,84,84,255},{255,170,0,255},{255,235,0,255},{120,255,120,255},{0,200,255,255},{90,140,255,255},{190,90,255,255},{255,90,200,255},{235,245,240,255} };
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
- if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12,m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ float flHov=HoverAnim(szLabel,bHover);
+ if(flHov>0.01f){
+  G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
+  G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
+ }
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
  int cr,cg,cb,ca; pValue->GetColor(cr,cg,cb,ca);
  int nX=nRowX+nRowW-10-10*20;
  for(int i=0;i<10;i++){
   bool bHov=Hovered(mouse.pt,nX+i*20,m_nItemY+5,16,14);
-  G::Draw.Rect(nX+i*20,m_nItemY+5,16,14,kSw[i]);
-  int sr,sg,sb,sa; kSw[i].GetColor(sr,sg,sb,sa);
-  if(cr==sr&&cg==sg&&cb==sb) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5,16,14,Color(255,255,255,255));
-  else if(bHov) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5,16,14,CLR_ACCENT);
+  bool bSel=(cr==kSw[i].r()&&cg==kSw[i].g()&&cb==kSw[i].b());
+  int nLift=bHov?1:0; // свотч приподнимается под курсором
+  G::Draw.Rect(nX+i*20,m_nItemY+5-nLift,16,14,kSw[i]);
+  G::Draw.Rect(nX+i*20,m_nItemY+5-nLift,16,14,Color(0,0,0,60)); // мягкая рамка-тень
+  G::Draw.Rect(nX+i*20,m_nItemY+6-nLift,16,13,kSw[i]);
+  if(bSel) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5-nLift,16,14,Color(255,255,255,255));
+  else if(bHov) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5-nLift,16,14,CLR_ACCENT);
   if(bHov&&mouse.bClicked) *pValue=kSw[i];
  }
  m_nItemY+=nRowH;
@@ -431,26 +453,30 @@ static Color LerpC(const Color& a,const Color& b,float t){
  if(t<0) t=0; if(t>1) t=1;
  return Color(ar+(int)((br-ar)*t),ag+(int)((bg2-ag)*t),ab+(int)((bb2-ab)*t),255);
 }
-static std::map<std::string,float> s_tog;
 void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool* pValue){
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
- if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
- if(bHover) G::Draw.Rect(nRowX,m_nItemY,2,nRowH,CLR_ACCENT);
+ float flHov=HoverAnim(szLabel,bHover);
+ float flPress=PressAnim(szLabel,mouse.bClicked&&bHover);
+ if(flHov>0.01f){
+  G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
+  G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
+ }
  // toggle track 32x16
  constexpr int nTogW=30, nTogH=14;
  int nTogX=nRowX+nRowW-nTogW-10;
  int nTogY=m_nItemY+(nRowH-nTogH)/2;
  float &flTog=s_tog[szLabel];
- flTog=Anim::Approach(flTog,*pValue?1.0f:0.0f,m_flDt,12.0f);
+ flTog=Anim::Approach(flTog,*pValue?1.0f:0.0f,s_menuDt,12.0f);
  Color trackClr=LerpC(CLR_OUTLINE,CLR_ACCENT,flTog);
  G::Draw.Rect(nTogX,nTogY,nTogW,nTogH,trackClr);
  G::Draw.OutlinedRect(nTogX,nTogY,nTogW,nTogH,LerpC(CLR_OUTLINE_SOFT,CLR_ACCENT,flTog));
- // knob
+ // knob (сжимается при клике)
  int nKnobX=nTogX+7+(int)((nTogW-14)*flTog);
- if(*pValue) G::Draw.Circle(nKnobX,nTogY+nTogH/2,8,14,CLR_ACCENT_SOFT);
- G::Draw.Circle(nKnobX,nTogY+nTogH/2,5,16,Color(245,255,250,255));
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(bHover?2:0),m_nItemY+6,*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
+ int nKnobR=(int)(5.0f-1.5f*flPress);
+ if(flTog>0.3f) G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR+3,14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(35*flTog)));
+ G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR,16,Color(245,255,250,255));
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6+(int)(1*flPress),*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szLabel);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
   const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szLabel)+7;
@@ -462,24 +488,36 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
 void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*pfnAction)()){
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=26;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
- if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
- if(bHover) G::Draw.Rect(nRowX,m_nItemY,2,nRowH,CLR_ACCENT);
- G::Draw.Rect(nRowX+8,m_nItemY+3,96,nRowH-7,CLR_HEADER);
- G::Draw.OutlinedRect(nRowX+8,m_nItemY+3,96,nRowH-7,bHover?CLR_ACCENT:CLR_OUTLINE);
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+8+48,m_nItemY+7,bHover?CLR_ACCENT:CLR_TEXT_ON,TXT_CENTERXY,szLabel);
+ bool bClick=(bHover&&mouse.bClicked);
+ float flHov=HoverAnim(szLabel,bHover);
+ float flPress=PressAnim(szLabel,bClick);
+ if(flHov>0.01f){
+  G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
+  G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
+ }
+ // фон кнопки: hover подсвечивает, клик вспыхивает акцентом
+ Color bg=CLR_HEADER;
+ if(flHov>0.01f) bg=LerpC(CLR_HEADER,CLR_ACCENT,0.07f*flHov);
+ if(flPress>0.01f) bg=LerpC(bg,CLR_ACCENT,0.5f*flPress);
+ G::Draw.Rect(nRowX+8,m_nItemY+3+(int)(1*flPress),96,nRowH-7-(int)(1*flPress),bg);
+ G::Draw.OutlinedRect(nRowX+8,m_nItemY+3+(int)(1*flPress),96,nRowH-7-(int)(1*flPress),(bHover||flPress>0.01f)?CLR_ACCENT:CLR_OUTLINE);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+8+48,m_nItemY+7+(int)(1*flPress),bHover?CLR_ACCENT:CLR_TEXT_ON,TXT_CENTERXY,szLabel);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel))
   bHelp=HelpIcon(mouse,he->label,he->title,he->text,nRowX,nRowW,m_nItemY,nRowH);
- if(bHover&&mouse.bClicked&&!bHelp&&pfnAction) pfnAction();
+ if(bClick&&!bHelp&&pfnAction) pfnAction();
  m_nItemY+=nRowH;
 }
 void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* pValue){
  static int* s_pCapturing=nullptr;
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
- if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
- if(bHover) G::Draw.Rect(nRowX,m_nItemY,2,nRowH,CLR_ACCENT);
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(bHover?2:0),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,szLabel);
+ float flHov=HoverAnim(szLabel,bHover);
+ if(flHov>0.01f){
+  G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
+  G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
+ }
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,szLabel);
  char szVal[32]={};
  if(s_pCapturing==pValue){
   strcpy_s(szVal,"[press key]");
@@ -510,13 +548,20 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
   HelpMark(mouse,he->label,he->title,he->text,nQX,nLblY-1);
  }
  int nX=m_rc.nX+20, nW=m_rc.nW-40; constexpr int nTrackH=4, nKnobR=5;
+ bool bOnTrack=Hovered(mouse.pt,nX-8,m_nItemY-8,nW+16,nTrackH+16);
+ bool bDrag=(mouse.bDown&&bOnTrack);
+ float flHov=HoverAnim(szLabel,bOnTrack);
+ float flDrag=PressAnim(szLabel,bDrag); // растёт при drag, плавно спадает
  float flFrac=((*pValue-nMin)/static_cast<float>(nMax-nMin)); int nFillW=int(nW*flFrac);
  G::Draw.Rect(nX,m_nItemY,nW,nTrackH,CLR_HEADER);
  G::Draw.Rect(nX,m_nItemY,nFillW,nTrackH,CLR_ACCENT);
  if(nFillW>2) G::Draw.Rect(nX+nFillW-6,m_nItemY,6,nTrackH,Color(200,255,240,255));
- G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,nKnobR+4,14,Color(0,255,171,35));
- G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,nKnobR,14,CLR_ACCENT);
- if(mouse.bDown&&Hovered(mouse.pt,nX-8,m_nItemY-8,nW+16,nTrackH+16)){
+ // glow и knob растут при drag
+ float flKnobR=nKnobR+1.5f*flDrag;
+ G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,(int)(nKnobR+4+4*flDrag),14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(35+50*flDrag)));
+ if(flHov>0.01f) G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,(int)(nKnobR+3),14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(30*flHov)));
+ G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,(int)flKnobR,14,CLR_ACCENT);
+ if(bDrag){
   float flNew=U::Math.Clamp((mouse.pt.x-nX)/static_cast<float>(nW),0.0f,1.0f);
   *pValue=nMin+int(flNew*(nMax-nMin));
  }
