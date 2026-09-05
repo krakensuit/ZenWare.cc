@@ -79,6 +79,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Fast stop","Fast stop","Counter-strafes to a full stop when no keys are held."},
 		{"Speed HUD","Speed HUD","Shows current velocity under the crosshair."},
 		{"Jump stats","Jump stats","KZ-style panel: distance, prestrafe, max speed, strafes, sync, edge and EB marks."},
+		{"Auto duck","Auto duck","Holds duck through the whole airtime for longer jumps and duck-landings."},
 		{"Prestrafe","Prestrafe","Forces full forward speed on ground jumps."},
 		{"Long jump helper","Long jump helper","Auto-ducks on jump for extra longjump distance."},
 		{"Viewmodel FOV x100","Viewmodel FOV","Weapon viewmodel field of view multiplier."},
@@ -170,6 +171,7 @@ void CFeatures_Menu::Render(){
  float dt = I::GlobalVars ? I::GlobalVars->frametime : 0.016f;
  if(dt <= 0 || dt > 0.1f) dt = 0.016f;
  m_flDt = dt;
+ m_flAnim = s_alpha;
  s_alpha = Anim::Approach(s_alpha, bOpen ? 1.0f : 0.0f, dt, 9.0f);
  if(s_alpha < 0.01f){
   static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
@@ -231,7 +233,8 @@ void CFeatures_Menu::Render(){
     Checkbox(mouse,"Speed HUD",&Vars::BunnyHop::bSpeedHUD);
     Checkbox(mouse,"Jump stats",&Vars::BunnyHop::bJumpStats);
     Checkbox(mouse,"Prestrafe",&Vars::BunnyHop::bPrestrafe);
-    Checkbox(mouse,"Long jump helper",&Vars::BunnyHop::bLongJumpHelper);
+     Checkbox(mouse,"Long jump helper",&Vars::BunnyHop::bLongJumpHelper);
+     Checkbox(mouse,"Auto duck",&Vars::BunnyHop::bAutoDuck);
     break;
    }
    case 2:{
@@ -386,7 +389,11 @@ void CFeatures_Menu::DrawPanel(){
  G::Draw.Rect(m_rc.nX,m_rc.nY,2,m_rc.nH,CLR_ACCENT_SOFT);
  G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,40,CLR_HEADER);
 	DrawRgbLogo(m_rc.nX+16,m_rc.nY+4);
- G::Draw.GradientRect(m_rc.nX+2,m_rc.nY+40,m_rc.nX+m_rc.nW,m_rc.nY+43,CLR_ACCENT,CLR_ACCENT_SOFT,false);
+ {
+  int hlw = (int)((m_rc.nW - 2) * m_flAnim);
+  int hlx = m_rc.nX + 1 + ((m_rc.nW - 2) - hlw) / 2;
+  if (hlw > 0) G::Draw.GradientRect(hlx,m_rc.nY+40,hlx+hlw,m_rc.nY+43,CLR_ACCENT,CLR_ACCENT_SOFT,false);
+ }
  {
   float shx = fmodf((float)GetTickCount64() / 12.0f, (float)(m_rc.nW + 120)) - 60;
   int sbx0 = m_rc.nX + 2 + (int)shx, sbx1 = sbx0 + 60;

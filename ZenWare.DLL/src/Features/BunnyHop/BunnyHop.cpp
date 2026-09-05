@@ -60,6 +60,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 				{
 					cmd->buttons |= IN_DUCK;
 					s_bJbDuck = true;
+					Vars::BunnyHop::nJbShowTick = cmd->tick_count;
 				}
 			}
 		}
@@ -71,6 +72,10 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	}
 	else
 		s_bJbDuck = false;
+
+	//AutoDuck: hold duck through the whole airtime (longer jumps, duck-landings).
+	if (Vars::BunnyHop::bAutoDuck && !bOnGround)
+		cmd->buttons |= IN_DUCK;
 
 	//Perfect style accepts any jump source (space / wheel / bound key);
 	//legit style only honors the game's own IN_JUMP bit for this tick.
@@ -90,7 +95,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	//Prestrafe: slight forward boost when on ground to build speed faster.
 	if (Vars::BunnyHop::bPrestrafe && bOnGround && bWantJump)
 	{
-		if (cmd->forwardmove < 300.0f)
+		if (cmd->forwardmove >= 0.0f && cmd->forwardmove < 300.0f)
 			cmd->forwardmove = 450.0f;
 	}
 
@@ -138,12 +143,15 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			G::Util.Trace(origin, down, MASK_PLAYERSOLID, &filter, &tr);
 
 			if (tr.fraction < 1.0f && !tr.startsolid)
+			{
 				cmd->buttons |= IN_DUCK;
+				Vars::BunnyHop::nEbShowTick = cmd->tick_count;
+			}
 		}
 	}
 
-	//FastStop - instant counter-strafe when no keys pressed.
-	if (Vars::BunnyHop::bFastStop && bOnGround)
+	//FastStop - instant counter-strafe when no keys pressed (never fights an active bhop jump).
+	if (Vars::BunnyHop::bFastStop && bOnGround && !bWantJump)
 	{
 		if (cmd->forwardmove == 0.0f && cmd->sidemove == 0.0f)
 		{

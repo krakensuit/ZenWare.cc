@@ -61,6 +61,7 @@ namespace
 			{ "bhop.prestrafe", &Vars::BunnyHop::bPrestrafe },
 			{ "bhop.longjump", &Vars::BunnyHop::bLongJumpHelper },
 			{ "bhop.speedhud", &Vars::BunnyHop::bSpeedHUD },
+			{ "bhop.autoduck", &Vars::BunnyHop::bAutoDuck },
 
 			//Chams
 			{ "chams.enabled", &Vars::Chams::bEnabled },

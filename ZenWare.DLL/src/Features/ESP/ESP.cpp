@@ -124,6 +124,7 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 
 		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 		G::Draw.OutlinedRect(x, y, w, h, clrBox);
+		G::Draw.OutlinedRect(x - 2, y - 2, w + 4, h + 4, { clrBox.r(), clrBox.g(), clrBox.b(), 40 });
 		//Corner ticks outside the box.
 		const int nTick = U::Math.Clamp(w / 4, 6, 16);
 		G::Draw.Line(x - 3, y - 3, x - 3 + nTick, y - 3, clrTeam);

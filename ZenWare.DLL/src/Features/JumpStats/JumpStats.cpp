@@ -119,6 +119,11 @@ void CFeatures_JumpStats::Draw()
 	const int cx = G::Draw.m_nScreenW / 2;
 	const int cy = G::Draw.m_nScreenH / 2 + 76;
 
+	if (I::GlobalVars->tickcount < Vars::BunnyHop::nJbShowTick + 66)
+		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 18, Color(0, 255, 171, 255), TXT_CENTERXY, "JUMPBUG");
+	if (I::GlobalVars->tickcount < Vars::BunnyHop::nEbShowTick + 66)
+		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 34, Color(255, 220, 0, 255), TXT_CENTERXY, "EDGEBUG");
+
 	const Color clrGood(0, 255, 171, 255);
 	const bool bGood = (m_last.syncPct >= 90 && m_nStrafes >= 0);
 	const Color& clrVerdict = bGood ? clrGood : Color(200, 200, 200, 255);
