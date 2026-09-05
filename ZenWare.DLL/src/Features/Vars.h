@@ -53,6 +53,7 @@ namespace Vars
 		inline bool bAutoDuck = false;         // hold duck while airborne
 		inline int nJbShowTick = 0;            // jumpbug notify timestamp (not saved)
 		inline int nEbShowTick = 0;            // edgebug notify timestamp (not saved)
+		inline int nEjShowTick = 0;            // edgejump notify timestamp (not saved)
 		inline bool bFastStop = false;         // counter-strafe to stop instantly
 		inline bool bSpeedHUD = false;         // velocity display
 		inline bool bJumpStats = false;        // KZ-style jump statistics panel

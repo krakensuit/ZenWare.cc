@@ -1,5 +1,6 @@
 #include "BunnyHop.h"
 #include "../Vars.h"
+#include "../../Util/Logger/Logger.h"
 
 #ifndef FL_ONGROUND
 #define FL_ONGROUND (1 << 0)
@@ -50,7 +51,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			if (vel.z < -350.0f)
 			{
 				Vector origin = pLocal->m_vecOrigin();
-				Vector down = origin; down.z -= 56.0f;
+				Vector down = origin; down.z -= 160.0f;
 
 				trace_t tr;
 				CTraceFilterHitAll filter(pLocal);
@@ -58,9 +59,18 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 				if (tr.fraction < 1.0f && !tr.startsolid)
 				{
-					cmd->buttons |= IN_DUCK;
-					s_bJbDuck = true;
-					Vars::BunnyHop::nJbShowTick = cmd->tick_count;
+					//Duck only inside the real bug window (~2 ticks to impact),
+					//ducking earlier just lands ducked without the bug.
+					const float flInterval = (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
+					const float flDist = tr.fraction * 160.0f;
+
+					if (flDist / (-vel.z * flInterval) <= 2.0f)
+					{
+						cmd->buttons |= IN_DUCK;
+						s_bJbDuck = true;
+						Vars::BunnyHop::nJbShowTick = cmd->tick_count;
+						ZTRACE_FIRST("BunnyHop:jumpbug");
+					}
 				}
 			}
 		}
@@ -86,9 +96,15 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	//EdgeJump: walked off an edge while holding jump -> jump anyway.
 	static bool s_bWasOnGround = true;
+	bool bEdgeJumped = false;
 
 	if (Vars::BunnyHop::bEdgeJump && s_bWasOnGround && !bOnGround && bWantJump)
+	{
 		cmd->buttons |= IN_JUMP;
+		bEdgeJumped = true;
+		Vars::BunnyHop::nEjShowTick = cmd->tick_count;
+		ZTRACE_FIRST("BunnyHop:edgejump");
+	}
 
 	s_bWasOnGround = bOnGround;
 
@@ -122,8 +138,9 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		else
 		{
 			//In air - release jump so next landing can be perfect.
-			//Keep duck if edgebug wants to bug the landing.
-			if (!Vars::BunnyHop::bEdgeBug)
+			//Keep duck if edgebug wants to bug the landing, and never strip
+			//an edgejump that just fired on this tick.
+			if (!Vars::BunnyHop::bEdgeBug && !bEdgeJumped)
 				cmd->buttons &= ~IN_JUMP;
 		}
 	}
@@ -136,7 +153,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		if (vel.Lenght2D() > 250.0f && vel.z < -100.0f)
 		{
 			Vector origin = pLocal->m_vecOrigin();
-			Vector down = origin; down.z -= 32.0f;
+			Vector down = origin; down.z -= 160.0f;
 
 			trace_t tr;
 			CTraceFilterHitAll filter(pLocal);
@@ -144,8 +161,16 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 			if (tr.fraction < 1.0f && !tr.startsolid)
 			{
-				cmd->buttons |= IN_DUCK;
-				Vars::BunnyHop::nEbShowTick = cmd->tick_count;
+				//Same tight window as jumpbug: duck ~2 ticks before impact.
+				const float flInterval = (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
+				const float flDist = tr.fraction * 160.0f;
+
+				if (flDist / (-vel.z * flInterval) <= 2.0f)
+				{
+					cmd->buttons |= IN_DUCK;
+					Vars::BunnyHop::nEbShowTick = cmd->tick_count;
+					ZTRACE_FIRST("BunnyHop:edgebug");
+				}
 			}
 		}
 	}
