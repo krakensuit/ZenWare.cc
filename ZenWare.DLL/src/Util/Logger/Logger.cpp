@@ -31,9 +31,10 @@ void CUtil_Logger::Init()
 
 	char szMod[MAX_PATH] = { };
 	{
+		// Адрес нашего глобального логгера лежит в .data этой DLL.
 		HMODULE hSelf = nullptr;
 		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-			(LPCWSTR)&CUtil_Logger::Init, &hSelf);
+			(LPCWSTR)this, &hSelf);
 		GetModuleFileNameA(hSelf, szMod, MAX_PATH);
 	}
 	U::Log.Write("=== ZenWare session started (early stage: interfaces are not up yet) ===");
