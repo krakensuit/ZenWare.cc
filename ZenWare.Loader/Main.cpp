@@ -26,7 +26,7 @@ constexpr int IDC_LAUNCH = 1008;
 constexpr int IDC_LABEL = 1006;
 
 struct Theme_t {
- COLORREF bg, ctl, text, dim, accent, accent2, border;
+ COLORREF bg, ctl, text, dim, accent, accent2, red, red2, border;
  bool dark;
 };
 
@@ -37,8 +37,8 @@ bool IsSystemDark(){
 }
 Theme_t MakeTheme(bool d){
  Theme_t t{}; t.dark=d;
- if(d){ t.bg=RGB(12,14,13); t.ctl=RGB(22,29,25); t.text=RGB(232,255,245); t.dim=RGB(118,142,132); t.accent=RGB(0,255,171); t.accent2=RGB(0,170,113); t.border=RGB(42,60,50); }
- else { t.bg=RGB(242,249,244); t.ctl=RGB(255,255,255); t.text=RGB(20,35,30); t.dim=RGB(100,115,110); t.accent=RGB(0,200,135); t.accent2=RGB(0,150,100); t.border=RGB(178,218,198); }
+ if(d){ t.bg=RGB(12,14,13); t.ctl=RGB(22,29,25); t.text=RGB(232,255,245); t.dim=RGB(118,142,132); t.accent=RGB(0,255,171); t.accent2=RGB(0,170,113); t.red=RGB(255,84,84); t.red2=RGB(178,32,32); t.border=RGB(42,60,50); }
+ else { t.bg=RGB(242,249,244); t.ctl=RGB(255,255,255); t.text=RGB(20,35,30); t.dim=RGB(100,115,110); t.accent=RGB(0,200,135); t.accent2=RGB(0,150,100); t.red=RGB(215,48,48); t.red2=RGB(165,25,25); t.border=RGB(178,218,198); }
  return t;
 }
 // HSV (h 0..360, s/v 0..1) -> RGB, для радужного логотипа
@@ -50,6 +50,7 @@ static COLORREF Hsv(float h, float s, float v){
  return RGB((BYTE)((r+m)*255),(BYTE)((g+m)*255),(BYTE)((b+m)*255));
 }
 Theme_t g_theme = MakeTheme(true);
+static float g_flModeT=0.0f, g_flModeTarget=0.0f; // 0=external мятный, 1=internal красный
 HWND g_hMain=nullptr, g_hInject=nullptr, g_hStatus=nullptr, g_hLaunch=nullptr;
 static bool g_bExternal=true, g_bModeHov=false;
 static RECT g_rcMode={0,0,0,0};
@@ -140,6 +141,7 @@ static bool FindDll(wchar_t* out){
 }
 void ToggleMode(){
  g_bExternal=!g_bExternal;
+ g_flModeTarget=g_bExternal?0.0f:1.0f;
  SetWindowTextW(g_hInject,LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"));
  LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)"));
  RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(g_hMain,&hdr,FALSE);
@@ -203,6 +205,13 @@ static COLORREF Mix2(COLORREF a, COLORREF b, int t){
  int bl=(GetBValue(a)*(255-t)+GetBValue(b)*t)/255;
  return RGB(r,g,bl);
 }
+// Плавный акцент темы: external мятный -> internal красный
+static COLORREF LerpC2(COLORREF a,COLORREF b,float t){
+ if(t<0)t=0; if(t>1)t=1;
+ return RGB((int)(GetRValue(a)+(GetRValue(b)-GetRValue(a))*t),(int)(GetGValue(a)+(GetGValue(b)-GetGValue(a))*t),(int)(GetBValue(a)+(GetBValue(b)-GetBValue(a))*t));
+}
+static COLORREF Acc(){ Theme_t& th=g_theme; return LerpC2(th.accent,th.red,g_flModeT); }
+static COLORREF Acc2(){ Theme_t& th=g_theme; return LerpC2(th.accent2,th.red2,g_flModeT); }
 static void ClassifyStatus(const wchar_t* t){
  if(!t) return;
  auto has=[](const wchar_t* h,const wchar_t* n){ return wcsstr(h,n)!=nullptr; };
@@ -210,7 +219,7 @@ static void ClassifyStatus(const wchar_t* t){
   g_dotColor=RGB(255,80,80);
  else if(has(t,L"Готово")||has(t,L"Done")||has(t,L"успешно")||has(t,L"success")||has(t,L"[===]"))
   g_dotColor=RGB(0,255,171);
- else if(g_busy) g_dotColor=g_theme.accent;
+ else if(g_busy) g_dotColor=Acc();
 }
 LRESULT DrawBtn(LPARAM lp){
  auto d=(LPDRAWITEMSTRUCT)lp; if(!d) return TRUE;
@@ -224,17 +233,17 @@ LRESULT DrawBtn(LPARAM lp){
  FillRect(d->hDC,&cr,g_brBg);
  HRGN rgClip=CreateRoundRectRgn(cr.left,cr.top,cr.right+1,cr.bottom+1,12,12);
  SelectClipRgn(d->hDC,rgClip);
- COLORREF fill=g_theme.ctl, txt=g_theme.text, br=Mix2(g_theme.border,g_theme.accent,110);
+ COLORREF fill=g_theme.ctl, txt=g_theme.text, br=Mix2(g_theme.border,Acc(),110);
  if(pri&&en){
-  fill=hov?Mix2(g_theme.accent,RGB(255,255,255),50):g_theme.accent; txt=g_theme.dark?RGB(4,12,8):RGB(255,255,255); br=g_theme.accent;
+  fill=hov?Mix2(Acc(),RGB(255,255,255),50):Acc(); txt=g_theme.dark?RGB(4,12,8):RGB(255,255,255); br=Acc();
   // вертикальный градиент поверх заливки
   TRIVERTEX vv[2]={{cr.left,cr.top,(COLOR16)(GetRValue(fill)<<8),(COLOR16)(GetGValue(fill)<<8),(COLOR16)(GetBValue(fill)<<8),0},
-   {cr.right,cr.bottom,(COLOR16)(GetRValue(g_theme.accent2)<<8),(COLOR16)(GetGValue(g_theme.accent2)<<8),(COLOR16)(GetBValue(g_theme.accent2)<<8),0}};
+   {cr.right,cr.bottom,(COLOR16)(GetRValue(Acc2())<<8),(COLOR16)(GetGValue(Acc2())<<8),(COLOR16)(GetBValue(Acc2())<<8),0}};
   GRADIENT_RECT gr={0,1}; GdiGradientFill(d->hDC,vv,2,&gr,1,GRADIENT_FILL_RECT_V);
  } else {
    if(!en){ fill=g_theme.bg; txt=g_theme.dim; }
-   else if(pr){ fill=Mix2(g_theme.ctl,g_theme.accent,60); }
-   else if(hov){ fill=Mix2(g_theme.ctl,g_theme.accent,36); br=g_theme.accent; }
+   else if(pr){ fill=Mix2(g_theme.ctl,Acc(),60); }
+   else if(hov){ fill=Mix2(g_theme.ctl,Acc(),36); br=Acc(); }
    // кнопка запуска игры: радужная обводка в ритме логотипа
    bool launch=(d->CtlID==IDC_LAUNCH);
    COLORREF rbDim=0;
@@ -255,7 +264,7 @@ LRESULT DrawBtn(LPARAM lp){
    SelectObject(d->hDC,o1); SelectObject(d->hDC,o2); DeleteObject(b); DeleteObject(pen);
  }
  if(pri&&en){
-  HPEN bp=CreatePen(PS_SOLID,1,g_theme.accent); auto ob=SelectObject(d->hDC,bp);
+  HPEN bp=CreatePen(PS_SOLID,1,Acc()); auto ob=SelectObject(d->hDC,bp);
   HGDIOBJ nb=SelectObject(d->hDC,GetStockObject(NULL_BRUSH));
   RECT r=cr; InflateRect(&r,-1,-1); RoundRect(d->hDC,r.left,r.top,r.right,r.bottom,10,10);
   SelectObject(d->hDC,nb); SelectObject(d->hDC,ob); DeleteObject(bp);
@@ -269,7 +278,7 @@ LRESULT DrawBtn(LPARAM lp){
 }
 LRESULT ColorChild(UINT msg,WPARAM wp,LPARAM lp){
  HDC dc=(HDC)wp; HWND ctl=(HWND)lp; int id=ctl?GetDlgCtrlID(ctl):0;
- SetTextColor(dc, id==IDC_STATUS?g_theme.accent:g_theme.dim); SetBkColor(dc,g_theme.bg); return (LRESULT)g_brBg;
+ SetTextColor(dc, id==IDC_STATUS?Acc():g_theme.dim); SetBkColor(dc,g_theme.bg); return (LRESULT)g_brBg;
 }
 // ---------- кодовый интро-сплэш: безрамочное окно ~2.8с, клик пропускает ----------
 static constexpr int SPL_W=560, SPL_H=300;
@@ -364,7 +373,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    float rt=(el-rt0)/0.7f;
    if(rt>0&&rt<1){
     int rr=(int)(20+rt*260);
-    HPEN rp=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,(int)(110*(1.0f-rt)))); auto ogr=SelectObject(dc,rp);
+    HPEN rp=CreatePen(PS_SOLID,2,Mix2(bg,Acc(),(int)(110*(1.0f-rt)))); auto ogr=SelectObject(dc,rp);
     HGDIOBJ onb=SelectObject(dc,GetStockObject(NULL_BRUSH));
     Ellipse(dc,SPL_W/2-rr,89-rr,SPL_W/2+rr,89+rr);
     SelectObject(dc,onb); SelectObject(dc,ogr); DeleteObject(rp);
@@ -389,7 +398,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
       int mg=14+(int)(40*(1.0f-bt));
       int bx0=LCX-LSZ/2-mg, bx1=LCX+LSZ/2+mg, by0=LCY-LSZ/2-mg, by1=LCY+LSZ/2+mg;
       int bl=30, bk=(int)(bt*255);
-      HPEN hp=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,bk)); auto oh=SelectObject(dc,hp);
+      HPEN hp=CreatePen(PS_SOLID,2,Mix2(bg,Acc(),bk)); auto oh=SelectObject(dc,hp);
       MoveToEx(dc,bx0,by0+bl,nullptr); LineTo(dc,bx0,by0); LineTo(dc,bx0+bl,by0);
       MoveToEx(dc,bx1-bl,by0,nullptr); LineTo(dc,bx1,by0); LineTo(dc,bx1,by0+bl);
       MoveToEx(dc,bx1,by1-bl,nullptr); LineTo(dc,bx1,by1); LineTo(dc,bx1-bl,by1);
@@ -399,7 +408,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
      { // орбита из пунктирных дуг вокруг эмблемы
       float oa=el*0.9f;
       int orad=LSZ/2+30;
-      HPEN op=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,(int)(la*130))); auto oo=SelectObject(dc,op);
+      HPEN op=CreatePen(PS_SOLID,2,Mix2(bg,Acc(),(int)(la*130))); auto oo=SelectObject(dc,op);
       for(int k2=0;k2<24;k2+=2){
        float a0=oa+k2*0.2618f, a1=a0+0.16f;
        MoveToEx(dc,LCX+(int)(orad*cosf(a0)),LCY+(int)(orad*sinf(a0)),nullptr);
@@ -409,7 +418,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
      }
      if(el>0.7f&&el<1.9f){
       int sy2=(LCY-LSZ/2)+(int)(LSZ*((el-0.7f)/1.2f));
-      HBRUSH sb=CreateSolidBrush(Mix2(bg,g_theme.accent,(int)(la*90))); RECT sr={LCX-LSZ/2,sy2,LCX+LSZ/2,sy2+2}; FillRect(dc,&sr,sb); DeleteObject(sb);
+      HBRUSH sb=CreateSolidBrush(Mix2(bg,Acc(),(int)(la*90))); RECT sr={LCX-LSZ/2,sy2,LCX+LSZ/2,sy2+2}; FillRect(dc,&sr,sb); DeleteObject(sb);
      }
     }
     g_splashQ[1]+=GetTickCount64()-q1; q2mark=GetTickCount64();
@@ -442,7 +451,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    if(lw>0){
      int hw2=(int)(200*lw);
      int ly=g_splashImg?214:196;
-     HPEN lp=CreatePen(PS_SOLID,2,Mix2(bg,g_theme.accent,(int)(la*255))); auto ol=SelectObject(dc,lp);
+     HPEN lp=CreatePen(PS_SOLID,2,Mix2(bg,Acc(),(int)(la*255))); auto ol=SelectObject(dc,lp);
      MoveToEx(dc,SPL_W/2-hw2,ly,nullptr); LineTo(dc,SPL_W/2+hw2,ly);
     SelectObject(dc,ol); DeleteObject(lp);
     auto os=SelectObject(dc,g_fSmall);
@@ -457,9 +466,9 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   {
    float f=el/2.6f; if(f>1) f=1;
    RECT tr={80,252,480,256}; HBRUSH tb=CreateSolidBrush(g_theme.ctl); FillRect(dc,&tr,tb); DeleteObject(tb);
-   if(f>0){ RECT fl={80,252,80+(int)(400*f),256}; HBRUSH fb=CreateSolidBrush(g_theme.accent); FillRect(dc,&fl,fb); DeleteObject(fb);
+   if(f>0){ RECT fl={80,252,80+(int)(400*f),256}; HBRUSH fb=CreateSolidBrush(Acc()); FillRect(dc,&fl,fb); DeleteObject(fb);
     int hx=80+(int)(400*f);
-    HBRUSH hb=CreateSolidBrush(Mix2(g_theme.accent,RGB(255,255,255),120)); RECT hr2={hx-12,251,hx,257}; FillRect(dc,&hr2,hb); DeleteObject(hb); }
+    HBRUSH hb=CreateSolidBrush(Mix2(Acc(),RGB(255,255,255),120)); RECT hr2={hx-12,251,hx,257}; FillRect(dc,&hr2,hb); DeleteObject(hb); }
   }
   auto os2=SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
   RECT hr={0,272,SPL_W-16,292}; DrawTextW(dc,LoaderUtil::SW(L"клик — пропустить",L"click to skip"),-1,&hr,DT_RIGHT|DT_SINGLELINE);
@@ -583,7 +592,16 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    ApplyCtrlTheme(); SetTimer(h,1,16,nullptr); break;
  }
  case WM_TIMER:
-  if(w==1){
+   if(w==1){
+    if(g_flModeT!=g_flModeTarget){
+     float dd=(g_flModeTarget>g_flModeT)?0.06f:-0.06f;
+     g_flModeT+=dd;
+     if((dd>0&&g_flModeT>g_flModeTarget)||(dd<0&&g_flModeT<g_flModeTarget)) g_flModeT=g_flModeTarget;
+     RECT all={0,0,WINDOW_W,WINDOW_H}; InvalidateRect(h,&all,FALSE);
+     HWND bi=GetDlgItem(h,IDC_INJECT), bl2=GetDlgItem(h,IDC_LAUNCH);
+     if(bi) InvalidateRect(bi,nullptr,FALSE);
+     if(bl2) InvalidateRect(bl2,nullptr,FALSE);
+    }
     RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(h,&hdr,FALSE);
     // перерисовка кнопки запуска, чтобы радужная обводка анимировалась вместе с логотипом
     HWND bl=GetDlgItem(h,IDC_LAUNCH); if(bl) InvalidateRect(bl,nullptr,FALSE);
@@ -639,19 +657,19 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   RECT hdr={0,0,rc.right,66};
   HBRUSH hb=CreateSolidBrush(g_theme.dark?RGB(8,11,10):RGB(228,242,235));
   FillRect(dc,&hdr,hb); DeleteObject(hb);
-  HPEN lp=CreatePen(PS_SOLID,1,g_theme.accent); auto ol=SelectObject(dc,lp);
+  HPEN lp=CreatePen(PS_SOLID,1,Acc()); auto ol=SelectObject(dc,lp);
   MoveToEx(dc,0,66,nullptr); LineTo(dc,rc.right,66);
   SelectObject(dc,ol); DeleteObject(lp);
   // радужный логотип
   DrawRgbLogo(dc,22,8);
    // пилюля-кнопка режима справа
    RECT vr={rc.right-170,16,rc.right-20,42}; g_rcMode=vr;
-   COLORREF mfill=g_bModeHov?Mix2(g_theme.ctl,g_theme.accent,40):(g_theme.dark?RGB(6,14,11):RGB(255,255,255));
-   HBRUSH vb=CreateSolidBrush(mfill); HPEN vp=CreatePen(PS_SOLID,1,g_bModeHov?g_theme.accent:g_theme.border);
+   COLORREF mfill=g_bModeHov?Mix2(g_theme.ctl,Acc(),40):(g_theme.dark?RGB(6,14,11):RGB(255,255,255));
+   HBRUSH vb=CreateSolidBrush(mfill); HPEN vp=CreatePen(PS_SOLID,1,g_bModeHov?Acc():g_theme.border);
    auto vo1=SelectObject(dc,vb); auto vo2=SelectObject(dc,vp);
    RoundRect(dc,vr.left,vr.top,vr.right,vr.bottom,12,12);
    SelectObject(dc,vo1); SelectObject(dc,vo2); DeleteObject(vb); DeleteObject(vp);
-   SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT); SetTextColor(dc,g_theme.dark?g_theme.accent:g_theme.accent2);
+   SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT); SetTextColor(dc,g_theme.dark?Acc():Acc2());
    DrawTextW(dc,g_bExternal?L"EXTERNAL • x86":L"INTERNAL • x86",-1,&vr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
   // подписи секций
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
@@ -665,7 +683,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   if(g_busy){
    RECT trk={20,196,600,200}; HBRUSH tb=CreateSolidBrush(g_theme.ctl); FillRect(dc,&trk,tb); DeleteObject(tb);
    static int px=0; px=(px+7)%(580+120);
-   RECT sg={20+px-120,196,20+px,200}; HBRUSH sb=CreateSolidBrush(g_theme.accent); FillRect(dc,&sg,sb); DeleteObject(sb);
+   RECT sg={20+px-120,196,20+px,200}; HBRUSH sb=CreateSolidBrush(Acc()); FillRect(dc,&sg,sb); DeleteObject(sb);
    FrameRect(dc,&trk,g_brBorder);
   }
   // статус-точка
