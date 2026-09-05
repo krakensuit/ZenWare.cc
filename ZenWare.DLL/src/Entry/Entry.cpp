@@ -121,11 +121,12 @@ void CGlobal_ModuleEntry::Load()
 		I::MoveHelper = **reinterpret_cast<IMoveHelper***>(U::Offsets.m_dwMoveHelper);
 		U::Log.Write("[*] MoveHelper    : 0x%08X %s", reinterpret_cast<DWORD>(I::MoveHelper), I::MoveHelper ? "(ok)" : "(NULL!)");
 		XASSERT(I::MoveHelper == nullptr);
+		U::Log.Write("[*] Before relocate.");
 
-		if (U::Log.RelocateToGameDir())
-			U::Log.Write("[+] Log moved next to the game directory.");
+		U::Log.Write("[*] RelocateToGameDir -> %s.", U::Log.RelocateToGameDir() ? "moved" : "staying in TEMP");
 
 		F::Config.Load();
+		U::Log.Write("[*] Config loaded from \"%s\".", F::Config.FilePath());
 	}
 
 	U::Log.Write("[*] Initializing draw manager (fonts) ...");

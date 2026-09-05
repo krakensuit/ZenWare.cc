@@ -85,11 +85,33 @@ const char* CFeatures_Config::FilePath()
 {
 	static char szPath[MAX_PATH] = { };
 
-	if (!szPath[0] && I::EngineClient)
+	if (!szPath[0])
 	{
-		const char* const szGameDir = I::EngineClient->GetGameDirectory();
+		//Same as Logger: module path, no engine virtuals at startup.
+		char szGameDir[MAX_PATH] = { };
+		char szMod[MAX_PATH] = { };
 
-		if (szGameDir && szGameDir[0])
+		if (GetModuleFileNameA(GetModuleHandleA("client.dll"), szMod, MAX_PATH) && szMod[0])
+		{
+			char* szSlash = strrchr(szMod, '\\');
+
+			if (szSlash)
+			{
+				*szSlash = '\0';
+				szSlash = strrchr(szMod, '\\');
+
+				if (szSlash)
+				{
+					if (_stricmp(szSlash, "\\bin") == 0)
+						*szSlash = '\0';
+
+					if (szMod[0])
+						strcpy_s(szGameDir, szMod);
+				}
+			}
+		}
+
+		if (szGameDir[0])
 			sprintf_s(szPath, "%s\\ZenWare.cfg", szGameDir);
 	}
 

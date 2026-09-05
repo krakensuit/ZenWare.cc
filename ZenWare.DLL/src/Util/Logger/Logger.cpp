@@ -24,14 +24,47 @@ void CUtil_Logger::Init()
 	U::Log.Write("=== ZenWare session started (early stage: interfaces are not up yet) ===");
 }
 
-bool CUtil_Logger::RelocateToGameDir()
+static bool GetGameDirFromModule(char* szOut, size_t nOut)
 {
-	if (!m_bCsInit || !I::EngineClient)
+	char szPath[MAX_PATH] = { };
+
+	if (!GetModuleFileNameA(GetModuleHandleA("client.dll"), szPath, MAX_PATH) || !szPath[0])
 		return false;
 
-	const char* const szGameDir = I::EngineClient->GetGameDirectory();
+	//...\left4dead2\bin\client.dll -> ...\left4dead2
+	char* szSlash = strrchr(szPath, '\\');
 
-	if (!szGameDir || !szGameDir[0])
+	if (!szSlash)
+		return false;
+
+	*szSlash = '\0';
+	szSlash = strrchr(szPath, '\\');
+
+	if (!szSlash)
+		return false;
+
+	if (_stricmp(szSlash, "\\bin") == 0)
+		*szSlash = '\0';
+
+	if (szPath[0] == '\0')
+		return false;
+
+	strcpy_s(szOut, nOut, szPath);
+	return true;
+}
+
+bool CUtil_Logger::RelocateToGameDir()
+{
+	U::Log.Write("[*] Relocate enter.");
+
+	if (!m_bCsInit)
+		return false;
+
+	//No engine virtuals on this path: the vtable layout is untrusted on
+	//current builds. Game dir comes from client.dll's own location.
+	char szGameDir[MAX_PATH] = { };
+
+	if (!GetGameDirFromModule(szGameDir, sizeof(szGameDir)))
 		return false;
 
 	char szNewPath[MAX_PATH] = { };
@@ -53,13 +86,12 @@ bool CUtil_Logger::RelocateToGameDir()
 		m_pFile = nullptr;
 	}
 
-	const char* const szFailedPath = m_szPath;
 	Open(szNewPath);
 
 	if (m_pFile)
 		Write("[*] Log relocated from \"%s\". Early-stage lines are in the old file.", szOldPath);
 	else
-		strncpy_s(m_szPath, szFailedPath, _TRUNCATE); //keep pointing at the working file
+		Open(szOldPath); //reopen the previous file: Open() overwrote m_szPath, never go silent
 
 	LeaveCriticalSection(&m_cs);
 
