@@ -260,7 +260,7 @@ void CFeatures_Menu::Render(){
  const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
- G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"drag header | WASD free | F11 unload");
+ G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"drag header | WASD free | F11 unload | %d fps",(int)(1.0f/m_flDt));
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
  {
   const float ehue=fmodf((float)GetTickCount64()/38.0f,360.0f);
@@ -338,6 +338,7 @@ void CFeatures_Menu::DrawHelpPopup(const MouseState_t& mouse){
  if(nX<8) nX=8;
  if(nY<8) nY=8;
  if(nY+nH>G::Draw.m_nScreenH-8) nY=G::Draw.m_nScreenH-8-nH;
+ G::Draw.Rect(nX+3,nY+4,nW,nH,CLR_SHADOW);
  G::Draw.Rect(nX,nY,nW,nH,CLR_BG);
  G::Draw.Rect(nX,nY,nW,2,CLR_ACCENT);
  G::Draw.String(EFonts::MENU_TAHOMA,nX+14,nY+5,CLR_ACCENT,TXT_DEFAULT,"%s",m_szHelpTitle);
@@ -351,6 +352,10 @@ void CFeatures_Menu::DrawPanel(){
  G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,40,CLR_HEADER);
 	DrawRgbLogo(m_rc.nX+16,m_rc.nY+4);
  G::Draw.GradientRect(m_rc.nX+2,m_rc.nY+40,m_rc.nX+m_rc.nW,m_rc.nY+43,CLR_ACCENT,CLR_ACCENT_SOFT,false);
+ {
+  float shx = fmodf((float)GetTickCount64() / 12.0f, (float)(m_rc.nW + 120)) - 60;
+  G::Draw.Rect(m_rc.nX + 2 + (int)shx, m_rc.nY, 60, 40, Color(255,255,255,10));
+ }
 }
 void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
  const char* szTabs[]={"Visuals","Move","View","Combat","Misc"};
@@ -381,6 +386,7 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
+ if(bHover) G::Draw.Rect(nRowX,m_nItemY,2,nRowH,CLR_ACCENT);
  // toggle track 32x16
  constexpr int nTogW=30, nTogH=14;
  int nTogX=nRowX+nRowW-nTogW-10;
@@ -406,6 +412,7 @@ void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=26;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
+ if(bHover) G::Draw.Rect(nRowX,m_nItemY,2,nRowH,CLR_ACCENT);
  G::Draw.Rect(nRowX+8,m_nItemY+3,96,nRowH-7,CLR_HEADER);
  G::Draw.OutlinedRect(nRowX+8,m_nItemY+3,96,nRowH-7,bHover?CLR_ACCENT:CLR_OUTLINE);
  G::Draw.String(EFonts::MENU_TAHOMA,nRowX+8+48,m_nItemY+7,bHover?CLR_ACCENT:CLR_TEXT_ON,TXT_CENTERXY,szLabel);
@@ -420,6 +427,7 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  if(bHover) G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,CLR_ROW_HOVER);
+ if(bHover) G::Draw.Rect(nRowX,m_nItemY,2,nRowH,CLR_ACCENT);
  G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(bHover?2:0),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,szLabel);
  char szVal[32]={};
  if(s_pCapturing==pValue){
@@ -427,6 +435,7 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
   for(int vk=0x08;vk<0xFE;vk++){ if(vk==VK_LBUTTON||vk==VK_RBUTTON||vk==VK_MBUTTON) continue; if(GetAsyncKeyState(vk)&0x8000){ if(vk==VK_ESCAPE) *pValue=0; else *pValue=vk; s_pCapturing=nullptr; break; } }
  } else { strcpy_s(szVal,"["); strcat_s(szVal,KeyName(*pValue)); strcat_s(szVal,"]"); }
  Color clrVal=(s_pCapturing==pValue)?CLR_ACCENT:CLR_TEXT_ON;
+ if(s_pCapturing==pValue){ int pp=150+(int)(105*sinf((GetTickCount64()%6283)/1000.0f)); clrVal=Color(0,255,171,pp); }
  G::Draw.String(EFonts::MENU_TAHOMA,nRowX+nRowW-90,m_nItemY+6,clrVal,TXT_DEFAULT,szVal);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){

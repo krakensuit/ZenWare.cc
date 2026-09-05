@@ -668,7 +668,14 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    HDC mem=CreateCompatibleDC(hdc);
    HBITMAP bmp=CreateCompatibleBitmap(hdc,bw,bh);
    HGDIOBJ oldBmp=SelectObject(mem,bmp);
-   HDC dc=mem; FillRect(dc,&rc,g_brBg);
+   HDC dc=mem;
+   {
+    int gb1=46+(int)(18*sinf((float)(GetTickCount64()%6283)/1000.0f*0.45f));
+    COLORREF gbot=Mix2(g_theme.bg,g_theme.ctl,gb1);
+    TRIVERTEX gv[2]={{rc.left,rc.top,(COLOR16)(GetRValue(g_theme.bg)<<8),(COLOR16)(GetGValue(g_theme.bg)<<8),(COLOR16)(GetBValue(g_theme.bg)<<8),0},
+     {rc.right,rc.bottom,(COLOR16)(GetRValue(gbot)<<8),(COLOR16)(GetGValue(gbot)<<8),(COLOR16)(GetBValue(gbot)<<8),0}};
+    GRADIENT_RECT ggr={0,1}; GdiGradientFill(dc,gv,2,&ggr,1,GRADIENT_FILL_RECT_V);
+   }
    { // дрейфующая пыль по фону (детерминированная, без состояния)
     float elP=GetTickCount64()/1000.0f;
     float spd=g_bParty?3.0f:1.0f;

@@ -26,7 +26,7 @@ void CFeatures_Visuals::DrawCrosshair()
 
 void CFeatures_Visuals::DrawOverlay()
 {
-	if (!Vars::Visuals::bOverlay || !I::EngineClient->IsInGame())
+	if (!I::EngineClient->IsInGame())
 		return;
 
 	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TerrorPlayer*>();
@@ -41,9 +41,12 @@ void CFeatures_Visuals::DrawOverlay()
 	const Vector vPos = pLocal->m_vecOrigin();
 	const float flSpeed = pLocal->m_vecVelocity().Lenght2D();
 
-	G::Draw.String(EFonts::MENU_CONSOLAS, 8, G::Draw.m_nScreenH - 34,
-		CLR_TEXT_HINT, TXT_DEFAULT, "fps %4.0f | pos %.0f %.0f %.0f | hp %i",
-		s_flFpsAvg, vPos.x, vPos.y, vPos.z, pLocal->GetHealth());
+	if (Vars::Visuals::bOverlay)
+	{
+		G::Draw.String(EFonts::MENU_CONSOLAS, 8, G::Draw.m_nScreenH - 34,
+			CLR_TEXT_HINT, TXT_DEFAULT, "fps %4.0f | pos %.0f %.0f %.0f | hp %i",
+			s_flFpsAvg, vPos.x, vPos.y, vPos.z, pLocal->GetHealth());
+	}
 
 	// Speed HUD - movement feature
 	if (Vars::BunnyHop::bSpeedHUD)

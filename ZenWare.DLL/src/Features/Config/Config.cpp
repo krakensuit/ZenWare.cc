@@ -54,6 +54,12 @@ namespace
 			{ "bhop.jumpbug", &Vars::BunnyHop::bJumpBug },
 			{ "bhop.nullmove", &Vars::BunnyHop::bNullMove },
 			{ "bhop.jumpstats", &Vars::BunnyHop::bJumpStats },
+			{ "bhop.edgejump", &Vars::BunnyHop::bEdgeJump },
+			{ "bhop.edgebug", &Vars::BunnyHop::bEdgeBug },
+			{ "bhop.faststop", &Vars::BunnyHop::bFastStop },
+			{ "bhop.prestrafe", &Vars::BunnyHop::bPrestrafe },
+			{ "bhop.longjump", &Vars::BunnyHop::bLongJumpHelper },
+			{ "bhop.speedhud", &Vars::BunnyHop::bSpeedHUD },
 
 			//Chams
 			{ "chams.enabled", &Vars::Chams::bEnabled },
