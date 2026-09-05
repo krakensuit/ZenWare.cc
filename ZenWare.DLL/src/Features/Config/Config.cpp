@@ -80,6 +80,10 @@ namespace
 		{ "esp.common", &Vars::ESP::bCommon },
 		{ "esp.filled", &Vars::ESP::bFilled },
 		{ "esp.snaplines", &Vars::ESP::bSnaplines },
+		{ "esp.healthtext", &Vars::ESP::bHealthText },
+		{ "esp.weapontext", &Vars::ESP::bWeaponText },
+		{ "esp.specialboxes", &Vars::ESP::bSpecialBoxes },
+		{ "esp.bossboxes", &Vars::ESP::bBossBoxes },
 
 		//Visuals
 		{ "visuals.nofog", &Vars::Visuals::bNoFog },
@@ -88,6 +92,8 @@ namespace
 		{ "visuals.chsize", &Vars::Visuals::nCrosshairSize },
 		{ "visuals.overlay", &Vars::Visuals::bOverlay },
 		{ "visuals.chcolor", &Vars::Visuals::clrCrosshair },
+		{ "visuals.3rdperson", &Vars::Visuals::bThirdPerson },
+		{ "visuals.3rdpersondist", &Vars::Visuals::nThirdPersonDist },
 
 			//Recoil
 			{ "norecoil.visual", &Vars::VisualRecoil::bEnabled },

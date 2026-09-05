@@ -58,6 +58,17 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"ESP distance","ESP distance","Distance in meters next to the name."},
 		{"ESP items","ESP items","Highlights ground weapons, meds and throwables."},
 		{"ESP commons","ESP commons","Draws boxes around common infected."},
+	{"ESP special infected","ESP special infected","Boxes and names for hunter/smoker/jockey/spitter/charger/tank."},
+	{"ESP witch","ESP witch","Purple box around the witch."},
+	{"HP text near bar","HP text near bar","Prints the HP number left of the health bar."},
+	{"Weapon text","Weapon text","Active weapon name under the nickname."},
+	{"Hitbox: Head >","Hitbox","Where the aimbot aims: head or body center."},
+	{"Hitbox: Center >","Hitbox","Where the aimbot aims: head or body center."},
+	{"Priority: FOV >","Target priority","FOV picks the closest to the crosshair, Distance the nearest player."},
+	{"Priority: Distance >","Target priority","FOV picks the closest to the crosshair, Distance the nearest player."},
+	{"Visible only","Visible only","Only aim at targets with a clear line of sight."},
+	{"Skip incapped","Skip incapped","Ignore players who are incapacitated."},
+	{"Trigger visible only","Trigger visible only","Trigger only fires when the target is visible (no walls)."},
 		{"Snaplines","Snaplines","Line from the bottom of the screen to each player box."},
 		{"Filled boxes","Filled boxes","Translucent team-colored fill inside ESP boxes."},
 		{"Chams","Chams","Flat materials on player models, visible through walls."},
@@ -83,8 +94,10 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Auto duck","Auto duck","Holds duck through the whole airtime for longer jumps and duck-landings."},
 		{"Prestrafe","Prestrafe","Forces full forward speed on ground jumps."},
 		{"Long jump helper","Long jump helper","Auto-ducks on jump for extra longjump distance."},
-		{"Viewmodel FOV x100","Viewmodel FOV","Weapon viewmodel field of view multiplier."},
-		{"No fog","No fog","Disables world fog."},
+	{"FOV x100 (view+model)","FOV","Field of view multiplier: world camera and viewmodel."},
+	{"Third person","Third person","Camera behind the back (local server). Set the distance below."},
+	{"3rd person distance","3rd person distance","How far the camera sits behind you."},
+	{"No fog","No fog","Disables world fog."},
 		{"Crosshair","Crosshair","Custom center crosshair."},
 		{"Crosshair size","Crosshair size","Crosshair arm length in pixels."},
 		{"FPS / pos overlay","FPS overlay","FPS and position readout in the bottom-left corner."},
@@ -209,7 +222,18 @@ void CFeatures_Menu::Render(){
  if(!mouse.bDown) m_bDragging=false;
  if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY; }
  Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f;
- m_rc.nX=m_nPosX; m_rc.nY=m_nPosY-(int)((1.0f-Anim::EaseOutCubic(s_alpha))*16); m_rc.nW=PANEL_W; m_rc.nH=PANEL_H;
+ m_rc.nX=m_nPosX; m_rc.nY=m_nPosY;
+ //красивое открытие/закрытие: fade + scale от центра панели + лёгкий подъем при открытии
+ {
+  const float flA=Anim::EaseOutCubic(s_alpha);
+  const float flScale=0.85f+0.15f*flA;       //0.85 при закрытии -> 1.0 при открытии
+  const int nShrinkW=(int)(PANEL_W*(1.0f-flScale)*0.5f);
+  const int nShrinkH=(int)(PANEL_H*(1.0f-flScale)*0.5f);
+  m_rc.nX+=nShrinkW;
+  m_rc.nY+=nShrinkH-(int)((1.0f-flA)*16);
+  m_rc.nW=PANEL_W-nShrinkW*2;
+  m_rc.nH=PANEL_H-nShrinkH*2;
+ }
  if(s_alpha > 0.02f) G::Draw.Rect(0,0,G::Draw.m_nScreenW,G::Draw.m_nScreenH,Color(0,0,0,(int)(70*s_alpha)));
  CLR_ACCENT = Vars::Menu::clrAccent;
  CLR_ACCENT_SOFT = Color(Vars::Menu::clrAccent.r(),Vars::Menu::clrAccent.g(),Vars::Menu::clrAccent.b(),45);
@@ -226,9 +250,13 @@ void CFeatures_Menu::Render(){
    Checkbox(mouse,"ESP name",&Vars::ESP::bName);
    Checkbox(mouse,"ESP distance",&Vars::ESP::bDistance);
    Checkbox(mouse,"ESP items",&Vars::ESP::bItems);
-    Checkbox(mouse,"ESP commons",&Vars::ESP::bCommon);
-    Checkbox(mouse,"Snaplines",&Vars::ESP::bSnaplines);
-    Checkbox(mouse,"Filled boxes",&Vars::ESP::bFilled);
+     Checkbox(mouse,"ESP commons",&Vars::ESP::bCommon);
+     Checkbox(mouse,"ESP special infected",&Vars::ESP::bSpecialBoxes);
+     Checkbox(mouse,"ESP witch",&Vars::ESP::bBossBoxes);
+     Checkbox(mouse,"Snaplines",&Vars::ESP::bSnaplines);
+     Checkbox(mouse,"Filled boxes",&Vars::ESP::bFilled);
+     Checkbox(mouse,"HP text near bar",&Vars::ESP::bHealthText);
+     Checkbox(mouse,"Weapon text",&Vars::ESP::bWeaponText);
    Checkbox(mouse,"Chams",&Vars::Chams::bEnabled);
    Checkbox(mouse,"Chams through walls",&Vars::Chams::bThroughWalls);
    Button(mouse,"Chams palette >",[](){ Vars::Chams::nPalette=(Vars::Chams::nPalette+1)%5; });
@@ -256,28 +284,37 @@ void CFeatures_Menu::Render(){
     break;
    }
    case 2:{
-    SliderInt(mouse,"Viewmodel FOV x100",&Vars::Visuals::nViewFOVSlider,50,300);
+    SliderInt(mouse,"FOV x100 (view+model)",&Vars::Visuals::nViewFOVSlider,50,300);
     Checkbox(mouse,"No fog",&Vars::Visuals::bNoFog);
+    Checkbox(mouse,"Third person",&Vars::Visuals::bThirdPerson);
+    if(Vars::Visuals::bThirdPerson) SliderInt(mouse,"3rd person distance",&Vars::Visuals::nThirdPersonDist,30,200);
     Checkbox(mouse,"Crosshair",&Vars::Visuals::bCrosshair);
     SliderInt(mouse,"Crosshair size",&Vars::Visuals::nCrosshairSize,2,30);
     Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
     break;
    }
    case 3:{
-   Checkbox(mouse,"Aimbot",&Vars::Aimbot::bEnabled);
-   Checkbox(mouse,"Auto shoot",&Vars::Aimbot::bAutoShoot);
+    Checkbox(mouse,"Aimbot",&Vars::Aimbot::bEnabled);
+    Checkbox(mouse,"Auto shoot",&Vars::Aimbot::bAutoShoot);
     Checkbox(mouse,"Silent aim",&Vars::Aimbot::bSilent);
+    static char szHitbox[32]; sprintf_s(szHitbox,"Hitbox: %s >",Vars::Aimbot::nHitbox?"Center":"Head");
+    Button(mouse,szHitbox,[](){ Vars::Aimbot::nHitbox^=1; });
+    static char szPrio[32]; sprintf_s(szPrio,"Priority: %s >",Vars::Aimbot::nTargetPriority?"Distance":"FOV");
+    Button(mouse,szPrio,[](){ Vars::Aimbot::nTargetPriority^=1; });
+    Checkbox(mouse,"Visible only",&Vars::Aimbot::bVisibleOnly);
+    Checkbox(mouse,"Skip incapped",&Vars::Aimbot::bIgnoreIncapped);
     Checkbox(mouse,"Target commons",&Vars::Aimbot::bTargetCommons);
     Checkbox(mouse,"Target specials",&Vars::Aimbot::bTargetSpecials);
-   SliderInt(mouse,"Aim FOV x10",&Vars::Aimbot::nFOVSlider,5,300);
-   SliderInt(mouse,"Smoothing",&Vars::Aimbot::nSmoothSlider,0,60);
-   BindRow(mouse,"Aimbot key",&Vars::Aimbot::nKey);
-   Checkbox(mouse,"Trigger bot",&Vars::TriggerBot::bEnabled);
-   BindRow(mouse,"Trigger key",&Vars::TriggerBot::nKey);
-   Checkbox(mouse,"Auto pistol",&Vars::AutoPistol::bEnabled);
-   Checkbox(mouse,"Auto shove",&Vars::AutoShove::bEnabled);
-   break;
-  }
+    SliderInt(mouse,"Aim FOV x10",&Vars::Aimbot::nFOVSlider,5,300);
+    SliderInt(mouse,"Smoothing",&Vars::Aimbot::nSmoothSlider,0,60);
+    BindRow(mouse,"Aimbot key",&Vars::Aimbot::nKey);
+    Checkbox(mouse,"Trigger bot",&Vars::TriggerBot::bEnabled);
+    Checkbox(mouse,"Trigger visible only",&Vars::TriggerBot::bVisibleOnly);
+    BindRow(mouse,"Trigger key",&Vars::TriggerBot::nKey);
+    Checkbox(mouse,"Auto pistol",&Vars::AutoPistol::bEnabled);
+    Checkbox(mouse,"Auto shove",&Vars::AutoShove::bEnabled);
+    break;
+   }
   default:{
     Button(mouse,"Save config",[](){F::Config.Save();});
     Button(mouse,"Load config",[](){F::Config.Load();
@@ -414,7 +451,12 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
  m_nItemY+=nRowH;
 }
 void CFeatures_Menu::DrawPanel(){
+ //виньетка: тонкие затемнения сверху/снизу панели для глубины
+ G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,4,Color(255,255,255,10));
+ G::Draw.Rect(m_rc.nX,(m_rc.nY+m_rc.nH)-4,m_rc.nW,4,Color(0,0,0,40));
  G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_BG);
+ //тонкая внутренняя рамка-акцент по периметру (премиальная глубина)
+ G::Draw.OutlinedRect(m_rc.nX+2,m_rc.nY+2,m_rc.nW-4,m_rc.nH-4,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),28));
  G::Draw.Rect(m_rc.nX,m_rc.nY,2,m_rc.nH,CLR_ACCENT_SOFT);
  G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,40,CLR_HEADER);
 	DrawRgbLogo(m_rc.nX+16,m_rc.nY+4);

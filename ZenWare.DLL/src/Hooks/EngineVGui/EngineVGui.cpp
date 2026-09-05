@@ -62,8 +62,9 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 		G::Draw.m_nScreenH = rcGame.bottom;
 	}
 
-	I::MatSystemSurface->StartDrawing();
+ I::MatSystemSurface->StartDrawing();
 	{
+		F::Visuals.UpdateThirdPerson();
 		F::ESP.Render();
 		F::Menu.Render();
 		F::Visuals.DrawCrosshair();

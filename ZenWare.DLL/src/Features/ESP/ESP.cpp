@@ -65,21 +65,23 @@ void CFeatures_ESP::Render()
 
 				break;
 			}
-			case Hunter:
-			case Smoker:
-			case Jockey:
-			case Spitter:
-			case Charger:
-			case Tank:
-			{
+		case Hunter:
+		case Smoker:
+		case Jockey:
+		case Spitter:
+		case Charger:
+		case Tank:
+		{
+			if (Vars::ESP::bSpecialBoxes)
 				DrawSpecial(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_ClassID);
-				break;
-			}
-			case Witch:
-			{
+			break;
+		}
+		case Witch:
+		{
+			if (Vars::ESP::bBossBoxes)
 				DrawBoss(pEntity->As<C_BaseEntity*>());
-				break;
-			}
+			break;
+		}
 			default:
 				break;
 		}
@@ -155,6 +157,9 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 		G::Draw.Rect(x - nBarW - 2, nBarTop, nBarW, nBarH / 2,
 			{ clrHP.r() + 60 > 255 ? 255 : clrHP.r() + 60, clrHP.g() + 60 > 255 ? 255 : clrHP.g() + 60, clrHP.b(), 255 });
 		G::Draw.Rect(x - nBarW - 2, nBarTop + nBarH / 2, nBarW, nBarH - nBarH / 2, clrHP);
+
+		if (Vars::ESP::bHealthText)
+			G::Draw.String(EFonts::ESP, x - nBarW - 8, y + (h / 2) - G::Draw.GetFontHeight(EFonts::ESP) / 2, clrHP, TXT_CENTERXY, "%i", nHealth);
 	}
 
 	//Nickname (+distance) and HP text above the box.
@@ -172,8 +177,10 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 		nTextY -= G::Draw.GetFontHeight(EFonts::ESP);
 		G::Draw.String(EFonts::ESP, nCenterX, nTextY, clrHP, TXT_CENTERXY, "%ihp", nHealth);
 
-		// Held weapon - через netvar m_hActiveWeapon (надёжнее виртуалки)
-		EHANDLE hActive = pPlayer->m_hActiveWeapon();
+	// Held weapon - через netvar m_hActiveWeapon (надёжнее виртуалки)
+	if (Vars::ESP::bWeaponText)
+	{
+	EHANDLE hActive = pPlayer->m_hActiveWeapon();
 		C_BaseEntity* pEntActive = nullptr;
 		if (hActive.IsValid())
 		{
@@ -218,7 +225,8 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 				G::Draw.String(EFonts::ESP_WEAPON, nCenterX, nTextY, Color(220,220,220,255), TXT_CENTERXY, "%ls", wszDisplay);
 			}
 		}
-	}
+	} // bWeaponText
+	} // bName
 }
 
 void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
@@ -356,9 +364,22 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	}
 
 	const Color& clrTeam = Vars::Chams::clrEnemy;
+	if (Vars::ESP::bFilled)
+		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
 	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrTeam);
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szName);
+
+	//HP и дистанция для спец-заражённых
+	if (Vars::ESP::bHealthText || Vars::ESP::bDistance)
+	{
+		char szInfo[32] = { };
+		const int nHP = pPl->GetHealth();
+		if (Vars::ESP::bHealthText) sprintf_s(szInfo, "%ihp", nHP);
+		if (Vars::ESP::bDistance) sprintf_s(szInfo + strlen(szInfo), sizeof(szInfo) - strlen(szInfo), "%s%.0fm", szInfo[0] ? " " : "", G::Util.GetEyePosition(pLocal).DistTo(pEntity->m_vecOrigin()) / 52.5f);
+		if (szInfo[0])
+			G::Draw.String(EFonts::ESP, x + (w / 2), y + h + 2, Color(230, 230, 230, 255), TXT_CENTERXY, "%s", szInfo);
+	}
 }
 
 void CFeatures_ESP::DrawBoss(C_BaseEntity* pEntity)

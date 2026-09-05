@@ -40,7 +40,9 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 		const int nSide = (cmd->mousedx > 0) ? 1 : -1;
 		s_nLastSide = nSide;
-		cmd->sidemove = 450.0f * static_cast<float>(nSide);
+		//плавный отклик: слабое движение мыши -> меньший side, резкий флик -> полный 450
+		const float flRatio = U::Math.Clamp(fabsf((float)cmd->mousedx) / 12.0f, 0.25f, 1.0f);
+		cmd->sidemove = 450.0f * flRatio * static_cast<float>(nSide);
 	}
 	else if (mode == 1) //Rage - perfect circle strafe, persistent side
 	{

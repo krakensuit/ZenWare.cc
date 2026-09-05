@@ -4,6 +4,27 @@
 
 static const Color CLR_TEXT_HINT(140, 160, 152, 255);
 
+void CFeatures_Visuals::UpdateThirdPerson()
+{
+	static bool s_bWasOn = false;
+	const bool bWant = Vars::Visuals::bThirdPerson && I::EngineClient && I::EngineClient->IsInGame();
+
+	if (bWant == s_bWasOn)
+		return;
+
+	s_bWasOn = bWant;
+
+	if (bWant)
+	{
+		char szCmd[96] = { };
+		//локальный сервер: включаем камеру и дистанцию
+		sprintf_s(szCmd, "sv_cheats 1; cam_idealdist %d; cam_idealpitch 0; thirdperson", U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200));
+		I::EngineClient->ClientCmd_Unrestricted(szCmd);
+	}
+	else
+		I::EngineClient->ClientCmd_Unrestricted("firstperson");
+}
+
 void CFeatures_Visuals::DrawCrosshair()
 {
 	if (!Vars::Visuals::bCrosshair || !G::Draw.m_nScreenW)

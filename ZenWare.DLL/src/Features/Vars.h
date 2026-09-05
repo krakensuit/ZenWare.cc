@@ -84,6 +84,10 @@ namespace Vars
 		inline bool bCommon = true;    //common infected boxes
 		inline bool bSnaplines = false; //line from screen bottom to each box
 		inline bool bFilled = false;    //translucent fill inside boxes
+		inline bool bHealthText = false; //HP number next to health bar
+		inline bool bWeaponText = true;  //active weapon name under nickname
+		inline bool bSpecialBoxes = true; //SI boxes/names
+		inline bool bBossBoxes = true;   //witch box
 	}
 
 	namespace Visuals
@@ -95,6 +99,8 @@ namespace Vars
 		inline int nCrosshairSize = 6;
 		inline Color clrCrosshair = { 0, 255, 171, 255 };
 		inline bool bOverlay = false;   //FPS + position overlay
+		inline bool bThirdPerson = false; //3rd person camera (local server)
+		inline int nThirdPersonDist = 100; //cam_idealdist
 	}
 
 	namespace Menu

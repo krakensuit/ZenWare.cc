@@ -443,20 +443,25 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     SetTextColor(dc,Mix2(bg,Hsv(hue,0.9f,0.35f),k));
     TextOutW(dc,x0+dx,y0+dy,txt,(int)wcslen(txt));
    }
-   int cx=x0;
-   float swx=(el-1.6f)/0.8f;
-   for(const wchar_t* p=txt;*p;++p){
-    int idx=(int)(p-txt);
-    COLORREF lc=Mix2(bg,Hsv(hue+idx*5.0f,0.85f,1.0f),k);
-    if(swx>0&&swx<1.4f){
-     float dd=idx-(swx*12.0f-1.0f);
-     float bb2=expf(-dd*dd/1.5f);
-     if(bb2>0.03f) lc=Mix2(lc,RGB(255,255,255),(int)(bb2*150));
+    int cx=x0;
+    float swx=(el-1.6f)/0.8f;
+    for(const wchar_t* p=txt;*p;++p){
+     int idx=(int)(p-txt);
+     // посимвольный вылет: каждая буква выезжает снизу с overshoot-пружинкой
+     float lc=SplashEase((el-0.75f-idx*0.045f)/0.5f);
+     if(lc<=0.0f){ wchar_t c0[2]={*p,0}; SIZE cs0={0,0}; GetTextExtentPoint32W(dc,c0,1,&cs0); cx+=cs0.cx; continue; }
+     float ov=lc<1.0f?(1.0f-lc)*(1.0f-lc)*-26.0f:0.0f; // подпрыгивание в конце
+     int dy=(int)((1.0f-lc)*34+ov);
+     COLORREF lcol=Mix2(bg,Hsv(hue+idx*5.0f,0.85f,1.0f),k);
+     if(swx>0&&swx<1.4f){
+      float dd=idx-(swx*12.0f-1.0f);
+      float bb2=expf(-dd*dd/1.5f);
+      if(bb2>0.03f) lcol=Mix2(lcol,RGB(255,255,255),(int)(bb2*150));
+     }
+     SetTextColor(dc,lcol);
+     wchar_t ch[2]={*p,0}; SIZE cs={0,0}; GetTextExtentPoint32W(dc,ch,1,&cs);
+     TextOutW(dc,cx,y0+dy,ch,1); cx+=cs.cx;
     }
-    SetTextColor(dc,lc);
-    wchar_t ch[2]={*p,0}; SIZE cs={0,0}; GetTextExtentPoint32W(dc,ch,1,&cs);
-    TextOutW(dc,cx,y0,ch,1); cx+=cs.cx;
-   }
    // раскрывающаяся линия + подпись
    float lw=SplashEase((el-0.9f)/0.8f);
    if(lw>0){
@@ -481,7 +486,16 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     int hx=80+(int)(400*f);
     HBRUSH hb=CreateSolidBrush(Mix2(Acc(),RGB(255,255,255),120)); RECT hr2={hx-12,251,hx,257}; FillRect(dc,&hr2,hb); DeleteObject(hb); }
   }
-  auto os2=SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
+   { // финальная вспышка при закрытии: короткая белая заливка с затуханием
+    ULONGLONG elF=GetTickCount64()-g_splashT0;
+    if(elF>SPLASH_MS-320){
+     float ft=(float)(elF-(SPLASH_MS-320))/320.0f;
+     if(ft>1.0f) ft=1.0f;
+     HBRUSH fb=CreateSolidBrush(Mix2(bg,RGB(255,255,255),(int)(90*(1.0f-ft))));
+     RECT fr2={0,0,SPL_W,SPL_H}; FillRect(dc,&fr2,fb); DeleteObject(fb);
+    }
+   }
+   auto os2=SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
   RECT hr={0,272,SPL_W-16,292}; DrawTextW(dc,LoaderUtil::SW(L"клик — пропустить",L"click to skip"),-1,&hr,DT_RIGHT|DT_SINGLELINE);
   SelectObject(dc,os2);
   g_splashQ[3]+=GetTickCount64()-q3; ULONGLONG q4=GetTickCount64();

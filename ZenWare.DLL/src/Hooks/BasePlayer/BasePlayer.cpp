@@ -20,6 +20,16 @@ void __fastcall BasePlayer::CalcPlayerView::Detour(C_BasePlayer* pThis, void* ed
 	{
 		Func.Original<FN>()(pThis, edx, eyeOrigin, eyeAngles, fov);
 	}
+
+	//FOV от лица: множитель из меню (90 * 1.0 = дефолт)
+	if (Vars::Visuals::flViewFOV > 0.01f && pThis && !pThis->deadflag())
+	{
+		const int nLocalIdx = I::EngineClient->GetLocalPlayer();
+		IClientEntity* pLocalEnt = (nLocalIdx >= 0) ? I::ClientEntityList->GetClientEntity(nLocalIdx) : nullptr;
+
+		if (pLocalEnt && pLocalEnt->As<C_TerrorPlayer*>() == pThis)
+			fov = U::Math.Clamp(fov * Vars::Visuals::flViewFOV, 10.0f, 160.0f);
+	}
 }
 
 void BasePlayer::Init()
