@@ -37,6 +37,7 @@ namespace
 			{ "aimbot.fov", &Vars::Aimbot::flFOV },
 			{ "aimbot.smoothing", &Vars::Aimbot::flSmoothing },
 			{ "aimbot.key", &Vars::Aimbot::nKey },
+			{ "aimbot.commons", &Vars::Aimbot::bTargetCommons },
 
 			//Trigger / shove / pistol
 			{ "trigger.enabled", &Vars::TriggerBot::bEnabled },

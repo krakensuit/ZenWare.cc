@@ -159,7 +159,7 @@ bool CGlobal_GameUtil::IsTargetVisible(C_TerrorPlayer* pLocal, C_TerrorPlayer* p
 	memset(&baseTrace, 0, sizeof(baseTrace));
 
 	trace_t tr;
-	CTraceFilterHitAll filter(reinterpret_cast<IHandleEntity*>(pLocal));
+	CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
 
 	Trace(vEyePos, GetEyePosition(pTarget), MASK_SHOT, &filter, &tr);
 

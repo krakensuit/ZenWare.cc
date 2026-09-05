@@ -1,5 +1,6 @@
 #include "AutoStrafe.h"
 #include "../Vars.h"
+#include <cmath>
 
 #ifndef FL_ONGROUND
 #define FL_ONGROUND (1 << 0)
@@ -49,12 +50,15 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		if (speed < 50.0f)
 			speed = 50.0f;
 
-		//Optimal strafe yaw delta shrinks as speed grows (~15 deg at 300u/s).
-		float ideal = 15.0f;
+		//Optimal per-tick yaw delta shrinks as speed grows (atan formula,
+		//scaled to the real tick interval instead of a fixed 15 deg spin).
+		const float flInterval = (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
+		float ideal = (atanf(30.0f / speed) * 57.29578f) * (flInterval / (1.0f / 66.0f));
 
-		if (speed > 300.0f) ideal = 10.0f;
-		if (speed > 500.0f) ideal = 7.0f;
-		if (speed > 800.0f) ideal = 5.0f;
+		if (ideal < 1.0f)
+			ideal = 1.0f;
+		else if (ideal > 8.0f)
+			ideal = 8.0f;
 
 		//Flip only on explicit opposite mouse flick, never every tick
 		//(flipping every tick stalls the circle).
@@ -109,7 +113,9 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 		s_nLastSide = side;
 
-		cmd->forwardmove = 0.0f;
+		if (!(cmd->buttons & (IN_FORWARD | IN_BACK)))
+			cmd->forwardmove = 0.0f;
+
 		cmd->sidemove = 450.0f * static_cast<float>(side);
 	}
 }

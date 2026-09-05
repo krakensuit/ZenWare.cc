@@ -13,7 +13,7 @@ namespace
 		I::EngineClient->GetViewAngles(vView);
 		U::Math.AngleVectors(vView, &vForward);
 
-		CTraceFilterHitAll filter(reinterpret_cast<IHandleEntity*>(pLocal));
+		CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
 
 		trace_t tr;
 		G::Util.Trace(vEye, vEye + vForward * 8192.0f, MASK_SHOT, &filter, &tr);
@@ -40,8 +40,22 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 
 	C_TerrorPlayer* pTarget = pHit->As<C_TerrorPlayer*>();
 
-	if (!G::Util.IsValidTarget(pLocal, pTarget, Vars::TriggerBot::bVisibleOnly))
+	if (G::Util.IsValidTarget(pLocal, pTarget, Vars::TriggerBot::bVisibleOnly))
+	{
+		cmd->buttons |= IN_ATTACK;
 		return;
+	}
 
-	cmd->buttons |= IN_ATTACK;
+	if (Vars::Aimbot::bTargetCommons)
+	{
+		ClientClass* pCC = pHit->GetClientClass();
+
+		if (pCC && (pCC->m_ClassID == Infected || pCC->m_ClassID == Witch))
+		{
+			C_Infected* pInf = pHit->As<C_Infected*>();
+
+			if (pInf && G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
+				cmd->buttons |= IN_ATTACK;
+		}
+	}
 }

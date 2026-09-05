@@ -1,6 +1,73 @@
 #include "Aimbot.h"
 
 #include "../Vars.h"
+#include "../../Util/Logger/Logger.h"
+
+namespace
+{
+	bool IsCommonVisible(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vAimPoint)
+	{
+		trace_t tr;
+		CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
+		G::Util.Trace(vEyePos, vAimPoint, MASK_SHOT, &filter, &tr);
+		return !tr.DidHit();
+	}
+
+	bool FindCommonTarget(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vViewAngles, Vector& vOut)
+	{
+		bool bFound = false;
+		float flBest = 1e30f;
+
+		for (int n = 1; n <= I::ClientEntityList->GetMaxEntities(); n++)
+		{
+			IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+
+			if (!pEntity || pEntity->IsDormant())
+				continue;
+
+			ClientClass* pCC = pEntity->GetClientClass();
+
+			if (!pCC)
+				continue;
+
+			const int nID = pCC->m_ClassID;
+
+			if (nID != Infected && nID != Witch)
+				continue;
+
+			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
+			C_Infected* pInf = pEntity->As<C_Infected*>();
+
+			if (!pEnt || !pInf)
+				continue;
+
+			if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
+				continue;
+
+			Vector vAim = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.85f);
+
+			if ((vAim - vEyePos).LenghtSqr() < 1.0f)
+				continue;
+
+			if (Vars::Aimbot::bVisibleOnly && !IsCommonVisible(pLocal, vEyePos, vAim))
+				continue;
+
+			const float flFov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAim));
+
+			if (flFov > Vars::Aimbot::flFOV)
+				continue;
+
+			if (flFov < flBest)
+			{
+				flBest = flFov;
+				vOut = vAim;
+				bFound = true;
+			}
+		}
+
+		return bFound;
+	}
+}
 
 void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUserCmd* cmd)
 {
@@ -11,19 +78,41 @@ void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUse
 	Vector vViewAngles = cmd->viewangles;
 
 	C_TerrorPlayer* pTarget = FindTarget(pLocal, vEyePos, vViewAngles);
-
-	if (!pTarget)
-		return;
-
 	Vector vAimPoint;
-	if (!GetAimPoint(pTarget, vAimPoint))
+	bool bHavePlayer = (pTarget && GetAimPoint(pTarget, vAimPoint));
+
+	Vector vCommonPoint;
+	bool bHaveCommon = (Vars::Aimbot::bTargetCommons && FindCommonTarget(pLocal, vEyePos, vViewAngles, vCommonPoint));
+
+	if (bHavePlayer && bHaveCommon)
+	{
+		const float flP = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAimPoint));
+		const float flC = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vCommonPoint));
+
+		if (flC < flP)
+		{
+			bHavePlayer = false;
+			pTarget = nullptr;
+		}
+		else
+			bHaveCommon = false;
+	}
+
+	if (!bHavePlayer && !bHaveCommon)
 		return;
+
+	if (bHaveCommon)
+	{
+		vAimPoint = vCommonPoint;
+		pTarget = nullptr;
+		ZTRACE_FIRST("Aimbot:common");
+	}
 
 	//Guard against degenerate direction (NaN protection for GetAngleToPosition).
 	if ((vAimPoint - vEyePos).LenghtSqr() < 1.0f)
 		return;
 
-	if (Vars::Aimbot::bVisibleOnly && !G::Util.IsTargetVisible(pLocal, pTarget, vEyePos))
+	if (bHavePlayer && Vars::Aimbot::bVisibleOnly && !G::Util.IsTargetVisible(pLocal, pTarget, vEyePos))
 		return;
 
 	Vector vAngleTo = U::Math.GetAngleToPosition(vEyePos, vAimPoint);

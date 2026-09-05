@@ -89,6 +89,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Aimbot","Aimbot","Silent aim at head or center within FOV. Hold the aim key."},
 		{"Auto shoot","Auto shoot","Fires automatically while a target is locked."},
 		{"Silent aim","Silent aim","The server sees aimed angles, your screen stays still."},
+		{"Target commons","Target commons","Aimbot and triggerbot also lock common infected and the witch, not just specials."},
 		{"Aim FOV x10","Aim FOV","Target search radius around the crosshair, in 0.1 degrees."},
 		{"Smoothing","Smoothing","0 snaps instantly. Higher values look more human."},
 		{"Aimbot key","Aimbot key","Hold to enable the aimbot. Click to rebind, ESC clears."},
@@ -233,7 +234,8 @@ void CFeatures_Menu::Render(){
    case 3:{
    Checkbox(mouse,"Aimbot",&Vars::Aimbot::bEnabled);
    Checkbox(mouse,"Auto shoot",&Vars::Aimbot::bAutoShoot);
-   Checkbox(mouse,"Silent aim",&Vars::Aimbot::bSilent);
+    Checkbox(mouse,"Silent aim",&Vars::Aimbot::bSilent);
+    Checkbox(mouse,"Target commons",&Vars::Aimbot::bTargetCommons);
    SliderInt(mouse,"Aim FOV x10",&Vars::Aimbot::nFOVSlider,5,300);
    SliderInt(mouse,"Smoothing",&Vars::Aimbot::nSmoothSlider,0,60);
    BindRow(mouse,"Aimbot key",&Vars::Aimbot::nKey);

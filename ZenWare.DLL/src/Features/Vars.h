@@ -18,6 +18,7 @@ namespace Vars
 		inline float flSmoothing = 0.0f;
 		inline int nSmoothSlider = 0;
 		inline int nKey = 0; // 0 = always on
+		inline bool bTargetCommons = true; //also lock common infected + witch
 	}
 
 	namespace TriggerBot

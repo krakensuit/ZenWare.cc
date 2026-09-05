@@ -210,8 +210,9 @@ static COLORREF LerpC2(COLORREF a,COLORREF b,float t){
  if(t<0)t=0; if(t>1)t=1;
  return RGB((int)(GetRValue(a)+(GetRValue(b)-GetRValue(a))*t),(int)(GetGValue(a)+(GetGValue(b)-GetGValue(a))*t),(int)(GetBValue(a)+(GetBValue(b)-GetBValue(a))*t));
 }
-static COLORREF Acc(){ Theme_t& th=g_theme; return LerpC2(th.accent,th.red,g_flModeT); }
-static COLORREF Acc2(){ Theme_t& th=g_theme; return LerpC2(th.accent2,th.red2,g_flModeT); }
+static bool g_bParty=false;
+static COLORREF Acc(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.85f,1.0f); } Theme_t& th=g_theme; return LerpC2(th.accent,th.red,g_flModeT); }
+static COLORREF Acc2(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.9f,0.6f); } Theme_t& th=g_theme; return LerpC2(th.accent2,th.red2,g_flModeT); }
 static void ClassifyStatus(const wchar_t* t){
  if(!t) return;
  auto has=[](const wchar_t* h,const wchar_t* n){ return wcsstr(h,n)!=nullptr; };
@@ -269,7 +270,11 @@ LRESULT DrawBtn(LPARAM lp){
   RECT r=cr; InflateRect(&r,-1,-1); RoundRect(d->hDC,r.left,r.top,r.right,r.bottom,10,10);
   SelectObject(d->hDC,nb); SelectObject(d->hDC,ob); DeleteObject(bp);
  }
- SetBkMode(d->hDC,TRANSPARENT); SetTextColor(d->hDC,txt); auto o3=SelectObject(d->hDC,g_fUI);
+  { // стеклянный блик сверху кнопки
+   HBRUSH hb=CreateSolidBrush(Mix2(fill,RGB(255,255,255),26));
+   RECT hr={cr.left+3,cr.top+1,cr.right-3,cr.top+3}; FillRect(d->hDC,&hr,hb); DeleteObject(hb);
+  }
+  SetBkMode(d->hDC,TRANSPARENT); SetTextColor(d->hDC,txt); auto o3=SelectObject(d->hDC,g_fUI);
  wchar_t t[64]={}; GetWindowTextW(d->hwndItem,t,64);
  RECT r2=cr; DrawTextW(d->hDC,t,-1,&r2,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
  SelectObject(d->hDC,o3);
@@ -637,6 +642,17 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    int x=GET_X_LPARAM(l), y=GET_Y_LPARAM(l);
    POINT cp{x,y};
    if(PtInRect(&g_rcMode,cp)) ToggleMode();
+   {
+    RECT lr={22,8,220,50};
+    static DWORD slc=0; static int sln=0;
+    if(PtInRect(&lr,cp)){
+     DWORD now=GetTickCount();
+     if(now-slc<600){ if(++sln>=3){ sln=0;
+      MessageBoxW(h,LoaderUtil::SW(L"ZenWare.cc — internal & external, x86.\nТы нашёл секрет #1. А второй вводится с клавиатуры...",L"ZenWare.cc — internal & external, x86.\nYou found secret #1. The second one is typed on the keyboard..."),L"ZenWare",MB_ICONINFORMATION); } }
+     else sln=1;
+     slc=now;
+    }
+   }
    break;
   }
   case WM_MOUSELEAVE:{
@@ -653,13 +669,30 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    HBITMAP bmp=CreateCompatibleBitmap(hdc,bw,bh);
    HGDIOBJ oldBmp=SelectObject(mem,bmp);
    HDC dc=mem; FillRect(dc,&rc,g_brBg);
+   { // дрейфующая пыль по фону (детерминированная, без состояния)
+    float elP=GetTickCount64()/1000.0f;
+    float spd=g_bParty?3.0f:1.0f;
+    for(int i=0;i<36;i++){
+     int px=(int)(i*97+elP*11*spd*(1+i%3))%bw;
+     int py=(int)(i*131-elP*7*spd)%bh; if(py<0)py+=bh;
+     int pa=g_bParty?60:14+(i*7)%18;
+     HBRUSH pb=CreateSolidBrush(Mix2(g_theme.bg,g_theme.dim,pa));
+     RECT pr={px,py,px+2,py+2}; FillRect(dc,&pr,pb); DeleteObject(pb);
+    }
+   }
   // тёмная шапка с тонкой мятной линией снизу
   RECT hdr={0,0,rc.right,66};
   HBRUSH hb=CreateSolidBrush(g_theme.dark?RGB(8,11,10):RGB(228,242,235));
   FillRect(dc,&hdr,hb); DeleteObject(hb);
-  HPEN lp=CreatePen(PS_SOLID,1,Acc()); auto ol=SelectObject(dc,lp);
-  MoveToEx(dc,0,66,nullptr); LineTo(dc,rc.right,66);
-  SelectObject(dc,ol); DeleteObject(lp);
+   HPEN lp=CreatePen(PS_SOLID,2,Acc()); auto ol=SelectObject(dc,lp);
+   MoveToEx(dc,0,66,nullptr); LineTo(dc,rc.right,66);
+   SelectObject(dc,ol); DeleteObject(lp);
+   { // бегущий блик по линии шапки
+    float elP=GetTickCount64()/1000.0f;
+    int sx=(int)fmodf(elP*170.0f,(float)(rc.right+240))-120;
+    HBRUSH sb=CreateSolidBrush(Mix2(Acc(),RGB(255,255,255),150));
+    RECT sr={sx,64,sx+90,68}; FillRect(dc,&sr,sb); DeleteObject(sb);
+   }
   // радужный логотип
   DrawRgbLogo(dc,22,8);
    // пилюля-кнопка режима справа
@@ -719,7 +752,16 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    }
    else if(HIWORD(w)==EN_SETFOCUS || HIWORD(w)==EN_KILLFOCUS){ RECT pf={20,100,424,134}; InvalidateRect(h,&pf,FALSE); }
   break;
- case WM_DESTROY: PostQuitMessage(0); break;
+  case WM_KEYDOWN:{
+   static const int seq[]={VK_UP,VK_UP,VK_DOWN,VK_DOWN,VK_LEFT,VK_RIGHT,VK_LEFT,VK_RIGHT,'B','A'};
+   static int si=0;
+   int k=(int)w;
+   if(k==seq[si]){ if(++si>=10){ si=0; g_bParty=!g_bParty;
+    LoaderUtil::Status(h,LoaderUtil::S(g_bParty?"PARTY MODE включен":"PARTY MODE выключен",g_bParty?"PARTY MODE on":"PARTY MODE off")); } }
+   else si=(k==seq[0])?1:0;
+   break;
+  }
+  case WM_DESTROY: PostQuitMessage(0); break;
  default: return DefWindowProcW(h,m,w,l);
  }
  return 0;
