@@ -1,0 +1,6 @@
+﻿ZenWare - kak zapustit (tolko svoy lokalny server!):
+1. Zapusti igru (knopka v loadere ili Steam).
+2. V konsoli igry: map c1m1_hotel (ili lyubaya lokalnaya karta).
+3. V loadere vyberi rezhim (tabletka sverhu): EXTERNAL ili INTERNAL,
+   nazhmi bolshuyu knopku. Vse nuzhnoe raspakuetsya samo.
+4. Menyu v igre: INSERT. Vygruzka chita: F11.

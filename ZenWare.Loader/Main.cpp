@@ -144,6 +144,13 @@ static bool FindDll(wchar_t* out){
   GetFullPathNameW(t,MAX_PATH,f,nullptr);
   if(GetFileAttributesW(f)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,f); return true; }
  }
+ // Однофайловая раздача: DLL вшита в ресурсы лоадера -> распаковываем в %TEMP%
+ std::vector<BYTE> vec;
+ if(LoaderUtil::LoadDllFromResource(vec)){
+  LoaderUtil::Log(g_hMain,"[*] DLL from embedded resource: %u bytes.",(unsigned)vec.size());
+  if(LoaderUtil::WriteTempFile(L"ZenWare.dll",vec,out)) return true;
+  LoaderUtil::Log(g_hMain,"[!] Failed to extract embedded DLL to TEMP.");
+ }
  return false;
 }
 void ToggleMode(){
@@ -169,6 +176,18 @@ void LaunchExternal(){
   if(GetFileAttributesW(f)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(goods,MAX_PATH,f); break; }
  }
  if(!goods[0]){
+  // Однофайловая раздача: External вшит в ресурсы -> распаковываем в %TEMP% и запускаем
+  std::vector<BYTE> vec;
+  if(LoaderUtil::LoadExternalFromResource(vec)){
+   LoaderUtil::Log(g_hMain,"[*] External from embedded resource: %u bytes.",(unsigned)vec.size());
+   wchar_t tmp[MAX_PATH]={};
+   if(LoaderUtil::WriteTempFile(L"ZenWare.External.exe",vec,tmp)){
+    ShellExecuteW(nullptr,L"open",tmp,nullptr,nullptr,SW_SHOWNORMAL);
+    LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched"));
+    return;
+   }
+   LoaderUtil::Log(g_hMain,"[!] Failed to extract embedded External to TEMP.");
+  }
   LoaderUtil::Status(g_hMain,LoaderUtil::S("External не найден — собери проект","External not found — build it"));
   LoaderUtil::Log(g_hMain,"[!] External exe not found, tried:");
   for(int i=0;i<3;i++){ char nb[MAX_PATH*2]={}; WideCharToMultiByte(CP_ACP,0,tried[i],-1,nb,sizeof(nb),nullptr,nullptr); LoaderUtil::Log(g_hMain,"[?] %s",nb); }
@@ -521,6 +540,9 @@ static bool FindLogo(wchar_t* out){
  wcscpy_s(t,dir); wcscat_s(t,L"\\zenwareLOGO.png");
  if(GetFileAttributesW(t)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,t); return true; }
  if(GetFileAttributesW(L"zenwareLOGO.png")!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,L"zenwareLOGO.png"); return true; }
+ // Однофайловая раздача: логотип вшит в ресурсы -> распаковываем в %TEMP%
+ std::vector<BYTE> vec;
+ if(LoaderUtil::LoadLogoFromResource(vec) && LoaderUtil::WriteTempFile(L"zenwareLOGO.png",vec,out)) return true;
  return false;
 }
 void RunSplash(HINSTANCE hi){
@@ -830,6 +852,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
 int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  LoaderUtil::g_bRuLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN);
  LoaderUtil::InitFileLog();
+ LoaderUtil::CleanupOldTempExtracts(); // подчистить старые распаковки из %TEMP%
  WNDCLASSEXW wc{sizeof(wc),CS_HREDRAW|CS_VREDRAW,WndProc,0,0,hi,LoadIconW(hi,MAKEINTRESOURCEW(IDI_MAINICON)),LoadCursorW(nullptr,IDC_ARROW),nullptr,nullptr,L"Zw3Wnd",(HICON)LoadImageW(hi,MAKEINTRESOURCEW(IDI_MAINICON),IMAGE_ICON,GetSystemMetrics(SM_CXSMICON),GetSystemMetrics(SM_CYSMICON),0)};
  RegisterClassExW(&wc);
  WNDCLASSEXW ws{sizeof(ws),CS_HREDRAW|CS_VREDRAW,SplashProc,0,0,hi,LoadIconW(hi,MAKEINTRESOURCEW(IDI_MAINICON)),LoadCursorW(nullptr,IDC_ARROW),nullptr,nullptr,L"ZwSplash",nullptr};

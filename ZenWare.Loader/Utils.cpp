@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include "resource.h"
 
 #include <tlhelp32.h>
 #include <cstdarg>
@@ -161,21 +162,123 @@ void LoaderUtil::Status(const HWND hwndLog, const char* const szText)
 	PostPacket(hwndLog, KIND_STATUS, szText);
 }
 
-bool LoaderUtil::LoadDllFromResource(std::vector<BYTE>& out)
+bool LoaderUtil::LoadResourceBytes(int nResId, std::vector<BYTE>& out)
 {
-	HRSRC hRes = FindResourceW(NULL, MAKEINTRESOURCEW(101), RT_RCDATA);
+	HRSRC hRes = FindResourceW(NULL, MAKEINTRESOURCEW(nResId), RT_RCDATA);
 	if (!hRes) return false;
 	HGLOBAL hMem = LoadResource(NULL, hRes);
 	if (!hMem) return false;
 	DWORD sz = SizeofResource(NULL, hRes);
 	if (!sz) return false;
-	BYTE* p = (BYTE*)LockResource(hMem);
+	const BYTE* p = (const BYTE*)LockResource(hMem);
 	if (!p) return false;
 	out.assign(p, p + sz);
+	return !out.empty();
+}
+
+bool LoaderUtil::LoadDllFromResource(std::vector<BYTE>& out)
+{
+	if (!LoadResourceBytes(IDR_ZENWARE_DLL, out))
+		return false;
 	// de-xor if was xored (our build xors with 0x5A)
 	// try detect: if first two bytes are not MZ, try xor
 	if (out.size() >= 2 && !(out[0] == 'M' && out[1] == 'Z')) {
 		for (auto &b : out) b ^= 0x5A;
 	}
 	return out.size() > 0 && out[0] == 'M' && out[1] == 'Z';
+}
+
+bool LoaderUtil::LoadExternalFromResource(std::vector<BYTE>& out)
+{
+	if (!LoadResourceBytes(IDR_ZENWARE_EXTERNAL, out))
+		return false;
+	return out.size() >= 2 && out[0] == 'M' && out[1] == 'Z';
+}
+
+bool LoaderUtil::LoadLogoFromResource(std::vector<BYTE>& out)
+{
+	static const BYTE kPngMagic[8] = { 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A };
+	if (!LoadResourceBytes(IDR_LOGO_PNG, out))
+		return false;
+	return out.size() > 8 && memcmp(out.data(), kPngMagic, sizeof(kPngMagic)) == 0;
+}
+
+bool LoaderUtil::WriteTempFile(const wchar_t* wszName, const std::vector<BYTE>& data, wchar_t* wszOutPath)
+{
+	if (!wszName || !wszName[0] || data.empty() || data.size() > 0x4000000)
+		return false;
+
+	wchar_t wszTemp[MAX_PATH] = { };
+	if (!GetTempPathW(MAX_PATH, wszTemp))
+		return false;
+
+	for (int i = 0; i < 8; i++)
+	{
+		wchar_t wszFile[MAX_PATH] = { };
+		if (i == 0)
+		{
+			wcscpy_s(wszFile, wszName);
+		}
+		else
+		{
+			// Locked (still mapped/running)? use a unique sibling name.
+			const wchar_t* dot = wcsrchr(wszName, L'.');
+			if (dot)
+				swprintf_s(wszFile, L"%.*s_%lu_%lu%ls", (int)(dot - wszName), wszName, GetCurrentProcessId(), GetTickCount(), dot);
+			else
+				swprintf_s(wszFile, L"%ls_%lu_%lu", wszName, GetCurrentProcessId(), GetTickCount());
+			if (i > 1) Sleep(5); // let the tick differ
+		}
+
+		wchar_t wszFull[MAX_PATH] = { };
+		wcscpy_s(wszFull, wszTemp);
+		wcscat_s(wszFull, wszFile);
+
+		HANDLE h = CreateFileW(wszFull, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (h == INVALID_HANDLE_VALUE)
+			continue;
+
+		DWORD dwWritten = 0;
+		const BOOL bOk = WriteFile(h, data.data(), (DWORD)data.size(), &dwWritten, nullptr);
+		CloseHandle(h);
+
+		if (!bOk || dwWritten != (DWORD)data.size())
+		{
+			DeleteFileW(wszFull);
+			continue;
+		}
+
+		if (wszOutPath)
+			wcscpy_s(wszOutPath, MAX_PATH, wszFull);
+		return true;
+	}
+	return false;
+}
+
+void LoaderUtil::CleanupOldTempExtracts()
+{
+	wchar_t wszTemp[MAX_PATH] = { };
+	if (!GetTempPathW(MAX_PATH, wszTemp))
+		return;
+
+	static const wchar_t* kPatterns[] = { L"ZenWare_*.dll", L"ZenWare.External_*.exe" };
+	for (auto pat : kPatterns)
+	{
+		wchar_t wszMask[MAX_PATH] = { };
+		wcscpy_s(wszMask, wszTemp);
+		wcscat_s(wszMask, pat);
+
+		WIN32_FIND_DATAW ff = { };
+		HANDLE hFind = FindFirstFileW(wszMask, &ff);
+		if (hFind == INVALID_HANDLE_VALUE)
+			continue;
+		do
+		{
+			wchar_t wszFull[MAX_PATH] = { };
+			wcscpy_s(wszFull, wszTemp);
+			wcscat_s(wszFull, ff.cFileName);
+			DeleteFileW(wszFull); // best effort: locked files just stay
+		} while (FindNextFileW(hFind, &ff));
+		FindClose(hFind);
+	}
 }

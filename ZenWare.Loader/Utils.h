@@ -36,6 +36,23 @@ namespace LoaderUtil
 	// Tries to load embedded DLL from RCDATA resource IDR_ZENWARE_DLL
 	bool LoadDllFromResource(std::vector<BYTE>& out);
 
+	//Raw bytes of any RCDATA resource (no magic checks).
+	bool LoadResourceBytes(int nResId, std::vector<BYTE>& out);
+
+	//Embedded ZenWare.External.exe (IDR_ZENWARE_EXTERNAL), MZ-verified.
+	bool LoadExternalFromResource(std::vector<BYTE>& out);
+
+	//Embedded splash logo png (IDR_LOGO_PNG), PNG-verified.
+	bool LoadLogoFromResource(std::vector<BYTE>& out);
+
+	//Writes bytes to %TEMP%\wszName (overwrites each run so updates apply).
+	//If the file is locked (e.g. a DLL still mapped into the game), falls back
+	//to a unique ZenWare_<pid>_<tick> name. Full path lands in wszOutPath.
+	bool WriteTempFile(const wchar_t* wszName, const std::vector<BYTE>& data, wchar_t* wszOutPath);
+
+	//Best-effort cleanup of stale unique-named extracts, errors ignored.
+	void CleanupOldTempExtracts();
+
 	//[HH:MM:SS.mmm] stamp for detailed logs.
 	void TimeStamp(char* szOut, const size_t nOutLen);
 

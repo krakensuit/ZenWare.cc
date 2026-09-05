@@ -2,3 +2,7 @@
 #include <windows.h>
 IDI_MAINICON ICON "icon.ico"
 IDR_ZENWARE_DLL RCDATA "..\\ZenWare.DLL\\bin\\Release\\ZenWare.dll"
+// Однофайловая раздача: External и логотип тоже вшиты в лоадер.
+// Собери сначала ZenWare.DLL и ZenWare.External в Release (или всё решение целиком).
+IDR_ZENWARE_EXTERNAL RCDATA "..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"
+IDR_LOGO_PNG RCDATA "zenwareLOGO.png"

@@ -1,3 +1,5 @@
 #pragma once
 #define IDR_ZENWARE_DLL 101
 #define IDI_MAINICON 102
+#define IDR_ZENWARE_EXTERNAL 103
+#define IDR_LOGO_PNG 104
