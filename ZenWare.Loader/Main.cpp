@@ -54,6 +54,13 @@ static float g_flModeT=0.0f, g_flModeTarget=0.0f; // 0=external мятный, 1=
 HWND g_hMain=nullptr, g_hInject=nullptr, g_hStatus=nullptr, g_hLaunch=nullptr;
 static bool g_bExternal=true, g_bModeHov=false;
 static RECT g_rcMode={0,0,0,0};
+// dt-анимации: экспоненциальное сглаживание вместо фиксированного шага
+static float g_flHovLaunch=0.0f, g_flHovInject=0.0f; // подсветка кнопок под курсором
+static float g_flPressMode=0.0f; // тактильный отклик пилюли режима
+static float g_flWinAlpha=0.0f;  // fade-in главного окна
+static bool g_bFading=true;
+static ULONGLONG g_ullLastTick=0;
+static float Approach(float cur,float target,float dt,float speed){ return cur+(target-cur)*(1.0f-expf(-dt*speed)); }
 HBRUSH g_brBg=nullptr,g_brCtl=nullptr,g_brBorder=nullptr;
 HFONT g_fUI=nullptr,g_fTitle=nullptr,g_fSmall=nullptr;
 bool g_busy=false;
@@ -223,28 +230,27 @@ static void ClassifyStatus(const wchar_t* t){
  else if(g_busy) g_dotColor=Acc();
 }
 LRESULT DrawBtn(LPARAM lp){
- auto d=(LPDRAWITEMSTRUCT)lp; if(!d) return TRUE;
- bool en=IsWindowEnabled(d->hwndItem); bool pr=(d->itemState & ODS_SELECTED)!=0; bool pri=(d->CtlID==IDC_INJECT);
- bool hov=(GetCapture()==d->hwndItem)||(d->itemState & ODS_FOCUS && false);
- POINT pt={0,0}; GetCursorPos(&pt); ScreenToClient(d->hwndItem,&pt);
- RECT cr; GetClientRect(d->hwndItem,&cr);
- hov = en && PtInRect(&cr,pt);
+  auto d=(LPDRAWITEMSTRUCT)lp; if(!d) return TRUE;
+   bool en=IsWindowEnabled(d->hwndItem); bool pri=(d->CtlID==IDC_INJECT);
+   bool pr=(d->itemState & ODS_SELECTED)!=0;
+   RECT cr; GetClientRect(d->hwndItem,&cr);
  // закрасить всё поле кнопки цветом диалога и обрезать рисование скруглением,
  // иначе по краям остаются неокрашенные белые пиксели
  FillRect(d->hDC,&cr,g_brBg);
  HRGN rgClip=CreateRoundRectRgn(cr.left,cr.top,cr.right+1,cr.bottom+1,12,12);
  SelectClipRgn(d->hDC,rgClip);
- COLORREF fill=g_theme.ctl, txt=g_theme.text, br=Mix2(g_theme.border,Acc(),110);
- if(pri&&en){
-  fill=hov?Mix2(Acc(),RGB(255,255,255),50):Acc(); txt=g_theme.dark?RGB(4,12,8):RGB(255,255,255); br=Acc();
+  COLORREF fill=g_theme.ctl, txt=g_theme.text, br=Mix2(g_theme.border,Acc(),110);
+  float hovF= (d->CtlID==IDC_INJECT)?g_flHovInject : (d->CtlID==IDC_LAUNCH)?g_flHovLaunch : 0.0f;
+  if(pri&&en){
+   fill=Mix2(Acc(),RGB(255,255,255),(int)(hovF*50)); txt=g_theme.dark?RGB(4,12,8):RGB(255,255,255); br=Acc();
   // вертикальный градиент поверх заливки
   TRIVERTEX vv[2]={{cr.left,cr.top,(COLOR16)(GetRValue(fill)<<8),(COLOR16)(GetGValue(fill)<<8),(COLOR16)(GetBValue(fill)<<8),0},
    {cr.right,cr.bottom,(COLOR16)(GetRValue(Acc2())<<8),(COLOR16)(GetGValue(Acc2())<<8),(COLOR16)(GetBValue(Acc2())<<8),0}};
   GRADIENT_RECT gr={0,1}; GdiGradientFill(d->hDC,vv,2,&gr,1,GRADIENT_FILL_RECT_V);
  } else {
-   if(!en){ fill=g_theme.bg; txt=g_theme.dim; }
-   else if(pr){ fill=Mix2(g_theme.ctl,Acc(),60); }
-   else if(hov){ fill=Mix2(g_theme.ctl,Acc(),36); br=Acc(); }
+    if(!en){ fill=g_theme.bg; txt=g_theme.dim; }
+    else if(pr){ fill=Mix2(g_theme.ctl,Acc(),60); }
+    else { fill=Mix2(g_theme.ctl,Acc(),(int)(hovF*36)); br=Mix2(g_theme.border,Acc(),110+(int)(hovF*145)); }
    // кнопка запуска игры: радужная обводка в ритме логотипа
    bool launch=(d->CtlID==IDC_LAUNCH);
    COLORREF rbDim=0;
@@ -560,8 +566,10 @@ void RunSplash(HINSTANCE hi){
 } // namespace
 LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  switch(m){
- case WM_CREATE:{
-  g_hMain=h; InitFonts(h); RefreshTheme();
+  case WM_CREATE:{
+   g_hMain=h; InitFonts(h); RefreshTheme();
+   SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // старт почти прозрачным для fade-in
+   g_ullLastTick=GetTickCount64();
    CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ЗАПУСТИТЬ ИГРУ",L"LAUNCH GAME"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,92,580,36,h,(HMENU)IDC_LAUNCH,nullptr,nullptr);
    g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
    g_hStatus=CreateWindowExW(0,L"STATIC",LoaderUtil::SW(L"Готов",L"Ready"),WS_CHILD|WS_VISIBLE,44,204,556,20,h,(HMENU)IDC_STATUS,nullptr,nullptr);
@@ -596,18 +604,38 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    #endif
    ApplyCtrlTheme(); SetTimer(h,1,16,nullptr); break;
  }
- case WM_TIMER:
-   if(w==1){
-    if(g_flModeT!=g_flModeTarget){
-     float dd=(g_flModeTarget>g_flModeT)?0.06f:-0.06f;
-     g_flModeT+=dd;
-     if((dd>0&&g_flModeT>g_flModeTarget)||(dd<0&&g_flModeT<g_flModeTarget)) g_flModeT=g_flModeTarget;
-     RECT all={0,0,WINDOW_W,WINDOW_H}; InvalidateRect(h,&all,FALSE);
-     HWND bi=GetDlgItem(h,IDC_INJECT), bl2=GetDlgItem(h,IDC_LAUNCH);
-     if(bi) InvalidateRect(bi,nullptr,FALSE);
-     if(bl2) InvalidateRect(bl2,nullptr,FALSE);
+  case WM_TIMER:
+    if(w==1){
+    { // dt-обновление всех плавных значений раз в кадр
+     ULONGLONG now=GetTickCount64();
+     float dt=g_ullLastTick?((float)(now-g_ullLastTick)/1000.0f):0.016f; if(dt>0.1f)dt=0.1f;
+     g_ullLastTick=now;
+     // hover кнопок: цель 1/0 по позиции курсора
+     POINT cp{0,0}; GetCursorPos(&cp); ScreenToClient(h,&cp);
+     auto hovOf=[&](int id){ HWND b=GetDlgItem(h,id); if(!b) return 0.0f; RECT r; GetWindowRect(b,&r); MapWindowPoints(HWND_DESKTOP,h,(LPPOINT)&r,2); return PtInRect(&r,cp)?1.0f:0.0f; };
+     float tL=hovOf(IDC_LAUNCH), tI=hovOf(IDC_INJECT);
+     bool changed= false;
+     float nL=Approach(g_flHovLaunch,tL,dt,14.0f); if(nL!=g_flHovLaunch){ g_flHovLaunch=nL; changed=true; }
+     float nI=Approach(g_flHovInject,tI,dt,14.0f); if(nI!=g_flHovInject){ g_flHovInject=nI; changed=true; }
+     float nP=Approach(g_flPressMode,0.0f,dt,10.0f); if(nP!=g_flPressMode){ g_flPressMode=nP; changed=true; }
+     if(g_flModeT!=g_flModeTarget){
+      float nM=Approach(g_flModeT,g_flModeTarget,dt,8.0f);
+      if(fabsf(nM-g_flModeTarget)<0.004f) nM=g_flModeTarget;
+      g_flModeT=nM; changed=true;
+      HWND bi=GetDlgItem(h,IDC_INJECT), bl2=GetDlgItem(h,IDC_LAUNCH);
+      if(bi) InvalidateRect(bi,nullptr,FALSE);
+      if(bl2) InvalidateRect(bl2,nullptr,FALSE);
+     }
+     if(g_bFading){
+      g_flWinAlpha=Approach(g_flWinAlpha,1.0f,dt,10.0f);
+      BYTE a=(BYTE)(g_flWinAlpha*255);
+      SetLayeredWindowAttributes(h,0,a,LWA_ALPHA);
+      if(g_flWinAlpha>0.985f){ g_flWinAlpha=1.0f; g_bFading=false; SetLayeredWindowAttributes(h,0,255,LWA_ALPHA); }
+      changed=true;
+     }
+     if(changed){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(h,&all,FALSE); }
     }
-    RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(h,&hdr,FALSE);
+     RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(h,&hdr,FALSE);
     // перерисовка кнопки запуска, чтобы радужная обводка анимировалась вместе с логотипом
     HWND bl=GetDlgItem(h,IDC_LAUNCH); if(bl) InvalidateRect(bl,nullptr,FALSE);
    if(g_busy){ RECT pr={20,262,600,266}; InvalidateRect(h,&pr,FALSE); }
@@ -641,7 +669,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   case WM_LBUTTONDOWN:{
    int x=GET_X_LPARAM(l), y=GET_Y_LPARAM(l);
    POINT cp{x,y};
-   if(PtInRect(&g_rcMode,cp)) ToggleMode();
+    if(PtInRect(&g_rcMode,cp)){ g_flPressMode=1.0f; ToggleMode(); }
    {
     RECT lr={22,8,220,50};
     static DWORD slc=0; static int sln=0;
@@ -702,10 +730,13 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    }
   // радужный логотип
   DrawRgbLogo(dc,22,8);
-   // пилюля-кнопка режима справа
-   RECT vr={rc.right-170,16,rc.right-20,42}; g_rcMode=vr;
-   COLORREF mfill=g_bModeHov?Mix2(g_theme.ctl,Acc(),40):(g_theme.dark?RGB(6,14,11):RGB(255,255,255));
-   HBRUSH vb=CreateSolidBrush(mfill); HPEN vp=CreatePen(PS_SOLID,1,g_bModeHov?Acc():g_theme.border);
+    // пилюля-кнопка режима справа (с тактильным сжатием при клике)
+    int sq=(int)(g_flPressMode*4.0f); // прижимается на 4px
+    RECT vr={rc.right-170+sq,16+sq/2,rc.right-20-sq,42-sq/2}; g_rcMode=vr;
+    float hovT=g_bModeHov?1.0f:0.0f;
+    static float g_flModeHovA=0.0f; g_flModeHovA=hovT; // dt-сглаживание делает WM_TIMER
+    COLORREF mfill=Mix2(g_theme.dark?RGB(6,14,11):RGB(255,255,255),Mix2(g_theme.ctl,Acc(),60),(int)(g_flModeHovA*255));
+    HBRUSH vb=CreateSolidBrush(mfill); HPEN vp=CreatePen(PS_SOLID,1,Mix2(g_theme.border,Acc(),(int)(g_flModeHovA*255)));
    auto vo1=SelectObject(dc,vb); auto vo2=SelectObject(dc,vp);
    RoundRect(dc,vr.left,vr.top,vr.right,vr.bottom,12,12);
    SelectObject(dc,vo1); SelectObject(dc,vo2); DeleteObject(vb); DeleteObject(vp);
@@ -726,11 +757,20 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    RECT sg={20+px-120,196,20+px,200}; HBRUSH sb=CreateSolidBrush(Acc()); FillRect(dc,&sg,sb); DeleteObject(sb);
    FrameRect(dc,&trk,g_brBorder);
   }
-  // статус-точка
-  HBRUSH db=CreateSolidBrush(g_dotColor); HPEN dp=CreatePen(PS_SOLID,1,g_dotColor);
-  auto od1=SelectObject(dc,db); auto od2=SelectObject(dc,dp);
-   Ellipse(dc,22,206,32,216);
-  SelectObject(dc,od1); SelectObject(dc,od2); DeleteObject(db); DeleteObject(dp);
+   // статус-точка (пульсирует, пока идёт работа)
+   COLORREF dotC=g_dotColor;
+   if(g_busy){ float pl=0.5f+0.5f*sinf(GetTickCount64()/130.0f); dotC=Mix2(Acc(),RGB(255,255,255),(int)(pl*90)); }
+   else if(dotC==RGB(120,130,124)){ float br=0.5f+0.5f*sinf(GetTickCount64()/900.0f); dotC=Mix2(g_dotColor,Acc(),(int)(br*40)); }
+   { // мягкое свечение вокруг точки
+    HBRUSH gb=CreateSolidBrush(Mix2(g_theme.bg,dotC,26));
+    RECT gr={17,201,37,221}; FillRect(dc,&gr,gb); DeleteObject(gb);
+   }
+   { // сама точка
+    HBRUSH db=CreateSolidBrush(dotC); HPEN dp=CreatePen(PS_SOLID,1,dotC);
+    auto od1=SelectObject(dc,db); auto od2=SelectObject(dc,dp);
+    Ellipse(dc,22,206,32,216);
+    SelectObject(dc,od1); SelectObject(dc,od2); DeleteObject(db); DeleteObject(dp);
+   }
   // футер
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
   RECT fr={20,306,600,326}; DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log"),-1,&fr,DT_LEFT|DT_VCENTER|DT_SINGLELINE);
@@ -785,7 +825,7 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  int ww=rc.right-rc.left, wh=rc.bottom-rc.top;
  // главное окно открывается ровно там же, где был сплэш — бесшовный переход
  int wx=(GetSystemMetrics(SM_CXSCREEN)-ww)/2, wy=(GetSystemMetrics(SM_CYSCREEN)-wh)/2;
- HWND hw=CreateWindowExW(0,wc.lpszClassName,L"ZenWare.cc Loader v3.2",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
+ HWND hw=CreateWindowExW(WS_EX_LAYERED,wc.lpszClassName,L"ZenWare.cc Loader v3.2",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
  ShowWindow(hw,cmd); UpdateWindow(hw);
  MSG m{}; while(GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m);} return (int)m.wParam;
