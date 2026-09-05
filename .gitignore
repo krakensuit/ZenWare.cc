@@ -16,6 +16,7 @@ x64/
 !ZenWare.DLL/
 *.ilk
 *.pdb
+*.obj
 *.iobj
 *.ipdb
 *.lib
