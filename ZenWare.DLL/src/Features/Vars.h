@@ -112,6 +112,13 @@ namespace Vars
 		inline bool bSpectators = true; // список наблюдателей под радаром
 	}
 
+	namespace Alerts
+	{
+		inline bool bEnabled = true; // баннеры угроз
+		inline bool bTank = true;    // танк + дистанция
+		inline bool bWitch = true;   // ведьма + дистанция
+	}
+
 	namespace Menu
 	{
 		inline bool bOpen = false;

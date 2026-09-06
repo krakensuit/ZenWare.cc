@@ -3,8 +3,28 @@
 #include "../Vars.h"
 #include "../../Util/Logger/Logger.h"
 
+#include <cctype>
+#include <cstring>
+
 namespace
 {
+	// ID нет в дампе (бумер!) или чужой билд: опознаём СИ по имени класса.
+	bool IsSpecialByName(const char* szNet)
+	{
+		if (!szNet || !szNet[0])
+			return false;
+		char szLower[64] = { };
+		int i = 0;
+		for (; i < 63 && szNet[i]; i++)
+			szLower[i] = (char)tolower((unsigned char)szNet[i]);
+		szLower[i] = '\0';
+		static const char* kSubs[] = { "hunter", "smoker", "boomer", "jockey", "spitter", "charger", "tank" };
+		for (size_t k = 0; k < sizeof(kSubs) / sizeof(kSubs[0]); k++)
+			if (strstr(szLower, kSubs[k]))
+				return true;
+		return false;
+	}
+
 	bool IsPointVisible(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vAimPoint)
 	{
 		trace_t tr;
@@ -86,10 +106,14 @@ namespace
 			if (!pCC)
 				continue;
 
-			const int nID = pCC->m_ClassID;
+		const int nID = pCC->m_ClassID;
 
-			if (nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter && nID != Charger && nID != Tank)
+		if (nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter && nID != Charger && nID != Tank)
+		{
+			// Фолбэк по имени: бумер и чужие билды со сдвинутыми ID.
+			if (!IsSpecialByName(pCC->m_pNetworkName))
 				continue;
+		}
 
 			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
 

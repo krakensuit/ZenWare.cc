@@ -1,0 +1,31 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Build solution (Release | Win32)
+        run: msbuild ZenWare.sln -p:Configuration=Release -p:Platform=x86 -m -v:m -nologo
+
+      - name: Check single-file size (resources embedded?)
+        shell: pwsh
+        run: |
+          $exe = "ZenWare.Loader\bin\Release\ZenWare.Loader.exe"
+          if (!(Test-Path $exe)) { throw "Loader exe missing" }
+          $kb = [math]::Round((Get-Item $exe).Length / 1KB)
+          "Loader: $kb KB"
+          if ((Get-Item $exe).Length -lt 2097152) { throw "Resources not embedded" }
+
+      - name: Upload loader artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZenWare-Loader
+          path: ZenWare.Loader/bin/Release/ZenWare.Loader.exe

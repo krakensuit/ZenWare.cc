@@ -118,6 +118,9 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Killfeed","Killfeed","Death notices panel in the top-right corner.","Киллфид","Панель смертей в правом верхнем углу."},
 		{"Radar","Radar","Top-down 2D radar, up is where you look.","Радар","2D-радар сверху, вверху — куда смотришь."},
 		{"Spectators","Spectators","Who is spectating you right now.","Наблюдатели","Кто сейчас смотрит за тобой."},
+		{"Alerts","Alerts","Big threat banners: tank spawned, witch nearby.","Алерты","Крупные баннеры угроз: танк заспавнился, ведьма рядом."},
+		{"Tank alert","Tank alert","Red TANK banner with distance.","Алерт танка","Красный баннер ТАНК с дистанцией."},
+		{"Witch alert","Witch alert","Purple WITCH banner with distance.","Алерт ведьмы","Фиолетовый баннер ВЕДЬМА с дистанцией."},
 		{"Save config","Save config","Writes all settings to ZenWare.cfg.","Сохранить конфиг","Пишет все настройки в ZenWare.cfg."},
 		{"Load config","Load config","Reads settings back from ZenWare.cfg.","Загрузить конфиг","Читает настройки обратно из ZenWare.cfg."},
 		{"Menu key","Menu key","Opens and closes this menu. Click to rebind.","Клавиша меню","Открывает и закрывает меню. Клик — смена."},
@@ -307,6 +310,12 @@ void CFeatures_Menu::Render(){
     Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
     Checkbox(mouse,"Radar",&Vars::Radar::bEnabled);
     Checkbox(mouse,"Spectators",&Vars::Radar::bSpectators);
+    Checkbox(mouse,"Alerts",&Vars::Alerts::bEnabled);
+    if (Vars::Alerts::bEnabled)
+    {
+     Checkbox(mouse,"Tank alert",&Vars::Alerts::bTank);
+     Checkbox(mouse,"Witch alert",&Vars::Alerts::bWitch);
+    }
     break;
    }
    case 3:{

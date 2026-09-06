@@ -49,6 +49,9 @@ namespace
 			{ "killfeed.enabled", &Vars::Killfeed::bEnabled },
 			{ "radar.enabled", &Vars::Radar::bEnabled },
 			{ "radar.spectators", &Vars::Radar::bSpectators },
+			{ "alerts.enabled", &Vars::Alerts::bEnabled },
+			{ "alerts.tank", &Vars::Alerts::bTank },
+			{ "alerts.witch", &Vars::Alerts::bWitch },
 
 			//Movement
 			{ "bhop.enabled", &Vars::BunnyHop::bEnabled },

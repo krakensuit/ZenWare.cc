@@ -418,19 +418,39 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	for (int i = 0; i < 63 && szNetworkName[i]; i++)
 		szLower[i] = (char)tolower((unsigned char)szNetworkName[i]);
 
-	struct Known_t { const char* sub; const char* show; };
+	struct Known_t { const char* sub; const char* show; bool bCommon; };
 	static const Known_t kKnown[] = {
-		{ "hunter", "HUNTER" }, { "smoker", "SMOKER" }, { "boomer", "BOOMER" },
-		{ "jockey", "JOCKEY" }, { "spitter", "SPITTER" }, { "charger", "CHARGER" },
-		{ "tank", "TANK" }, { "witch", "WITCH" },
+		{ "hunter", "HUNTER", false }, { "smoker", "SMOKER", false }, { "boomer", "BOOMER", false },
+		{ "jockey", "JOCKEY", false }, { "spitter", "SPITTER", false }, { "charger", "CHARGER", false },
+		{ "tank", "TANK", false }, { "witch", "WITCH", false },
+		{ "common", "COMMON", true }, { "infected", "COMMON", true }, { "zombie", "COMMON", true },
 	};
-	const char* szShow = nullptr;
+	const Known_t* pFound = nullptr;
 	for (size_t i = 0; i < sizeof(kKnown) / sizeof(kKnown[0]); i++)
 	{
-		if (strstr(szLower, kKnown[i].sub)) { szShow = kKnown[i].show; break; }
+		if (strstr(szLower, kKnown[i].sub)) { pFound = &kKnown[i]; break; }
 	}
-	if (!szShow)
+	if (!pFound)
 		return;
+	const char* szShow = pFound->show;
+
+	int x, y, w, h;
+	if (!GetBounds(pEntity, x, y, w, h) || w <= 0 || h <= 0)
+		return;
+
+	// Обычные: team=0, жизненный цикл не как у игроков — только бокс.
+	if (pFound->bCommon)
+	{
+		if (!Vars::ESP::bCommon)
+			return;
+		const Color clrCommon(170, 60, 60, 220);
+		if (Vars::ESP::bFilled)
+			G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
+		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
+		G::Draw.OutlinedRect(x, y, w, h, clrCommon);
+		G::Draw.String(EFonts::ESP, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP), clrCommon, TXT_CENTERXY, "%s", szShow);
+		return;
+	}
 
 	// Лёгкие проверки как у DrawSpecial (раскладка СИ shared с CTerrorPlayer).
 	C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
@@ -438,10 +458,6 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 		return;
 	const int nTeam = pEntity->m_iTeamNum();
 	if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == pLocal->GetTeamNumber())
-		return;
-
-	int x, y, w, h;
-	if (!GetBounds(pEntity, x, y, w, h) || w <= 0 || h <= 0)
 		return;
 
 	const Color& clrTeam = Vars::Chams::clrEnemy;

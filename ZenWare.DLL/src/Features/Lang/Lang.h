@@ -50,6 +50,8 @@ namespace Lang
 			{"No spread","Без разброса"}, {"Killfeed","Киллфид"},
 			{"Radar","Радар"}, {"Spectators","Наблюдатели"},
 			{"Spectators (%d)","Наблюдатели (%d)"},
+			{"Alerts","Алерты"}, {"Tank alert","Алерт танка"}, {"Witch alert","Алерт ведьмы"},
+			{"TANK","ТАНК"}, {"WITCH","ВЕДЬМА"},
 			{"Save config","Сохранить конфиг"}, {"Load config","Загрузить конфиг"},
 			{"Menu key","Клавиша меню"}, {"STYLE","СТИЛЬ"},
 			{"Menu accent","Акцент меню"}, {"ESP enemy","ESP враги"}, {"ESP ally","ESP союзники"},

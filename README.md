@@ -14,29 +14,19 @@ Internal cheat for Left 4 Dead 2 based on **Lak3/l4d2-internal-base** (x86, C++1
 ### Features
 
 **Visuals**
-- **ESP** — boxes, health bar, names, distance, ground items, common infected
-- **Chams** — `UnlitGeneric` `debug/debugambientcube` materials, 5 palettes, through-walls (`MATERIAL_VAR_IGNOREZ`)
-- **NoFog / Viewmodel FOV**, custom **crosshair**, **FPS overlay**
-
-**Combat**
-- **Aimbot** — silent, `FOV/Distance` priority, `head/center`, smoothing, `bVisibleOnly`
-- **TriggerBot**, **AutoShove** (`m_tongueOwner / m_pounceAttacker`), **AutoPistol**
-
-**Movement**
-- **BunnyHop** — perfect bhop, `EdgeJump`, `EdgeBug`, `LongJumpHelper`, `FastStop`, `Prestrafe`
-- **AutoStrafe** — `legit mousedx / rage circle / w-only`
-
-**System**
-- **Menu** — animated RGB `ZenWare.cc` logo, `?` help icons with descriptions, drag by header, tabs, `F11` unload, `INSERT` by default
+- **ESP** — boxes, health bar, names, distance, ground items, commons, all SI incl. boomer (class-name fallback survives ID shifts on foreign builds)
+- **Chams** — 5 palettes, allies/enemies/all SI, through-walls
+- **NoFog / FOV** (world + viewmodel) / **thirdperson**, custom **crosshair**, **FPS overlay**, **killfeed**, **2D radar**, **spectators**, **tank/witch alerts**
+- **Menu** — RU/EN toggle (button + `F7`), animated RGB `ZenWare.cc` logo, `?` help icons in both languages, tabs, `F11` unload, `INSERT` by default
 - **Config** — `<gamedir>\ZenWare.cfg` (`bool/int/float/Color`)
-- **Killfeed**, **Logger** (`%TEMP%\ZenWare.log` → `<gamedir>\ZenWare.log`)
+- **Logger** (`%TEMP%\ZenWare.log` → `<gamedir>\ZenWare.log`, per-pid fallback)
 
 **Loader**
-- Animated intro splash (logo reveal, particles, ESP corners, progress bar)
-- `Standard` / `Manual Map` injection, `LAUNCH GAME` via Steam, rainbow button outline
-- Dark/light system theme, RU/EN UI based on system language
+- Single-file build: DLL + External + logo embedded, extracted to `%TEMP%` on demand (`dist\ZenWare.exe` via `Build-SingleFile.ps1`)
+- Animated intro splash, `Standard` injection, `LAUNCH GAME` via Steam, rainbow button outline
+- Dark/light theme, RU/EN toggle (saved), **auto-updater** from GitHub Releases
 
-**External** (`ZenWare.External`) — separate read-only build: RPM + GDI overlay + `SendInput` bhop, nothing injected.
+**External** (`ZenWare.External`) — read-only: RPM + GDI overlay + `SendInput` bhop/strafe/stats, runtime offset resolver (signatures + anchor + on-screen diag), RU/EN (`F7`), nothing injected.
 
 ### Layout
 
@@ -91,17 +81,20 @@ Internal-чит для Left 4 Dead 2 на базе **Lak3/l4d2-internal-base** (
 ### Возможности
 
 **Visuals**
-- **ESP** — боксы, полоска здоровья, ники, дистанция, предметы на земле, обычные заражённые
-- **Chams** — материалы `UnlitGeneric` `debug/debugambientcube`, 5 палитр, сквозь стены (`MATERIAL_VAR_IGNOREZ`)
-- **NoFog / Viewmodel FOV**, кастомный **прицел**, **FPS-оверлей**
+- **ESP** — боксы, полоска HP, ники, дистанция, предметы, обычные, все СИ включая бумера (фолбэк по именам переживает сдвиг ID на чужих билдах)
+- **Chams** — 5 палитр, союзники/враги/все СИ, сквозь стены
+- **NoFog / FOV** (мир + модель) / **3-е лицо**, кастомный **прицел**, **FPS-оверлей**, **киллфид**, **2D-радар**, **наблюдатели**, **алерты танка/ведьмы**
+- **Меню** — тоггл RU/EN (кнопка + `F7`), анимированный RGB-логотип `ZenWare.cc`, иконки `?` с описаниями на двух языках, табы, `F11` выгрузка, `INSERT` по умолчанию
+- **Config** — `<gamedir>\ZenWare.cfg` (`bool/int/float/Color`)
+- **Logger** (`%TEMP%\ZenWare.log` → `<gamedir>\ZenWare.log`, per-pid фолбэк)
 
 **Combat**
-- **Aimbot** — silent, приоритет `FOV/Distance`, `head/center`, сглаживание, `bVisibleOnly`
-- **TriggerBot**, **AutoShove** (`m_tongueOwner / m_pounceAttacker`), **AutoPistol**
+- **Aimbot** — silent, приоритет `FOV/Distance`, `head/center`, сглаживание, только видимые, обычные + все СИ (ID + фолбэк по именам)
+- **TriggerBot**, **AutoShove**, **AutoPistol**, **NoSpread** (отключаемый)
 
 **Movement**
-- **BunnyHop** — perfect bhop, `EdgeJump`, `EdgeBug`, `LongJumpHelper`, `FastStop`, `Prestrafe`
-- **AutoStrafe** — `legit mousedx / rage circle / w-only`
+- **BunnyHop** — perfect/legit, `EdgeJump`, `EdgeBug`, `JumpBug`, `LongJump`, `FastStop`, `Prestrafe`, `AutoDuck`, `JumpStats`, `SpeedHUD`
+- **AutoStrafe** — `legit / rage / w-only / directional`
 
 **System**
 - **Меню** — анимированный RGB-логотип `ZenWare.cc`, иконки `?` с описаниями, drag за шапку, табы, `F11` выгрузка, `INSERT` по умолчанию
@@ -109,11 +102,11 @@ Internal-чит для Left 4 Dead 2 на базе **Lak3/l4d2-internal-base** (
 - **Killfeed**, **Logger** (`%TEMP%\ZenWare.log` → `<gamedir>\ZenWare.log`)
 
 **Лоадер**
-- Анимированный интро-сплэш (появление логотипа, частицы, ESP-уголки, прогресс-бар)
-- Инжект `Standard` / `Manual Map`, кнопка `ЗАПУСТИТЬ ИГРУ` через Steam, радужная обводка
-- Тёмная/светлая тема из системы, язык RU/EN по языку системы
+- Однофайловый билд: DLL + External + лого внутри, распаковка в `%TEMP%` по требованию (`dist\ZenWare.exe` через `Build-SingleFile.ps1`)
+- Анимированный интро-сплэш, инжект `Standard`, кнопка `ЗАПУСТИТЬ ИГРУ` через Steam, радужная обводка
+- Тёмная/светлая тема, тоггл RU/EN (сохраняется), **автоапдейтер** с GitHub Releases
 
-**External** (`ZenWare.External`) — отдельная read-only сборка: RPM + GDI-оверлей + bhop через `SendInput`, ничего не инжектится.
+**External** (`ZenWare.External`) — read-only: RPM + GDI-оверлей + bhop/strafe/stats через `SendInput`, runtime-резолв оффсетов (сигнатуры + якорь + диагностика на экране), RU/EN (`F7`), ничего не инжектится.
 
 ### Структура
 
