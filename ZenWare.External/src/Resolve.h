@@ -14,6 +14,15 @@ struct Resolved_t
 	char srcList[8] = { };
 	char srcMat[8] = { };
 	int matCands = 0; // сколько thunk-кандидатов прошло фильтры (диагностика)
+	int dbgCliKB = -1; // сколько КБ client.dll реально прочиталось
+	int dbgLpHits = -1; // совпадений LP-сигнатуры
+	int dbgEngKB = -1; // сколько КБ engine.dll реально прочиталось
+	int dbgThunks = -1; // всего B9/E9 thunk'ов
+	int dbgDataSec = 0; // .data engine найдена (1) или нет (0)
+	uint32_t dbgCliHead = 0; // первые 4 байта прочитанного client.dll (должен быть MZ)
+	uint32_t dbgEngHead = 0; // первые 4 байта прочитанного engine.dll
+	uint32_t dbgCliSize = 0; // SizeOfImage client (modBaseSize)
+	uint32_t dbgEngSize = 0; // SizeOfImage engine
 };
 
 bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,

@@ -89,6 +89,40 @@ namespace
 		return !b.empty();
 	}
 
+	// Чтение модуля кусками по коммитнутым регионам: один RPM на весь
+	// SizeOfImage падает из-за незакоммиченных дыр, мелкие чтения работают.
+	bool ReadModule(const Memory& mem, uintptr_t base, uint32_t size, std::vector<uint8_t>& out, int* dbgKB = nullptr)
+	{
+		out.assign(size, 0);
+		uintptr_t end = base + size;
+		uintptr_t cur = base;
+		bool any = false;
+		int got = 0;
+		while (cur < end)
+		{
+			uint8_t* p = out.data() + (cur - base);
+			size_t want = (size_t)(end - cur);
+			if (want > 0x10000) want = 0x10000;
+			if (mem.ReadRaw(cur, p, want))
+			{
+				any = true;
+				got += (int)want;
+				cur += want;
+			}
+			else if (want > 0x1000)
+			{
+				want = 0x1000; // битый кусок — пробуем мелкими шагами, дыры оставляем нулями
+				if (mem.ReadRaw(cur, p, want)) { any = true; got += (int)want; cur += want; }
+				else { cur += want; }
+			}
+			else
+			{
+				cur += want;
+			}
+		}
+		if (dbgKB) *dbgKB = got / 1024;
+		return any;
+	}
 	bool Finite16(const float* f)
 	{
 		for (int i = 0; i < 16; i++)
@@ -133,13 +167,16 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 	out.local = Off::dwLocalPlayer; strcpy_s(out.srcLocal, "hard");
 	out.list = Off::dwEntityList; strcpy_s(out.srcList, "hard");
 	out.mat = Off::dwViewMatrix; strcpy_s(out.srcMat, "hard");
+	out.dbgCliSize = clientSize;
+	out.dbgEngSize = engineSize;
 
 	if (!client || !engine || clientSize < 0x100000 || engineSize < 0x100000)
 		return false;
 
-	std::vector<uint8_t> cli(clientSize);
-	if (!mem.ReadRaw(client, cli.data(), cli.size()))
+	std::vector<uint8_t> cli;
+	if (!ReadModule(mem, client, clientSize, cli, &out.dbgCliKB))
 		return false;
+	if (cli.size() >= 4) memcpy(&out.dbgCliHead, cli.data(), 4);
 	const uint32_t cliBase = ImageBase(cli.data(), cli.size());
 
 	uintptr_t anchor = 0; // валидный указатель локального игрока
@@ -149,7 +186,8 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		std::vector<uint8_t> b; std::vector<bool> m;
 		ParseSig("8B 0D ? ? ? ? 85 C9 74 ? 8B 01 8B 50 08 FF D2 8B 00 89 86 84 16 00 00", b, m);
 		int hits[4] = { };
-		if (FindAll(cli.data(), cli.size(), b, m, hits, 4) == 1 && cliBase)
+		out.dbgLpHits = FindAll(cli.data(), cli.size(), b, m, hits, 4);
+		if (out.dbgLpHits == 1 && cliBase)
 		{
 			uint32_t disp;
 			memcpy(&disp, cli.data() + hits[0] + 2, 4);
@@ -181,11 +219,12 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 	uintptr_t engData = 0; uint32_t engDataSize = 0;
 	bool haveEng = false;
 	{
-		eng.assign(engineSize, 0);
-		if (mem.ReadRaw(engine, eng.data(), eng.size()))
+		eng.clear();
+		if (ReadModule(mem, engine, engineSize, eng, &out.dbgEngKB))
 		{
 			haveEng = true;
-			SectionRange(eng.data(), eng.size(), ".data", engine, engData, engDataSize);
+			if (eng.size() >= 4) memcpy(&out.dbgEngHead, eng.data(), 4);
+			out.dbgDataSec = SectionRange(eng.data(), eng.size(), ".data", engine, engData, engDataSize) ? 1 : 0;
 		}
 	}
 
@@ -196,6 +235,7 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		ParseSig("B9 ? ? ? ? E9", b, m);
 		int hits[2048] = { };
 		int n = FindAll(eng.data(), eng.size(), b, m, hits, 2048);
+		out.dbgThunks = n;
 		int passed = 0;
 		for (int k = 0; k < n; k++)
 		{

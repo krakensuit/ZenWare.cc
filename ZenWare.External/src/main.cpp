@@ -135,6 +135,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 						(unsigned)(res.list & 0xFFFFF), res.srcList,
 						(unsigned)(res.mat & 0xFFFFF), res.srcMat, res.matCands, staleFrames);
 					o.Text(10, 24, RGB(120, 140, 132), L"%s", dg);
+					wchar_t dg2[192];
+					swprintf_s(dg2, L"rd:cli=%dKB eng=%dKB lphits=%d thunks=%d datasrc=%d ch=%08X eh=%08X sz=%X/%X",
+						res.dbgCliKB, res.dbgEngKB, res.dbgLpHits, res.dbgThunks, res.dbgDataSec,
+						res.dbgCliHead, res.dbgEngHead, res.dbgCliSize, res.dbgEngSize);
+					o.Text(10, 56, RGB(120, 140, 132), L"%s", dg2);
 				}
 
 				if (staleFrames > 20)
