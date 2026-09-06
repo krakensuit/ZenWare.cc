@@ -6,7 +6,8 @@
 # Zapusk: powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1
 param(
 	[string]$Configuration = "Release",
-	[string]$OutName = "ZenWare.exe"
+	[string]$OutName = "ZenWare.exe",
+	[switch]$Publish
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -47,9 +48,20 @@ $howto = @(
 	"3. V loadere vyberi rezhim (tabletka sverhu): EXTERNAL ili INTERNAL,",
 	"   nazhmi bolshuyu knopku. Vse nuzhnoe raspakuetsya samo.",
 	"4. Menyu v igre: INSERT. Vygruzka chita: F11. F7 - smena yazyka RU/EN.",
+	"5. Obnovleniya priletayut sami pri zapuske loadera (sprosit).",
 	"5. EXTERNAL: esli net boksov - sfotkay 3 verhnie stroki overleya i prishli.",
 	"6. Esli v menu/vmesto bukv kvadratiki - nazhmi F7 (smena yazyka)."
 )
 $howto | Set-Content "$dist\KAK-ZAPUSTIT.txt" -Encoding UTF8
 
 "Gotovo: $dist\$OutName - etot ODIN file i kiday drugu."
+if ($Publish) {
+	$m = Select-String -Pattern 'define ZENWARE_VER_STR "([^"]+)"' -Path "$root\ZenWare.Loader\resource.h"
+	if (-not $m) { throw "Ne nashel versiyu v resource.h" }
+	$tag = "v" + $m.Matches[0].Groups[1].Value
+	$gh = Get-Command gh -ErrorAction SilentlyContinue
+	if (-not $gh) { throw "Net GitHub CLI (gh). Postav: winget install GitHub.cli, zatem gh auth login. Ili sozday reliz v web: tag $tag + asset dist\$OutName" }
+	& gh release create $tag "$dist\$OutName" --title $tag --notes "ZenWare $tag single-file (loader + DLL + external + logo)"
+	if ($LASTEXITCODE -ne 0) { throw "gh release create upal (mozhet, takoy tag uzhe est?)" }
+	"Opublikovano: $tag - druzya poluchat obnovu avtomaticheski pri zapuske."
+}

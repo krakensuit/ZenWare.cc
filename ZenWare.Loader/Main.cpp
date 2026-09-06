@@ -7,6 +7,7 @@
 #include <windowsx.h>
 #include <gdiplus.h>
 #include "ManualMapper.h"
+#include "Updater.h"
 #include "Utils.h"
 #include "resource.h"
 #pragma comment(lib, "comdlg32.lib")
@@ -931,5 +932,6 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  HWND hw=CreateWindowExW(WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
  ShowWindow(hw,cmd); UpdateWindow(hw);
+ Updater::CheckAsync(hw); // фоновая проверка релизов GitHub, UI не блокирует
  MSG m{}; while(GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m);} return (int)m.wParam;
 }

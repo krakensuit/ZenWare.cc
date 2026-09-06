@@ -2,7 +2,9 @@
 
 #include "../Vars.h"
 
+#include <cctype>
 #include <cmath>
+#include <cstring>
 
 void CFeatures_ESP::Render()
 {
@@ -82,8 +84,14 @@ void CFeatures_ESP::Render()
 				DrawBoss(pEntity->As<C_BaseEntity*>());
 			break;
 		}
-			default:
-				break;
+		default:
+		{
+			// ID нет в нашем дампе (бумер!) или чужой билд со сдвинутыми ID —
+			// опознаём по имени класса, оно не меняется.
+			if (Vars::ESP::bSpecialBoxes && pCC->m_pNetworkName)
+				DrawUnknown(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_pNetworkName);
+			break;
+		}
 		}
 	}
 }
@@ -398,6 +406,50 @@ void CFeatures_ESP::DrawBoss(C_BaseEntity* pEntity)
 	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrBoss);
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrBoss, TXT_CENTERXY, "WITCH");
+}
+
+void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const char* szNetworkName)
+{
+	if (!pLocal || !pEntity || !szNetworkName || !szNetworkName[0])
+		return;
+
+	// Имя класса в нижний регистр, ищем подстроку (переживает префиксы типа CBoomer).
+	char szLower[64] = { };
+	for (int i = 0; i < 63 && szNetworkName[i]; i++)
+		szLower[i] = (char)tolower((unsigned char)szNetworkName[i]);
+
+	struct Known_t { const char* sub; const char* show; };
+	static const Known_t kKnown[] = {
+		{ "hunter", "HUNTER" }, { "smoker", "SMOKER" }, { "boomer", "BOOMER" },
+		{ "jockey", "JOCKEY" }, { "spitter", "SPITTER" }, { "charger", "CHARGER" },
+		{ "tank", "TANK" }, { "witch", "WITCH" },
+	};
+	const char* szShow = nullptr;
+	for (size_t i = 0; i < sizeof(kKnown) / sizeof(kKnown[0]); i++)
+	{
+		if (strstr(szLower, kKnown[i].sub)) { szShow = kKnown[i].show; break; }
+	}
+	if (!szShow)
+		return;
+
+	// Лёгкие проверки как у DrawSpecial (раскладка СИ shared с CTerrorPlayer).
+	C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
+	if (!pPl || pPl->m_lifeState() != 0)
+		return;
+	const int nTeam = pEntity->m_iTeamNum();
+	if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == pLocal->GetTeamNumber())
+		return;
+
+	int x, y, w, h;
+	if (!GetBounds(pEntity, x, y, w, h) || w <= 0 || h <= 0)
+		return;
+
+	const Color& clrTeam = Vars::Chams::clrEnemy;
+	if (Vars::ESP::bFilled)
+		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
+	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
+	G::Draw.OutlinedRect(x, y, w, h, clrTeam);
+	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szShow);
 }
 
 bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w, int& h)

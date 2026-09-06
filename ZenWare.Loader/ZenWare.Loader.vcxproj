@@ -52,11 +52,13 @@ if exist "$(ProjectDir)..\ZenWare.External\bin\$(Configuration)\ZenWare.External
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ManualMapper.cpp" />
     <ClCompile Include="PEHelper.cpp" />
+    <ClCompile Include="Updater.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ManualMapper.h" />
     <ClInclude Include="PEHelper.h" />
+    <ClInclude Include="Updater.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
