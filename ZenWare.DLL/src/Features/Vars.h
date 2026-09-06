@@ -106,6 +106,12 @@ namespace Vars
 		inline int nThirdPersonDist = 100; //cam_idealdist
 	}
 
+	namespace Radar
+	{
+		inline bool bEnabled = true;    // 2D-радар сверху слева
+		inline bool bSpectators = true; // список наблюдателей под радаром
+	}
+
 	namespace Menu
 	{
 		inline bool bOpen = false;

@@ -47,6 +47,8 @@ namespace
 			{ "autopistol.enabled", &Vars::AutoPistol::bEnabled },
 			{ "nospread.enabled", &Vars::NoSpread::bEnabled },
 			{ "killfeed.enabled", &Vars::Killfeed::bEnabled },
+			{ "radar.enabled", &Vars::Radar::bEnabled },
+			{ "radar.spectators", &Vars::Radar::bSpectators },
 
 			//Movement
 			{ "bhop.enabled", &Vars::BunnyHop::bEnabled },

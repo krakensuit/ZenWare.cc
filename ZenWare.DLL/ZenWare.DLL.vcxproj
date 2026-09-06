@@ -69,6 +69,7 @@
     <ClCompile Include="src\Features\ESP\ESP.cpp" />
     <ClCompile Include="src\Features\Menu\Menu.cpp" />
     <ClCompile Include="src\Features\NoSpread\NoSpread.cpp" />
+    <ClCompile Include="src\Features\Radar\Radar.cpp" />
     <ClCompile Include="src\Features\Killfeed\Killfeed.cpp" />
     <ClCompile Include="src\Features\JumpStats\JumpStats.cpp" />
     <ClCompile Include="src\Features\TriggerBot\TriggerBot.cpp" />
@@ -121,6 +122,7 @@
     <ClInclude Include="src\Features\ESP\ESP.h" />
     <ClInclude Include="src\Features\Menu\Menu.h" />
     <ClInclude Include="src\Features\NoSpread\NoSpread.h" />
+    <ClInclude Include="src\Features\Radar\Radar.h" />
     <ClInclude Include="src\Features\Killfeed\Killfeed.h" />
     <ClInclude Include="src\Features\JumpStats\JumpStats.h" />
     <ClInclude Include="src\Features\Lang\Lang.h" />

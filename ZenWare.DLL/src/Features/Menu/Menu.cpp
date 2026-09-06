@@ -116,6 +116,8 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Auto shove","Auto shove","Auto-shoves tongue and pounce attackers off teammates.","Авто-толчок","Авто-толчок: сбрасывает язык и прыгунов с союзников."},
 		{"No spread","No spread","Compensates weapon spread and punch in view angles while firing.","Без разброса","Компенсирует разброс и отдачу в углах обзора во время огня."},
 		{"Killfeed","Killfeed","Death notices panel in the top-right corner.","Киллфид","Панель смертей в правом верхнем углу."},
+		{"Radar","Radar","Top-down 2D radar, up is where you look.","Радар","2D-радар сверху, вверху — куда смотришь."},
+		{"Spectators","Spectators","Who is spectating you right now.","Наблюдатели","Кто сейчас смотрит за тобой."},
 		{"Save config","Save config","Writes all settings to ZenWare.cfg.","Сохранить конфиг","Пишет все настройки в ZenWare.cfg."},
 		{"Load config","Load config","Reads settings back from ZenWare.cfg.","Загрузить конфиг","Читает настройки обратно из ZenWare.cfg."},
 		{"Menu key","Menu key","Opens and closes this menu. Click to rebind.","Клавиша меню","Открывает и закрывает меню. Клик — смена."},
@@ -303,6 +305,8 @@ void CFeatures_Menu::Render(){
     SliderInt(mouse,"Crosshair size",&Vars::Visuals::nCrosshairSize,2,30);
     Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
     Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
+    Checkbox(mouse,"Radar",&Vars::Radar::bEnabled);
+    Checkbox(mouse,"Spectators",&Vars::Radar::bSpectators);
     break;
    }
    case 3:{

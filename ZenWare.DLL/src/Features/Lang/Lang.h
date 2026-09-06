@@ -48,6 +48,8 @@ namespace Lang
 			{"Trigger visible only","Триггер видим. only"}, {"Trigger key","Клавиша триггера"},
 			{"Auto pistol","Авто-пистолет"}, {"Auto shove","Авто-толчок"},
 			{"No spread","Без разброса"}, {"Killfeed","Киллфид"},
+			{"Radar","Радар"}, {"Spectators","Наблюдатели"},
+			{"Spectators (%d)","Наблюдатели (%d)"},
 			{"Save config","Сохранить конфиг"}, {"Load config","Загрузить конфиг"},
 			{"Menu key","Клавиша меню"}, {"STYLE","СТИЛЬ"},
 			{"Menu accent","Акцент меню"}, {"ESP enemy","ESP враги"}, {"ESP ally","ESP союзники"},
