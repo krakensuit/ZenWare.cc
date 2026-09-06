@@ -2,6 +2,7 @@
 
 #include "../../Entry/Entry.h"
 #include "../../Features/ESP/ESP.h"
+#include "../../Features/Killfeed/Killfeed.h"
 #include "../../Features/Menu/Menu.h"
 #include "../../Features/Visuals/Visuals.h"
 #include "../../Features/Killfeed/Killfeed.h"
@@ -62,9 +63,10 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 		G::Draw.m_nScreenH = rcGame.bottom;
 	}
 
- I::MatSystemSurface->StartDrawing();
+	I::MatSystemSurface->StartDrawing();
 	{
 		F::Visuals.UpdateThirdPerson();
+		F::Killfeed.OnTick();
 		F::ESP.Render();
 		F::Menu.Render();
 		F::Visuals.DrawCrosshair();

@@ -12,7 +12,12 @@ void CFeatures_VisualRecoil::FrameStageNotify(ClientFrameStage_t curStage)
 
 	const int nLocalIndex = I::EngineClient->GetLocalPlayer();
 
-	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(nLocalIndex)->As<C_TerrorPlayer*>();
+	C_TerrorPlayer* pLocal = nullptr;
+	if (nLocalIndex >= 0)
+	{
+		IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
+		if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+	}
 
 	if (!pLocal)
 		return;

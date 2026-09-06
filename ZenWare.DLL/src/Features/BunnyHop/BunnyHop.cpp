@@ -121,19 +121,22 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		{
 			static int s_nLastJumpTick = 0;
 
-			if (Vars::BunnyHop::nJumpDelayTicks > 0 && s_nLastJumpTick != 0 &&
-				(cmd->tick_count - s_nLastJumpTick) < Vars::BunnyHop::nJumpDelayTicks)
-				return;
+			// Задержка: пропускаем только сам прыжок, EdgeBug/FastStop ниже всё равно работают.
+			const bool bDelayed = (Vars::BunnyHop::nJumpDelayTicks > 0 && s_nLastJumpTick != 0 &&
+				(cmd->tick_count - s_nLastJumpTick) < Vars::BunnyHop::nJumpDelayTicks);
 
-			//Don't jump if ducking and edgebug wants to keep duck.
-			if (!(bDucking && Vars::BunnyHop::bEdgeBug))
-				cmd->buttons |= IN_JUMP;
+			if (!bDelayed)
+			{
+				//Don't jump if ducking and edgebug wants to keep duck.
+				if (!(bDucking && Vars::BunnyHop::bEdgeBug))
+					cmd->buttons |= IN_JUMP;
 
-			//Long-jump helper: crouch-jump gives extra distance.
-			if (Vars::BunnyHop::bLongJumpHelper)
-				cmd->buttons |= IN_DUCK;
+				//Long-jump helper: crouch-jump gives extra distance.
+				if (Vars::BunnyHop::bLongJumpHelper)
+					cmd->buttons |= IN_DUCK;
 
-			s_nLastJumpTick = cmd->tick_count;
+				s_nLastJumpTick = cmd->tick_count;
+			}
 		}
 		else
 		{

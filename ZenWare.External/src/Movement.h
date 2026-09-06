@@ -38,6 +38,8 @@ private:
 	// Strafe timer
 	bool m_side = false;
 	uint64_t m_nextFlip = 0;
+	// EdgeJump: держим эмулированный пробел чтобы тик игры увидел нажатие
+	uint64_t m_holdSpaceUntil = 0;
 };
 
 inline uint64_t NowMs();

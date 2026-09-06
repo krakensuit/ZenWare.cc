@@ -48,7 +48,14 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 
 	IClientEntity* pIClient = I::ClientEntityList->GetClientEntity(pInfo.entity_index);
 
-	if (!pIClient)
+	if (!pIClient || pIClient->IsDormant())
+		return false;
+
+	// Чамсы свои: выжившие, боты и ВСЕ особые + танк.
+	// IsValidTarget не подходит: он режет свою команду и классы СИ.
+	ClientClass* pCC = pIClient->GetClientClass();
+	if (!pCC || !U::Math.CompareGroup(pCC->m_ClassID,
+		CTerrorPlayer, SurvivorBot, Hunter, Smoker, Jockey, Spitter, Charger, Tank))
 		return false;
 
 	C_TerrorPlayer* pPlayer = pIClient->As<C_TerrorPlayer*>();
@@ -61,10 +68,23 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 	if (pInfo.entity_index == nLocalIndex)
 		return false;
 
-	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(nLocalIndex)->As<C_TerrorPlayer*>();
+	C_TerrorPlayer* pLocal = nullptr;
+	if (nLocalIndex >= 0)
+	{
+		IClientEntity* pLocalEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
+		if (pLocalEnt) pLocal = pLocalEnt->As<C_TerrorPlayer*>();
+	}
+	if (!pLocal)
+		return false;
 
-	//Shared target filter (no visibility check for rendering).
-	if (!G::Util.IsValidTarget(pLocal, pPlayer, false))
+	const int nTeam = pPlayer->GetTeamNumber();
+	if (!G::Util.IsValidTeam(nTeam))
+		return false;
+
+	if (pPlayer->deadflag() || pPlayer->m_lifeState() != 0 || pPlayer->GetHealth() <= 0)
+		return false;
+
+	if (pPlayer->m_isGhost())
 		return false;
 
 	//Enemy/ally is resolved relative to the local player's team.

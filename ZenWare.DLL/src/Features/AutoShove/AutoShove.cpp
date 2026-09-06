@@ -16,15 +16,22 @@ void CFeatures_AutoShove::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	{
 		IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
 
-		if (!pEntity)
+		if (!pEntity || pEntity->IsDormant())
+			continue;
+
+		// Свои: выжившие и боты (IsValidTarget тут не подходит — он режет свою команду).
+		ClientClass* pCC = pEntity->GetClientClass();
+		if (!pCC || !U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot))
 			continue;
 
 		C_TerrorPlayer* pMate = pEntity->As<C_TerrorPlayer*>();
-
-		if (!G::Util.IsValidTarget(pLocal, pMate, false))
+		if (!pMate || pMate == pLocal)
 			continue;
 
 		if (pMate->GetTeamNumber() != TEAM_SURVIVOR)
+			continue;
+
+		if (pMate->deadflag() || pMate->m_lifeState() != 0 || pMate->GetHealth() <= 0)
 			continue;
 
 		const bool bTongued = (pMate->m_tongueOwner().Get() != nullptr);

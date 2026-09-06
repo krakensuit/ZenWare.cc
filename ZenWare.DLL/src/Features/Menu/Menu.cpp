@@ -114,6 +114,8 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Trigger key","Trigger key","Hold to enable the triggerbot. Click to rebind.","Клавиша триггера","Держи для работы триггера. Клик — смена."},
 		{"Auto pistol","Auto pistol","Re-clicks semi-auto pistols for hold-to-fire.","Авто-пистолет","Дожимает полуавто-пистолеты для огня с зажатой кнопкой."},
 		{"Auto shove","Auto shove","Auto-shoves tongue and pounce attackers off teammates.","Авто-толчок","Авто-толчок: сбрасывает язык и прыгунов с союзников."},
+		{"No spread","No spread","Compensates weapon spread and punch in view angles while firing.","Без разброса","Компенсирует разброс и отдачу в углах обзора во время огня."},
+		{"Killfeed","Killfeed","Death notices panel in the top-right corner.","Киллфид","Панель смертей в правом верхнем углу."},
 		{"Save config","Save config","Writes all settings to ZenWare.cfg.","Сохранить конфиг","Пишет все настройки в ZenWare.cfg."},
 		{"Load config","Load config","Reads settings back from ZenWare.cfg.","Загрузить конфиг","Читает настройки обратно из ZenWare.cfg."},
 		{"Menu key","Menu key","Opens and closes this menu. Click to rebind.","Клавиша меню","Открывает и закрывает меню. Клик — смена."},
@@ -201,9 +203,6 @@ bool CFeatures_Menu::HandleOpenState(){
 void CFeatures_Menu::Render(){
  // F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
  // Работает и при закрытом меню: Render крутится каждый кадр.
- static bool s_bPrevF7=false;
- { const bool bF7=(GetAsyncKeyState(VK_F7)&0x8000)!=0; if(bF7&&!s_bPrevF7) Vars::Menu::bRussian=!Vars::Menu::bRussian; s_bPrevF7=bF7; }
- // язык по умолчанию — системный (конфиг, если есть, уже применился при инжекте)
  static bool s_bLangInit=false;
  if(!s_bLangInit){ s_bLangInit=true; Vars::Menu::bRussian=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN); }
  // анимация появления (fade-in) - не блокирует логику открытия
@@ -303,6 +302,7 @@ void CFeatures_Menu::Render(){
     Checkbox(mouse,"Crosshair",&Vars::Visuals::bCrosshair);
     SliderInt(mouse,"Crosshair size",&Vars::Visuals::nCrosshairSize,2,30);
     Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
+    Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
     break;
    }
    case 3:{
@@ -325,6 +325,7 @@ void CFeatures_Menu::Render(){
     BindRow(mouse,"Trigger key",&Vars::TriggerBot::nKey);
     Checkbox(mouse,"Auto pistol",&Vars::AutoPistol::bEnabled);
     Checkbox(mouse,"Auto shove",&Vars::AutoShove::bEnabled);
+    Checkbox(mouse,"No spread",&Vars::NoSpread::bEnabled);
     break;
    }
   default:{

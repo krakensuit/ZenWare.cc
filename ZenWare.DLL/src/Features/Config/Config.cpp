@@ -45,6 +45,8 @@ namespace
 			{ "trigger.visible", &Vars::TriggerBot::bVisibleOnly },
 			{ "autoshove.enabled", &Vars::AutoShove::bEnabled },
 			{ "autopistol.enabled", &Vars::AutoPistol::bEnabled },
+			{ "nospread.enabled", &Vars::NoSpread::bEnabled },
+			{ "killfeed.enabled", &Vars::Killfeed::bEnabled },
 
 			//Movement
 			{ "bhop.enabled", &Vars::BunnyHop::bEnabled },

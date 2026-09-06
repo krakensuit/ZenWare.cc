@@ -47,6 +47,7 @@ namespace Lang
 			{"Aimbot key","Клавиша аима"}, {"Trigger bot","Триггербот"},
 			{"Trigger visible only","Триггер видим. only"}, {"Trigger key","Клавиша триггера"},
 			{"Auto pistol","Авто-пистолет"}, {"Auto shove","Авто-толчок"},
+			{"No spread","Без разброса"}, {"Killfeed","Киллфид"},
 			{"Save config","Сохранить конфиг"}, {"Load config","Загрузить конфиг"},
 			{"Menu key","Клавиша меню"}, {"STYLE","СТИЛЬ"},
 			{"Menu accent","Акцент меню"}, {"ESP enemy","ESP враги"}, {"ESP ally","ESP союзники"},
@@ -54,7 +55,7 @@ namespace Lang
 			{"F11 = unload cheat","F11 = выгрузить чит"},
 			{"drag header | WASD free | F11 unload | %d fps","тащи за шапку | WASD свободны | F11 выгрузка | %d fps"},
 			{"[press key]","[нажми клавишу]"}, {"off","выкл"},
-			{"killed","убил"}, {"strafes","стрейфы"}, {"sync","синхр."},
+			{"killed","убил"}, {"died","умер"}, {"strafes","стрейфы"}, {"sync","синхр."},
 		};
 		auto it = tbl.find(szEn);
 		return it != tbl.end() ? it->second.c_str() : szEn;

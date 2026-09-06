@@ -1,11 +1,13 @@
 #include "Killfeed.h"
 #include "../Lang/Lang.h"
+#include "../Vars.h"
 #include "../../SDK/DrawManager/DrawManager.h"
 #include "../../Util/Anim/Anim.h"
 
 void CFeatures_Killfeed::Push(const char* killer, const char* victim, const char* weapon) {
-    if (!killer || !victim || !weapon) return;
-    if (!killer[0] || !victim[0]) return;
+    if (!victim || !victim[0]) return;
+    if (!killer) killer = "";
+    if (!weapon) weapon = "";
     if (!I::GlobalVars) return;
     KillEntry_t e;
     e.killer = killer;
@@ -44,8 +46,70 @@ void CFeatures_Killfeed::Draw() {
         G::Draw.Rect(ix, iy, 3, h, border);
         // Name rendering via G::Draw
         G::Draw.String(EFonts::ESP_NAME, ix + 10, iy + 6, Color(0,255,171,(int)(255*alpha)), TXT_DEFAULT, "%s", e.killer.c_str());
-        G::Draw.String(EFonts::ESP, ix + 110, iy + 7, Color(255,255,255,(int)(230*alpha)), TXT_DEFAULT, "%s", Lang::T("killed"));
+        if (e.killer.empty())
+            G::Draw.String(EFonts::ESP, ix + 110, iy + 7, Color(255,255,255,(int)(230*alpha)), TXT_DEFAULT, "%s", Lang::T("died"));
+        else
+            G::Draw.String(EFonts::ESP, ix + 110, iy + 7, Color(255,255,255,(int)(230*alpha)), TXT_DEFAULT, "%s", Lang::T("killed"));
         G::Draw.String(EFonts::ESP, ix + 160, iy + 7, Color(255,80,80,(int)(255*alpha)), TXT_DEFAULT, "%s", e.victim.c_str());
         y += 34.0f;
     }
+}
+
+bool CFeatures_Killfeed::PinKillerName(C_TerrorPlayer* pVictim, char* szOut, size_t nOut)
+{
+    if (!pVictim || !szOut || !nOut) return false;
+    szOut[0] = '\0';
+    // Кто держит жертву пином — тот почти наверняка и добил.
+    const EHANDLE hPins[] = {
+        pVictim->m_tongueOwner(), pVictim->m_pounceAttacker(),
+        pVictim->m_jockeyAttacker(), pVictim->m_carryAttacker(), pVictim->m_pummelAttacker()
+    };
+    for (const EHANDLE& h : hPins)
+    {
+        if (!h.IsValid()) continue;
+        IClientEntity* pEnt = I::ClientEntityList->GetClientEntityFromHandle(h);
+        if (!pEnt) continue;
+        player_info_t pi;
+        if (I::EngineClient->GetPlayerInfo(h.GetEntryIndex(), &pi) && pi.name[0])
+        {
+            strcpy_s(szOut, nOut, pi.name);
+            return true;
+        }
+    }
+    return false;
+}
+
+void CFeatures_Killfeed::OnTick()
+{
+    if (!Vars::Killfeed::bEnabled || !I::EngineClient || !I::EngineClient->IsInGame())
+    {
+        if (!m_alive.empty() || !m_aEntries.empty()) { m_alive.clear(); m_aEntries.clear(); }
+        return;
+    }
+
+    std::set<int> aliveNow;
+    const int nMax = I::ClientEntityList ? I::ClientEntityList->GetMaxEntities() : 0;
+    for (int n = 1; n <= nMax; n++)
+    {
+        IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+        if (!pEntity || pEntity->IsDormant()) continue;
+        C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
+        if (!pPlayer) continue;
+        player_info_t pi;
+        // Только именованные игроки (выжившие, боты, особые за другую команду).
+        if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0]) continue;
+        const bool bAlive = !pPlayer->deadflag() && pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0;
+        if (bAlive)
+        {
+            aliveNow.insert(n);
+            continue;
+        }
+        if (m_alive.count(n))
+        {
+            char szKiller[32] = { };
+            PinKillerName(pPlayer, szKiller, sizeof(szKiller));
+            Push(szKiller, pi.name, "");
+        }
+    }
+    m_alive.swap(aliveNow);
 }

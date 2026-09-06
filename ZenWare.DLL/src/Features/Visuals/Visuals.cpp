@@ -7,22 +7,32 @@ static const Color CLR_TEXT_HINT(140, 160, 152, 255);
 void CFeatures_Visuals::UpdateThirdPerson()
 {
 	static bool s_bWasOn = false;
+	static int s_nLastDist = -1;
 	const bool bWant = Vars::Visuals::bThirdPerson && I::EngineClient && I::EngineClient->IsInGame();
-
-	if (bWant == s_bWasOn)
-		return;
-
-	s_bWasOn = bWant;
+	const int nDist = U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200);
 
 	if (bWant)
 	{
-		char szCmd[96] = { };
-		//локальный сервер: включаем камеру и дистанцию
-		sprintf_s(szCmd, "sv_cheats 1; cam_idealdist %d; cam_idealpitch 0; thirdperson", U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200));
-		I::EngineClient->ClientCmd_Unrestricted(szCmd);
+		// Дистанцию досылаем и на ходу, а не только в момент включения.
+		if (!s_bWasOn || nDist != s_nLastDist)
+		{
+			char szCmd[96] = { };
+			//локальный сервер: включаем камеру и дистанцию
+			sprintf_s(szCmd, "sv_cheats 1; cam_idealdist %d; cam_idealpitch 0; thirdperson", nDist);
+			I::EngineClient->ClientCmd_Unrestricted(szCmd);
+			s_nLastDist = nDist;
+		}
+		s_bWasOn = true;
+		return;
 	}
-	else
-		I::EngineClient->ClientCmd_Unrestricted("firstperson");
+
+	if (s_bWasOn)
+	{
+		s_bWasOn = false;
+		s_nLastDist = -1;
+		if (I::EngineClient)
+			I::EngineClient->ClientCmd_Unrestricted("firstperson");
+	}
 }
 
 void CFeatures_Visuals::DrawCrosshair()
@@ -62,7 +72,7 @@ void CFeatures_Visuals::DrawCrosshair()
 
 void CFeatures_Visuals::DrawOverlay()
 {
-	if (!I::EngineClient->IsInGame())
+	if (!I::EngineClient->IsInGame() || !I::GlobalVars)
 		return;
 
  C_TerrorPlayer* pLocal = nullptr;

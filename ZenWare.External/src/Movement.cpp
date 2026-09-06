@@ -66,18 +66,25 @@ float Movement::OnLogic(const Memory& mem, uintptr_t localAddr)
 
 	bool ground = (flags & Off::kGroundFlag) != 0;
 	bool alive = (hp > 0);
+	uint64_t nowEj = NowMs();
 
 	// --- BunnyHop: только чтение флагов + эмуляция пробела ---
 	bool wantJump = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
-	if (bBhop && alive && wantJump && ground)
+	// --- EdgeJump: сошли с края с зажатым пробелом -> свежее нажатие.
+	// Просто держать down бесполезно (физическая клавиша и так зажата):
+	// отпускаем и жмём заново, держим 40мс чтобы тик игры увидел нажатие.
+	if (bBhop && alive && m_wasGround && !ground && wantJump)
+	{
+		TapKey(VK_SPACE, false);
+		SetSpace(true);
+		m_holdSpaceUntil = nowEj + 40;
+	}
+	m_wasGround = ground;
+	bool holdEdge = (nowEj < m_holdSpaceUntil);
+	if (bBhop && alive && ((wantJump && ground) || holdEdge))
 		SetSpace(true);
 	else
 		SetSpace(false);
-
-	// --- EdgeJump: сошли с края с зажатым пробелом -> дожать прыжок ---
-	if (bBhop && alive && m_wasGround && !ground && wantJump)
-		SetSpace(true);
-	m_wasGround = ground;
 
 	// --- Strafe assist (experimental): чередование A/D в воздухе ---
 	if (bStrafe && alive && !ground)
@@ -93,11 +100,16 @@ float Movement::OnLogic(const Memory& mem, uintptr_t localAddr)
 			TapKey(m_side ? 'A' : 'D', false);
 		}
 	}
-	else if (ground)
+	else
 	{
-		TapKey('A', false);
-		TapKey('D', false);
-		m_nextFlip = 0;
+		// Стрейф неактивен (выключили/приземлились): отпустить наши клавиши,
+		// но только если мы их вообще нажимали — иначе спамим keyup впустую.
+		if (m_nextFlip)
+		{
+			TapKey('A', false);
+			TapKey('D', false);
+			m_nextFlip = 0;
+		}
 	}
 
 	// --- JumpStats observer ---
@@ -152,6 +164,7 @@ void Movement::Reset()
 	m_res.ok = false;
 	m_wasGround = true;
 	m_nextFlip = 0;
+	m_holdSpaceUntil = 0;
 }
 
 void Movement::DrawStats(Overlay& o)

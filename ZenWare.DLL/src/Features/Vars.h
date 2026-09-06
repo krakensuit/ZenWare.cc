@@ -2,6 +2,9 @@
 
 #include "../SDK/SDK.h"
 
+// Без windows.h (ломает byte в SDK-заголовках): только нужное из kernel32.
+extern "C" __declspec(dllimport) unsigned short __stdcall GetUserDefaultUILanguage(void);
+
 namespace Vars
 {
 	namespace Aimbot
@@ -108,7 +111,14 @@ namespace Vars
 		inline bool bOpen = false;
 		inline int nKey = VK_INSERT;
 		inline Color clrAccent = { 0, 255, 171, 255 };
-		inline bool bRussian = false; // RU/EN всего меню (системный язык по умолчанию, хранится в конфиге)
+		// RU/EN всего меню: системный язык по умолчанию (до Config.Load),
+		// хранится в конфиге, переключается кнопкой и F7.
+		inline bool bRussian = ((GetUserDefaultUILanguage() & 0x3FF) == 0x19);
+	}
+
+	namespace NoSpread
+	{
+		inline bool bEnabled = true;
 	}
 
 	namespace Killfeed

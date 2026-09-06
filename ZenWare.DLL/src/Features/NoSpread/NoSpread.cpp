@@ -36,6 +36,9 @@ void CFeatures_NoSpread::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CU
 
 bool CFeatures_NoSpread::ShouldRun(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUserCmd* cmd)
 {
+	if (!Vars::NoSpread::bEnabled || !pLocal || !pWeapon || !cmd)
+		return false;
+
 	if (!(cmd->buttons & IN_ATTACK) || (cmd->buttons & IN_USE))
 		return false;
 
