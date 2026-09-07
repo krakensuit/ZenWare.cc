@@ -109,6 +109,8 @@ namespace Vars
 		inline bool bWeaponText = true;  //active weapon name under nickname
 		inline bool bSpecialBoxes = true; //SI boxes/names
 		inline bool bBossBoxes = true;   //witch box
+		inline bool bTeamPanel = false;  //team HP panel (left side)
+		inline bool bThrowTimers = true; //thrown grenade timers (pipe/molotov/bile)
 	}
 
 	namespace Visuals
@@ -135,6 +137,7 @@ namespace Vars
 		inline bool bEnabled = true; // баннеры угроз
 		inline bool bTank = true;    // танк + дистанция
 		inline bool bWitch = true;   // ведьма + дистанция
+		inline bool bSIList = true;  // список особых рядом (справа)
 	}
 
 	namespace Menu
@@ -162,6 +165,9 @@ namespace Vars
 		inline bool bEnabled = false;
 		inline bool bSound = true;
 		inline bool bNumbers = true;
+		inline bool bXMark = true;     // крест на прицеле в момент попадания
+		inline bool bStats = false;    // панель статистики сессии
+		inline bool bDmgFlash = true;  // красная вспышка при уроне по тебе
 		inline int nPitch = 1000;      // Hz, menu 200..2000
 		inline int nDurationMs = 1200; // ms, menu 400..3000
 	}

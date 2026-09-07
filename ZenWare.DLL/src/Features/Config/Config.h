@@ -8,6 +8,9 @@ public:
 	void Save();
 	void Load();
 	static const char* FilePath();
+	static void SetSlot(int nSlot); // 1..3 -> ZenWare.cfg / ZenWare2.cfg / ZenWare3.cfg
+	static int GetSlot();
+	static const char* SlotName(int nSlot);
 
 private:
 };

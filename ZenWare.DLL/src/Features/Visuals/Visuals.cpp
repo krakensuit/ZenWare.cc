@@ -1,6 +1,7 @@
 #include "Visuals.h"
 
 #include "../Vars.h"
+#include "../Hitmarker/Hitmarker.h"
 
 static const Color CLR_TEXT_HINT(140, 160, 152, 255);
 
@@ -157,6 +158,21 @@ void CFeatures_Visuals::DrawCrosshair()
 	G::Draw.Rect(nCX - (nThick / 2), nCY - nGap - nS, nThick, nS, clr);
 	G::Draw.Rect(nCX - (nThick / 2), nCY + nGap, nThick, nS, clr);
 	G::Draw.Rect(nCX - 1, nCY - 1, 2, 2, clr);
+
+	// Крест попадания: 0.25 c после зачтённого урона.
+	if (Vars::Hitmarker::bEnabled && Vars::Hitmarker::bXMark)
+	{
+		const float flAge = F::Hitmarker.SecondsSinceHit();
+		if (flAge >= 0.0f && flAge < 0.25f)
+		{
+			const Color clrX(255, 70, 70, 255);
+			G::Draw.Line(nCX - 12, nCY - 12, nCX - 6, nCY - 6, clrX);
+			G::Draw.Line(nCX + 6, nCY - 12, nCX + 12, nCY - 6, clrX);
+			G::Draw.Line(nCX - 12, nCY + 12, nCX - 6, nCY + 6, clrX);
+			G::Draw.Line(nCX + 6, nCY + 12, nCX + 12, nCY + 6, clrX);
+		}
+	}
+}
 }
 
 void CFeatures_Visuals::DrawOverlay()

@@ -69,13 +69,17 @@ namespace
 		{ "hitmarker.enabled", &Vars::Hitmarker::bEnabled },
 		{ "hitmarker.sound", &Vars::Hitmarker::bSound },
 		{ "hitmarker.numbers", &Vars::Hitmarker::bNumbers },
+		{ "hitmarker.xmark", &Vars::Hitmarker::bXMark },
+		{ "hitmarker.stats", &Vars::Hitmarker::bStats },
+		{ "hitmarker.dmgflash", &Vars::Hitmarker::bDmgFlash },
 		{ "hitmarker.pitch", &Vars::Hitmarker::nPitch },
 		{ "hitmarker.duration", &Vars::Hitmarker::nDurationMs },
 			{ "radar.enabled", &Vars::Radar::bEnabled },
 			{ "radar.spectators", &Vars::Radar::bSpectators },
-			{ "alerts.enabled", &Vars::Alerts::bEnabled },
-			{ "alerts.tank", &Vars::Alerts::bTank },
-			{ "alerts.witch", &Vars::Alerts::bWitch },
+		{ "alerts.enabled", &Vars::Alerts::bEnabled },
+		{ "alerts.tank", &Vars::Alerts::bTank },
+		{ "alerts.witch", &Vars::Alerts::bWitch },
+		{ "alerts.silist", &Vars::Alerts::bSIList },
 
 			//Movement
 			{ "bhop.enabled", &Vars::BunnyHop::bEnabled },
@@ -115,6 +119,8 @@ namespace
 		{ "esp.weapontext", &Vars::ESP::bWeaponText },
 		{ "esp.specialboxes", &Vars::ESP::bSpecialBoxes },
 		{ "esp.bossboxes", &Vars::ESP::bBossBoxes },
+		{ "esp.teampanel", &Vars::ESP::bTeamPanel },
+		{ "esp.throwtimers", &Vars::ESP::bThrowTimers },
 
 		//Visuals
 		{ "visuals.nofog", &Vars::Visuals::bNoFog },
@@ -139,11 +145,36 @@ namespace
 	}
 }
 
+const char* CFeatures_Config::SlotName(int nSlot)
+{
+	switch (nSlot)
+	{
+		case 2: return "ZenWare2.cfg";
+		case 3: return "ZenWare3.cfg";
+		default: return "ZenWare.cfg"; // слот 1 = старый файл, совместимость
+	}
+}
+
+namespace { int s_nCfgSlot = 1; }
+
+void CFeatures_Config::SetSlot(int nSlot)
+{
+	if (nSlot < 1 || nSlot > 3)
+		return;
+	s_nCfgSlot = nSlot;
+}
+
+int CFeatures_Config::GetSlot()
+{
+	return s_nCfgSlot;
+}
+
 const char* CFeatures_Config::FilePath()
 {
 	static char szPath[MAX_PATH] = { };
+	static int s_nCachedSlot = 0;
 
-	if (!szPath[0])
+	if (!szPath[0] || s_nCachedSlot != s_nCfgSlot)
 	{
 		//Same as Logger: module path, no engine virtuals at startup.
 		char szGameDir[MAX_PATH] = { };
@@ -170,7 +201,10 @@ const char* CFeatures_Config::FilePath()
 		}
 
 		if (szGameDir[0])
-			sprintf_s(szPath, "%s\\ZenWare.cfg", szGameDir);
+		{
+			sprintf_s(szPath, "%s\\%s", szGameDir, SlotName(s_nCfgSlot));
+			s_nCachedSlot = s_nCfgSlot;
+		}
 	}
 
 	return szPath;

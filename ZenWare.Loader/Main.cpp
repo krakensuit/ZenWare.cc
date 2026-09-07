@@ -61,6 +61,8 @@ static bool g_bExternal=true, g_bModeHov=false;
 static RECT g_rcMode={0,0,0,0};
 static bool g_bLangHov=false;
 static RECT g_rcLang={0,0,0,0};
+static bool g_bUpdHov=false;
+static RECT g_rcUpdate={0,0,0,0};
 // dt-анимации: экспоненциальное сглаживание вместо фиксированного шага
 static float g_flHovLaunch=0.0f, g_flHovInject=0.0f; // подсветка кнопок под курсором
 static float g_flPressMode=0.0f; // тактильный отклик пилюли режима
@@ -743,7 +745,9 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     if(mh!=g_bModeHov){ g_bModeHov=mh; InvalidateRect(h,&g_rcMode,FALSE); }
     bool lh=PtInRect(&g_rcLang,mp)!=FALSE;
     if(lh!=g_bLangHov){ g_bLangHov=lh; InvalidateRect(h,&g_rcLang,FALSE); }
-    if(mh||lh) SetCursor(LoadCursorW(nullptr,IDC_HAND));
+    bool uh=PtInRect(&g_rcUpdate,mp)!=FALSE;
+    if(uh!=g_bUpdHov){ g_bUpdHov=uh; InvalidateRect(h,&g_rcUpdate,FALSE); }
+    if(mh||lh||uh) SetCursor(LoadCursorW(nullptr,IDC_HAND));
    }
     if(id==IDC_INJECT||id==IDC_LAUNCH){
    TRACKMOUSEEVENT tme{sizeof(tme),TME_LEAVE,h,0}; TrackMouseEvent(&tme);
@@ -755,6 +759,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    POINT cp{x,y};
     if(PtInRect(&g_rcMode,cp)){ g_flPressMode=1.0f; ToggleMode(); }
     else if(PtInRect(&g_rcLang,cp)){ ToggleLang(); }
+    else if(PtInRect(&g_rcUpdate,cp)){ ShellExecuteW(nullptr,L"open",L"https://github.com/krakensuit/ZenWare.cc/releases",nullptr,nullptr,SW_SHOWNORMAL); }
    {
     RECT lr={22,8,220,50};
     static DWORD slc=0; static int sln=0;
@@ -863,8 +868,20 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    RECT frT={20,306,536,326};
    DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log"),-1,&frT,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
   }
-  {
-   RECT lr={rc.right-72,304,rc.right-20,326}; g_rcLang=lr;
+   {
+    // Пилюля обновлений: только открывает страницу релизов в браузере.
+    // Ничего не качает и не запускает — проект source-only by design.
+    wchar_t szUpd[64]={}; swprintf_s(szUpd,L"v%ls \u00B7 %ls",ZENWARE_VER_WSTR,LoaderUtil::SW(L"обновления",L"updates"));
+    RECT ur={rc.right-232,304,rc.right-80,326}; g_rcUpdate=ur;
+    COLORREF ufill=g_bUpdHov?Mix2(g_theme.ctl,Acc(),60):g_theme.bg;
+    HBRUSH ub=CreateSolidBrush(ufill); HPEN up2=CreatePen(PS_SOLID,1,g_bUpdHov?Acc():g_theme.border);
+    auto uo1=SelectObject(dc,ub); auto uo2=SelectObject(dc,up2);
+    RoundRect(dc,ur.left,ur.top,ur.right,ur.bottom,8,8);
+    SelectObject(dc,uo1); SelectObject(dc,uo2); DeleteObject(ub); DeleteObject(up2);
+    SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT);
+    SetTextColor(dc,g_bUpdHov?Acc():g_theme.dim);
+    DrawTextW(dc,szUpd,-1,&ur,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    RECT lr={rc.right-72,304,rc.right-20,326}; g_rcLang=lr;
    COLORREF lfill=g_bLangHov?Mix2(g_theme.ctl,Acc(),60):g_theme.bg;
    HBRUSH lb=CreateSolidBrush(lfill); HPEN lp2=CreatePen(PS_SOLID,1,g_bLangHov?Acc():g_theme.border);
    auto lo1=SelectObject(dc,lb); auto lo2=SelectObject(dc,lp2);

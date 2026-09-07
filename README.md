@@ -54,6 +54,11 @@
 
 Details: [SECURITY.md](SECURITY.md) · Third-party: [NOTICE.md](NOTICE.md) · License: [LICENSE](LICENSE)
 
+## Screenshots
+
+Game shots live in [`docs/screenshots/`](docs/screenshots/) (`menu.png`, `esp.png`, `loader.png` wanted — see the HOWTO there).
+Скриншоты лежат в [`docs/screenshots/`](docs/screenshots/) (нужны `menu.png`, `esp.png`, `loader.png` — см. HOWTO).
+
 ---
 
 <a id="english"></a>
@@ -66,7 +71,7 @@ Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). 
 | Part | Output |
 |---|---|
 | `ZenWare.DLL` — internal module | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` — GUI loader | local `dist/ZenWare.exe`, never published |
+| `ZenWare.Loader` — GUI loader | local `dist/ZenWare.exe`, never published, releases-page pill |
 | `ZenWare.External` — read-only overlay | `bin/Release/ZenWare.External.exe` |
 
 ### Features
@@ -78,6 +83,7 @@ Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). 
 - **Chams** — 5 palettes, allies / enemies / all SI, through walls
 - **World** — NoFog, world + viewmodel FOV, thirdperson, custom crosshair, FPS overlay
 - **Intel** — 2D radar, spectator list, Tank / Witch alerts, killfeed, hitmarker (hitsound + damage numbers)
+- **Feedback** — cross hitmark, session stats (hits/shots/accuracy), damage flash, team HP panel, SI nearby list, thrown grenade timers
 - **Throwables** — grenade trajectory preview (molotov / pipe / bile) with landing marker
 
 </details>
@@ -103,7 +109,7 @@ Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). 
 <summary><b>Menu / System</b></summary>
 
 - `INSERT` menu · `F11` unload · RU/EN toggle (button + `F7`) · animated RGB logo · `?` help icons · tabs
-- Config — `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
+- Config — 3 slots (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`, `bool / int / float / Color`)
 - Logger — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid fallback)
 - Offsets cache — `<gamedir>/ZenWare.offsets` (auto, delete to force rescan)
 
@@ -173,6 +179,7 @@ ZenWare.cc/
 ├── dist/                        local output only (git-ignored)
 ├── Build-SingleFile.ps1         local builder (no Publish)
 ├── Verify-Signatures.bat        one-click pattern check vs your game files
+├── docs/screenshots/            game shots (see HOWTO)
 ├── START-ZenWare.bat            local external launcher
 ├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md
 ```
@@ -212,6 +219,7 @@ ZenWare.cc/
 - **Chams** — 5 палитр, союзники / враги / все СИ, сквозь стены
 - **Мир** — NoFog, FOV мира + модели, 3-е лицо, прицел, FPS-оверлей
 - **Инфо** — 2D-радар, наблюдатели, алерты танка / ведьмы, киллфид, хитмаркер (звук + цифры урона)
+- **Фидбэк** — крест попадания, стата сессии (хиты/выстрелы/точность), вспышка урона, панель HP команды, список особых, таймеры гранат
 - **Гранаты** — предпросмотр траектории (молотов / пайп / желчь) с маркером падения
 
 </details>
@@ -237,7 +245,7 @@ ZenWare.cc/
 <summary><b>Меню / Система</b></summary>
 
 - Меню `INSERT` · выгрузка `F11` · RU/EN (кнопка + `F7`) · RGB-логотип · иконки `?` · табы
-- Конфиг — `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
+- Конфиг — 3 слота (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`, `bool / int / float / Color`)
 - Лог — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid фолбэк)
 - Кэш оффсетов — `<gamedir>/ZenWare.offsets` (авто, удали для перескана)
 
@@ -307,6 +315,7 @@ ZenWare.cc/
 ├── dist/                        только локальный выход (игнорируется гитом)
 ├── Build-SingleFile.ps1         локальный сборщик (без Publish)
 ├── Verify-Signatures.bat        проверка паттернов в один клик
+├── docs/screenshots/            скриншоты игры (см. HOWTO)
 ├── START-ZenWare.bat            локальный запуск External
 ├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md
 ```

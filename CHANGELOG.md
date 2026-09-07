@@ -18,6 +18,16 @@ All notable changes to ZenWare.cc are documented here.
 - `Verify-Signatures.bat`: one-click pattern check against local game files.
   Проверка сигнатур в один клик.
 - `CHANGELOG.md`, `.editorconfig`.
+- Loader "updates" pill: opens the releases page in browser, downloads nothing.
+  Пилюля «обновления» в лоадере: открывает страницу релизов, ничего не качает.
+- Config slots 1/2/3 (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`).
+  Слоты конфига 1/2/3.
+- Cross hitmark on crosshair, session stats (hits/shots/accuracy), damage flash.
+  Крест попадания, стата сессии, вспышка урона.
+- Team HP panel, SI nearby list, thrown grenade timers (pipe fuse + ring).
+  Панель HP команды, список особых, таймеры гранат.
+- `docs/screenshots/` + HOWTO for README shots.
+  Папка и гайд для скриншотов в README.
 
 ### Removed / Удалено
 

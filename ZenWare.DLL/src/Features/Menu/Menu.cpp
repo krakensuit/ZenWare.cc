@@ -271,8 +271,10 @@ void CFeatures_Menu::Render(){
      Checkbox(mouse,"ESP witch",&Vars::ESP::bBossBoxes);
      Checkbox(mouse,"Snaplines",&Vars::ESP::bSnaplines);
      Checkbox(mouse,"Filled boxes",&Vars::ESP::bFilled);
-     Checkbox(mouse,"HP text near bar",&Vars::ESP::bHealthText);
-     Checkbox(mouse,"Weapon text",&Vars::ESP::bWeaponText);
+    Checkbox(mouse,"HP text near bar",&Vars::ESP::bHealthText);
+    Checkbox(mouse,"Weapon text",&Vars::ESP::bWeaponText);
+    Checkbox(mouse,"Team HP panel",&Vars::ESP::bTeamPanel);
+    Checkbox(mouse,"Throwable timers",&Vars::ESP::bThrowTimers);
    Checkbox(mouse,"Chams",&Vars::Chams::bEnabled);
    Checkbox(mouse,"Chams through walls",&Vars::Chams::bThroughWalls);
    Button(mouse,"Chams palette >",[](){ Vars::Chams::nPalette=(Vars::Chams::nPalette+1)%5; });
@@ -316,17 +318,21 @@ void CFeatures_Menu::Render(){
      {
       Checkbox(mouse,"Hit sound",&Vars::Hitmarker::bSound);
       Checkbox(mouse,"Damage numbers",&Vars::Hitmarker::bNumbers);
+      Checkbox(mouse,"Cross hitmark",&Vars::Hitmarker::bXMark);
+      Checkbox(mouse,"Session stats",&Vars::Hitmarker::bStats);
+      Checkbox(mouse,"Damage flash",&Vars::Hitmarker::bDmgFlash);
       SliderInt(mouse,"Hit pitch",&Vars::Hitmarker::nPitch,200,2000);
       SliderInt(mouse,"Number lifetime",&Vars::Hitmarker::nDurationMs,400,3000);
      }
     Checkbox(mouse,"Radar",&Vars::Radar::bEnabled);
     Checkbox(mouse,"Spectators",&Vars::Radar::bSpectators);
     Checkbox(mouse,"Alerts",&Vars::Alerts::bEnabled);
-    if (Vars::Alerts::bEnabled)
-    {
-     Checkbox(mouse,"Tank alert",&Vars::Alerts::bTank);
-     Checkbox(mouse,"Witch alert",&Vars::Alerts::bWitch);
-    }
+     if (Vars::Alerts::bEnabled)
+     {
+      Checkbox(mouse,"Tank alert",&Vars::Alerts::bTank);
+      Checkbox(mouse,"Witch alert",&Vars::Alerts::bWitch);
+      Checkbox(mouse,"SI list",&Vars::Alerts::bSIList);
+     }
     break;
    }
    case 3:{
@@ -383,7 +389,9 @@ void CFeatures_Menu::Render(){
     break;
    }
   default:{
-    Button(mouse,"Save config",[](){F::Config.Save();});
+     Button(mouse,"Save config",[](){F::Config.Save();});
+     static char szSlot[32]; sprintf_s(szSlot,"Config slot: %d >",F::Config.GetSlot());
+     Button(mouse,szSlot,[](){ F::Config.SetSlot(F::Config.GetSlot()%3+1); });
      Button(mouse,"Load config",[](){F::Config.Load();
       // слайдеры - источник правды для меню, подтянем их из загруженных float
       Vars::Aimbot::nFOVSlider=U::Math.Clamp((int)(Vars::Aimbot::flFOV*10.0f),5,300);

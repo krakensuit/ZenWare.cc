@@ -11,6 +11,7 @@
 #include "../../Features/EnginePrediction/EnginePrediction.h"
 #include "../../Features/NoSpread/NoSpread.h"
 #include "../../Features/TriggerBot/TriggerBot.h"
+#include "../../Features/Hitmarker/Hitmarker.h"
 #include "../../Features/JumpStats/JumpStats.h"
 
 using namespace Hooks;
@@ -52,6 +53,13 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 
 	if (pLocal && !pLocal->deadflag())
 	{
+		// Фронт IN_ATTACK для точности сессии (хитмаркер считает попадания).
+		static bool s_bPrevAtk = false;
+		const bool bAtk = (cmd->buttons & IN_ATTACK) != 0;
+		if (bAtk && !s_bPrevAtk)
+			F::Hitmarker.OnShot();
+		s_bPrevAtk = bAtk;
+
 		F::EnginePrediction.Start(pLocal, cmd);
 		{
 			// Movement features work without active weapon (infected claws etc.)

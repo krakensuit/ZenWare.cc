@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstring>
+#include <map>
 
 void CFeatures_ESP::Render()
 {
@@ -94,6 +95,9 @@ void CFeatures_ESP::Render()
 		}
 		}
 	}
+
+	DrawTeam(pLocal);
+	DrawThrowables();
 }
 
 void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, const int nEntityIndex)
@@ -510,4 +514,112 @@ bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w,
 	}
 
 	return false;
+}
+
+void CFeatures_ESP::DrawTeam(C_TerrorPlayer* pLocal)
+{
+	if (!Vars::ESP::bTeamPanel || !I::EngineClient || !pLocal || !G::Draw.m_nScreenW)
+		return;
+
+	const int nLocalTeam = pLocal->GetTeamNumber();
+	const int nMax = I::ClientEntityList ? I::ClientEntityList->GetMaxEntities() : 0;
+	int nY = 120;
+
+	G::Draw.String(EFonts::ESP, 16, nY - 16, Color(140, 160, 152, 255), TXT_DEFAULT, "TEAM");
+	for (int n = 1; n <= nMax && nY < G::Draw.m_nScreenH - 40; n++)
+	{
+		IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+		if (!pEntity || pEntity->IsDormant())
+			continue;
+		ClientClass* pCC = pEntity->GetClientClass();
+		if (!pCC)
+			continue;
+		const int nID = pCC->m_ClassID;
+		if (nID != CTerrorPlayer && nID != SurvivorBot)
+			continue;
+		C_TerrorPlayer* pT = pEntity->As<C_TerrorPlayer*>();
+		if (!pT || pT->GetTeamNumber() != nLocalTeam)
+			continue;
+		const int nHp = pT->GetHealth();
+		if (pT->deadflag() || pT->m_lifeState() != 0 || nHp <= 0)
+			continue;
+		player_info_t pi;
+		if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
+			continue;
+
+		const int nMaxHp = U::Math.Clamp(pT->m_iMaxHealth(), 1, 200);
+		const int nPct = U::Math.Clamp(nHp * 100 / nMaxHp, 0, 100);
+		G::Draw.String(EFonts::ESP, 16, nY, Color(235, 245, 240, 255), TXT_DEFAULT, "%s", pi.name);
+		G::Draw.Rect(16, nY + 13, 120, 5, Color(10, 12, 11, 200));
+		const Color clrBar(nPct > 50 ? 0 : 255, nPct > 50 ? 255 : (nPct > 25 ? 200 : 70), 70, 255);
+		G::Draw.Rect(16, nY + 13, 120 * nPct / 100, 5, clrBar);
+		nY += 26;
+	}
+}
+
+void CFeatures_ESP::DrawThrowables()
+{
+	if (!Vars::ESP::bThrowTimers || !I::EngineClient || !I::EngineClient->IsInGame() || !I::GlobalVars)
+		return;
+
+	static std::map<int, float> s_mSeen; // entindex -> curtime первого кадра
+	std::map<int, float> mNow;
+	const float flNow = I::GlobalVars->curtime;
+	const int nMax = I::ClientEntityList ? I::ClientEntityList->GetMaxEntities() : 0;
+
+	for (int n = 1; n <= nMax; n++)
+	{
+		IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+		if (!pEntity || pEntity->IsDormant())
+			continue;
+		ClientClass* pCC = pEntity->GetClientClass();
+		if (!pCC)
+			continue;
+
+		const char* szLabel = nullptr;
+		float flFuse = 0.0f; // 0 = без таймера (ломается о землю)
+		switch (pCC->m_ClassID)
+		{
+			case CPipeBombProjectile: szLabel = "PIPE"; flFuse = 6.0f; break;
+			case CMolotovProjectile: szLabel = "MOLOTOV"; break;
+			case CVomitJarProjectile: szLabel = "BILE"; break;
+			default: continue;
+		}
+
+		C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
+		if (!pEnt)
+			continue;
+
+		if (!s_mSeen.count(n))
+			s_mSeen[n] = flNow;
+		mNow[n] = s_mSeen[n];
+
+		const float flAge = flNow - s_mSeen[n];
+		if (flAge < 0.0f)
+			continue;
+
+		Vector vS;
+		if (!G::Util.W2S(pEnt->m_vecOrigin(), vS))
+			continue;
+
+		char sz[48] = { };
+		if (flFuse > 0.0f)
+		{
+			const float flLeft = flFuse - flAge;
+			sprintf_s(sz, "%s %.1f", szLabel, flLeft > 0.0f ? flLeft : 0.0f);
+		}
+		else
+			sprintf_s(sz, "%s", szLabel);
+		G::Draw.String(EFonts::ESP_NAME, (int)vS.x, (int)vS.y, Color(255, 220, 0, 255), TXT_CENTERXY, "%s", sz);
+
+		// Кольцо растёт пока горит запал пайпа.
+		if (flFuse > 0.0f)
+		{
+			const float flGrow = flAge * 4.0f;
+			const int nR = 6 + (int)(flGrow > 24.0f ? 24.0f : flGrow);
+			G::Draw.OutlinedCircle((int)vS.x, (int)vS.y + 16, nR, 20, Color(255, 220, 0, 200));
+		}
+	}
+
+	s_mSeen.swap(mNow);
 }

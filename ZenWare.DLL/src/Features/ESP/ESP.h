@@ -18,6 +18,8 @@ private:
 	// Fallback по имени класса (m_pNetworkName): ловит бумера (ID нет в дампе)
 	// и вообще все классы при смене ID на чужом билде. Только чтение, без новых вызовов.
 	void DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const char* szNetworkName);
+	void DrawTeam(C_TerrorPlayer* pLocal); // панель HP команды слева
+	void DrawThrowables(); // таймеры брошенных гранат (пайп/молотов/желчь)
 };
 
 namespace F { inline CFeatures_ESP ESP; }

@@ -89,7 +89,7 @@ void CFeatures_Hitmarker::OnTick()
 {
 	if (!Vars::Hitmarker::bEnabled || !I::EngineClient || !I::EngineClient->IsInGame() || !I::ClientEntityList || !I::GlobalVars)
 	{
-		if (!m_mHp.empty() || !m_aNums.empty()) { m_mHp.clear(); m_aNums.clear(); }
+		if (!m_mHp.empty() || !m_aNums.empty() || m_nShots || m_nHits) { Clear(); }
 		return;
 	}
 
@@ -104,6 +104,14 @@ void CFeatures_Hitmarker::OnTick()
 	}
 	if (!pLocal || pLocal->deadflag() || pLocal->m_lifeState() != 0)
 		return;
+
+	// Урон по нам: просадка HP локального между кадрами.
+	{
+		const int nHp = pLocal->GetHealth();
+		if (m_nLocalHp >= 0 && nHp < m_nLocalHp)
+			m_flLastDmgT = I::GlobalVars->curtime;
+		m_nLocalHp = nHp;
+	}
 
 	const Vector vEye = G::Util.GetEyePosition(pLocal);
 
@@ -141,6 +149,10 @@ void CFeatures_Hitmarker::OnTick()
 			continue;
 
 		const bool bKill = (nHp <= 0);
+		m_flLastHitT = flNow;
+		m_nHits++;
+		if (bKill)
+			m_nKills++;
 		PlayHit(bKill);
 
 		if (Vars::Hitmarker::bNumbers && m_aNums.size() < 12)
@@ -184,4 +196,44 @@ void CFeatures_Hitmarker::Draw()
 		const Color clr = m.bKill ? Color(255, 70, 70, nA) : Color(0, 255, 171, nA);
 		G::Draw.String(EFonts::ESP_NAME, (int)vS.x, nY, clr, TXT_CENTERXY, "%s", sz);
 	}
+
+	// Красная вспышка по краям при уроне по нам (направления нет: ивентов в движке нет).
+	if (Vars::Hitmarker::bDmgFlash)
+	{
+		const float flDmgAge = flNow - m_flLastDmgT;
+		if (flDmgAge >= 0.0f && flDmgAge < 0.6f)
+		{
+			const int nA = (int)(110.0f * (1.0f - flDmgAge / 0.6f));
+			const Color clrF(255, 40, 40, nA);
+			const int W = G::Draw.m_nScreenW, H = G::Draw.m_nScreenH;
+			const int nT = 26; // толщина рамки
+			G::Draw.Rect(0, 0, W, nT, clrF);
+			G::Draw.Rect(0, H - nT, W, nT, clrF);
+			G::Draw.Rect(0, 0, nT, H, clrF);
+			G::Draw.Rect(W - nT, 0, nT, H, clrF);
+		}
+	}
+
+	// Стата сессии: попадания / выстрелы / точность / добивания.
+	if (Vars::Hitmarker::bStats)
+	{
+		const int nAcc = (m_nShots > 0) ? (m_nHits * 100 / m_nShots) : 0;
+		const int nX = G::Draw.m_nScreenW - 228;
+		G::Draw.String(EFonts::MENU_CONSOLAS, nX, 16, Color(140, 160, 152, 255), TXT_DEFAULT, "session");
+		G::Draw.String(EFonts::MENU_CONSOLAS, nX, 32, Color(235, 245, 240, 255), TXT_DEFAULT, "hits %d / shots %d", m_nHits, m_nShots);
+		G::Draw.String(EFonts::MENU_CONSOLAS, nX, 48, Color(0, 255, 171, 255), TXT_DEFAULT, "acc %d%%  kills %d", nAcc, m_nKills);
+	}
+}
+
+float CFeatures_Hitmarker::SecondsSinceHit() const
+{
+	if (m_flLastHitT < -999.0f || !I::GlobalVars)
+		return -1.0f;
+	return I::GlobalVars->curtime - m_flLastHitT;
+}
+
+void CFeatures_Hitmarker::OnShot()
+{
+	if (Vars::Hitmarker::bEnabled && I::EngineClient && I::EngineClient->IsInGame())
+		m_nShots++;
 }
