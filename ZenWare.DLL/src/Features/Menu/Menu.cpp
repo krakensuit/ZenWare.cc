@@ -6,7 +6,7 @@
 #include "../../Entry/Entry.h"
 #include "../../Hooks/WndProc/WndProc.h"
 #include "../../Util/Anim/Anim.h"
-#include "../../external/Icons/IconsFontAwesome6.h"
+#include "../../../external/Icons/IconsFontAwesome6.h"
 #include <cmath>
 #include <map>
 #include <string>
