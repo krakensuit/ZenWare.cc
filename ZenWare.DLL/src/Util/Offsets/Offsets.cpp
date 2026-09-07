@@ -85,6 +85,7 @@ namespace
 		for (int i = 0; i < 15; i++) aGot[i].m_szName = kNames[i];
 
 		int nModsOk = 0;
+		bool bModMatched[3] = { };
 		char szLine[512] = { };
 		while (fgets(szLine, sizeof(szLine), f))
 		{
@@ -102,8 +103,13 @@ namespace
 				char* szId = pSp + 1;
 				szId[strcspn(szId, "\r\n")] = '\0';
 				for (int i = 0; i < 3; i++)
-					if (!_stricmp(szMod, kMods[i]) && !strcmp(szId, szWant[i]))
+				{
+					if (!bModMatched[i] && !_stricmp(szMod, kMods[i]) && !strcmp(szId, szWant[i]))
+					{
+						bModMatched[i] = true;
 						nModsOk++;
+					}
+				}
 				continue;
 			}
 			if (!strncmp(szLine, "rva ", 4))

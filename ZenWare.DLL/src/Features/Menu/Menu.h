@@ -26,6 +26,9 @@ public:
 	//while the menu is open (blocks game mouse/keyboard input).
 	bool ShouldBlockInput(unsigned int uMsg);
 
+	// Колесо мыши для прокрутки вкладок (вызывается из WndProc).
+	void OnWheel(int nDelta);
+
 private:
 	struct Layout_t
 	{
@@ -67,6 +70,12 @@ private:
 	bool m_bDragging = false;
 	int m_nDragOffX = 0;
 	int m_nDragOffY = 0;
+
+	// Прокрутка контента вкладок (Combat не влезает в 480px).
+	int m_nScroll[5] = { };
+	int m_nContentH[5] = { };
+	void ClampScroll();
+	bool RowClipped(int nRowTop, int nRowH) const;
 
 	const char* m_szHelpId = nullptr;
 	const char* m_szHelpTitle = nullptr;

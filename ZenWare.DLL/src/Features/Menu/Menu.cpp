@@ -256,9 +256,10 @@ void CFeatures_Menu::Render(){
  G::Draw.Rect(m_rc.nX+5,m_rc.nY+6,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+3,m_rc.nY+4,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+1,m_rc.nY+2,m_rc.nW,m_rc.nH,CLR_SHADOW);
- DrawPanel(); Tabs(mouse,m_nTab);
- m_nItemY=m_rc.nY+HEADER_H+34;
- switch(m_nTab){
+  DrawPanel(); Tabs(mouse,m_nTab);
+  ClampScroll();
+  m_nItemY=m_rc.nY+HEADER_H+34-m_nScroll[U::Math.Clamp(m_nTab,0,4)];
+  switch(m_nTab){
   case 0:{
    Checkbox(mouse,"ESP",&Vars::ESP::bEnabled);
    Checkbox(mouse,"ESP box",&Vars::ESP::bBox);
@@ -412,9 +413,27 @@ void CFeatures_Menu::Render(){
     ColorSwatches(mouse,"Crosshair",&Vars::Visuals::clrCrosshair);
    G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,Lang::T("F11 = unload cheat"));
    m_nItemY+=26; break;
+   }
   }
- }
- const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+  // Замер контента вкладки для скролла + тонкая полоса прокрутки.
+  {
+   const int nTabC=U::Math.Clamp(m_nTab,0,4);
+   const int nStartY=m_rc.nY+HEADER_H+34;
+   m_nContentH[nTabC]=m_nItemY-nStartY+m_nScroll[nTabC];
+   ClampScroll();
+   const int nTop=m_rc.nY+80, nBottom=m_rc.nY+m_rc.nH-30;
+   const int nView=nBottom-nTop;
+   if(m_nContentH[nTabC]>nView&&nView>0){
+    const float flFrac=(float)nView/(float)m_nContentH[nTabC];
+    const int nThumbH=U::Math.Clamp((int)(nView*flFrac),20,nView);
+    const int nMaxS=m_nContentH[nTabC]-nView;
+    const int nThumbY=nTop+(nMaxS>0?(m_nScroll[nTabC]*(nView-nThumbH))/nMaxS:0);
+    const int nSX=m_rc.nX+m_rc.nW-7;
+    G::Draw.Rect(nSX,nTop,3,nView,Color(255,255,255,12));
+    G::Draw.Rect(nSX,nThumbY,3,nThumbH,CLR_ACCENT_SOFT);
+   }
+  }
+  const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
  G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(1.0f/m_flDt));
@@ -581,8 +600,25 @@ static Color LerpC(const Color& a,const Color& b,float t){
  if(t<0) t=0; if(t>1) t=1;
  return Color(ar+(int)((br-ar)*t),ag+(int)((bg2-ag)*t),ab+(int)((bb2-ab)*t),255);
 }
+void CFeatures_Menu::OnWheel(int nDelta){
+ if(!Vars::Menu::bOpen) return;
+ m_nScroll[U::Math.Clamp(m_nTab,0,4)] += (nDelta > 0 ? -30 : 30);
+ ClampScroll();
+}
+void CFeatures_Menu::ClampScroll(){
+ const int nTab = U::Math.Clamp(m_nTab,0,4);
+ const int nView = m_rc.nH - 80 - 30;
+ const int nMax = m_nContentH[nTab] - nView + 8;
+ m_nScroll[nTab] = U::Math.Clamp(m_nScroll[nTab], 0, nMax > 0 ? nMax : 0);
+}
+bool CFeatures_Menu::RowClipped(int nRowTop,int nRowH) const{
+ const int nTop = m_rc.nY + 80;
+ const int nBottom = m_rc.nY + m_rc.nH - 30;
+ return (nRowTop + nRowH <= nTop) || (nRowTop >= nBottom);
+}
 void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool* pValue){
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+ if(RowClipped(m_nItemY,nRowH)){ m_nItemY+=nRowH; return; }
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  float flHov=HoverAnim(szLabel,bHover);
  float flPress=PressAnim(szLabel,mouse.bClicked&&bHover);
@@ -616,6 +652,7 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
 }
 void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*pfnAction)()){
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=26;
+ if(RowClipped(m_nItemY,nRowH)){ m_nItemY+=nRowH; return; }
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  bool bClick=(bHover&&mouse.bClicked);
  float flHov=HoverAnim(szLabel,bHover);
@@ -640,6 +677,7 @@ void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*
 void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* pValue){
  static int* s_pCapturing=nullptr;
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+ if(RowClipped(m_nItemY,nRowH)){ m_nItemY+=nRowH; return; }
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  float flHov=HoverAnim(szLabel,bHover);
  if(flHov>0.01f){
@@ -671,6 +709,8 @@ void CFeatures_Menu::LabelInt(const char* szLabel,const int nValue,int nRightPad
  m_nItemY+=G::Draw.GetFontHeight(EFonts::MENU_TAHOMA)+5;
 }
 void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int* pValue,const int nMin,const int nMax){
+ const int nLblH=G::Draw.GetFontHeight(EFonts::MENU_TAHOMA)+5;
+ if(RowClipped(m_nItemY,nLblH+20)){ m_nItemY+=nLblH+20; return; }
  const int nLblY=m_nItemY;
  LabelInt(szLabel,*pValue);
  if(const HelpEntry_t* he=FindHelp(szLabel)){

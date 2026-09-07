@@ -3,6 +3,7 @@
 using namespace Hooks;
 
 #include "../../Features/Menu/Menu.h"
+#include "../../Features/Vars.h"
 #include "../../Util/Logger/Logger.h"
 
 LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -11,6 +12,13 @@ LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	//with the Render fallback, so one press never toggles twice).
 	if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN)
 		F::Menu.PollMenuKey();
+
+	// Колесо крутит вкладки меню, в игру не уходит.
+	if (uMsg == WM_MOUSEWHEEL && Vars::Menu::bOpen)
+	{
+		F::Menu.OnWheel(GET_WHEEL_DELTA_WPARAM(wParam));
+		return 0;
+	}
 
 	if (F::Menu.ShouldBlockInput(uMsg))
 	return 0;

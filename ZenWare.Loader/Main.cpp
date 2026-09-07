@@ -864,10 +864,10 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   // футер + переключатель языка справа
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
   RECT fr={20,306,600,326};
-  {
-   RECT frT={20,306,536,326};
-   DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log"),-1,&frT,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
-  }
+   {
+    RECT frT={20,306,376,326};
+    DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log"),-1,&frT,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+   }
    {
     // Пилюля обновлений: только открывает страницу релизов в браузере.
     // Ничего не качает и не запускает — проект source-only by design.

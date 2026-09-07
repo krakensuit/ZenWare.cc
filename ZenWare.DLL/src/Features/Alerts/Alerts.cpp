@@ -142,8 +142,9 @@ void CFeatures_Alerts::Render()
 
 		if (nSI > 0)
 		{
-			const int nX = G::Draw.m_nScreenW - 228;
-			int nSY = 84;
+			// Слева, ниже панели команды: с киллфидом справа не пересекается.
+			const int nX = 16;
+			int nSY = 336;
 			G::Draw.String(EFonts::MENU_CONSOLAS, nX, nSY, Color(140, 160, 152, 255), TXT_DEFAULT, "SI NEARBY");
 			for (int i = 0; i < nSI && i < 8; i++)
 			{

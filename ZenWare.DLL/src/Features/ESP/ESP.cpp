@@ -559,10 +559,16 @@ void CFeatures_ESP::DrawTeam(C_TerrorPlayer* pLocal)
 
 void CFeatures_ESP::DrawThrowables()
 {
-	if (!Vars::ESP::bThrowTimers || !I::EngineClient || !I::EngineClient->IsInGame() || !I::GlobalVars)
-		return;
-
 	static std::map<int, float> s_mSeen; // entindex -> curtime первого кадра
+	if (!I::EngineClient || !I::EngineClient->IsInGame())
+	{
+		// Карта сменилась/выход: часы curtime сбросятся, старые метки врут.
+		if (!s_mSeen.empty())
+			s_mSeen.clear();
+		return;
+	}
+	if (!Vars::ESP::bThrowTimers || !I::GlobalVars)
+		return;
 	std::map<int, float> mNow;
 	const float flNow = I::GlobalVars->curtime;
 	const int nMax = I::ClientEntityList ? I::ClientEntityList->GetMaxEntities() : 0;
@@ -594,9 +600,14 @@ void CFeatures_ESP::DrawThrowables()
 			s_mSeen[n] = flNow;
 		mNow[n] = s_mSeen[n];
 
-		const float flAge = flNow - s_mSeen[n];
+		float flAge = flNow - s_mSeen[n];
 		if (flAge < 0.0f)
-			continue;
+		{
+			// Часы отмотало назад (смена карты без выхода): метка stale, обновляем.
+			s_mSeen[n] = flNow;
+			mNow[n] = flNow;
+			flAge = 0.0f;
+		}
 
 		Vector vS;
 		if (!G::Util.W2S(pEnt->m_vecOrigin(), vS))

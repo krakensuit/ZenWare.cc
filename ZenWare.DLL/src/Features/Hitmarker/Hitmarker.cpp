@@ -2,10 +2,24 @@
 #include "../Vars.h"
 #include "../../SDK/DrawManager/DrawManager.h"
 
+#include <cctype>
+#include <cstring>
 #include <thread>
 
 namespace
 {
+	// Бумера нет в дампе ID: опознаём по имени класса, как Aimbot/ESP.
+	bool IsBoomerByName(const char* szNet)
+	{
+		if (!szNet || !szNet[0])
+			return false;
+		char szLower[64] = { };
+		int i = 0;
+		for (; i < 63 && szNet[i]; i++)
+			szLower[i] = (char)tolower((unsigned char)szNet[i]);
+		szLower[i] = '\0';
+		return strstr(szLower, "boomer") != nullptr;
+	}
 	// Best-effort опознание shootable-врага, зеркалит классификацию Aimbot:
 	// игроки чужой команды, особые, обычные + ведьма. Возвращает HP и якорь.
 	bool GetEnemyHp(IClientEntity* pEntity, C_TerrorPlayer* pLocal, int& nHpOut, Vector& vAnchorOut)
@@ -27,15 +41,15 @@ namespace
 			return nHpOut >= 0;
 		}
 
-		// Особые заражённые.
-		if (nID == Hunter || nID == Smoker || nID == Jockey || nID == Spitter || nID == Charger)
+		// Особые заражённые (+бумер по имени: его ID нет в дампе).
+		if (nID == Hunter || nID == Smoker || nID == Jockey || nID == Spitter || nID == Charger || IsBoomerByName(pCC->m_pNetworkName))
 		{
 			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
 			C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
 			if (!pEnt || !pPl || pPl->m_lifeState() != 0)
 				return false;
 			const int nTeam = pEnt->m_iTeamNum();
-			if (nTeam == pLocal->GetTeamNumber())
+			if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == pLocal->GetTeamNumber())
 				return false;
 			nHpOut = pEnt->GetHealth();
 			vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
@@ -215,13 +229,15 @@ void CFeatures_Hitmarker::Draw()
 	}
 
 	// Стата сессии: попадания / выстрелы / точность / добивания.
+	// Справа внизу, над вотермарком: с киллфидом сверху не пересекается.
 	if (Vars::Hitmarker::bStats)
 	{
 		const int nAcc = (m_nShots > 0) ? (m_nHits * 100 / m_nShots) : 0;
 		const int nX = G::Draw.m_nScreenW - 228;
-		G::Draw.String(EFonts::MENU_CONSOLAS, nX, 16, Color(140, 160, 152, 255), TXT_DEFAULT, "session");
-		G::Draw.String(EFonts::MENU_CONSOLAS, nX, 32, Color(235, 245, 240, 255), TXT_DEFAULT, "hits %d / shots %d", m_nHits, m_nShots);
-		G::Draw.String(EFonts::MENU_CONSOLAS, nX, 48, Color(0, 255, 171, 255), TXT_DEFAULT, "acc %d%%  kills %d", nAcc, m_nKills);
+		const int nY0 = G::Draw.m_nScreenH - 130;
+		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, "session");
+		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0 + 16, Color(235, 245, 240, 255), TXT_DEFAULT, "hits %d / shots %d", m_nHits, m_nShots);
+		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0 + 32, Color(0, 255, 171, 255), TXT_DEFAULT, "acc %d%%  kills %d", nAcc, m_nKills);
 	}
 }
 
