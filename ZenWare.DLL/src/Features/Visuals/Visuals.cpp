@@ -173,7 +173,6 @@ void CFeatures_Visuals::DrawCrosshair()
 		}
 	}
 }
-}
 
 void CFeatures_Visuals::DrawOverlay()
 {
