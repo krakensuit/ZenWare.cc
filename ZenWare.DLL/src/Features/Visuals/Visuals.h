@@ -7,6 +7,7 @@ class CFeatures_Visuals
 public:
 	void DrawCrosshair();
 	void DrawOverlay();
+	void DrawGrenade(); // preview of molotov/pipe/bile trajectory
 	void UpdateThirdPerson(); //call once per frame; toggles cam cvars
 };
 

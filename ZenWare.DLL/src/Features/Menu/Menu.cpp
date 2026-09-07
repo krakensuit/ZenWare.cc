@@ -304,10 +304,21 @@ void CFeatures_Menu::Render(){
     Checkbox(mouse,"No fog",&Vars::Visuals::bNoFog);
     Checkbox(mouse,"Third person",&Vars::Visuals::bThirdPerson);
     if(Vars::Visuals::bThirdPerson) SliderInt(mouse,"3rd person distance",&Vars::Visuals::nThirdPersonDist,30,200);
-    Checkbox(mouse,"Crosshair",&Vars::Visuals::bCrosshair);
-    SliderInt(mouse,"Crosshair size",&Vars::Visuals::nCrosshairSize,2,30);
+     Checkbox(mouse,"Crosshair",&Vars::Visuals::bCrosshair);
+     SliderInt(mouse,"Crosshair size",&Vars::Visuals::nCrosshairSize,2,30);
+     Checkbox(mouse,"Grenade path",&Vars::Grenade::bEnabled);
+     if (Vars::Grenade::bEnabled)
+      Checkbox(mouse,"Landing marker",&Vars::Grenade::bLanding);
     Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
-    Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
+     Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
+     Checkbox(mouse,"Hitmarker",&Vars::Hitmarker::bEnabled);
+     if (Vars::Hitmarker::bEnabled)
+     {
+      Checkbox(mouse,"Hit sound",&Vars::Hitmarker::bSound);
+      Checkbox(mouse,"Damage numbers",&Vars::Hitmarker::bNumbers);
+      SliderInt(mouse,"Hit pitch",&Vars::Hitmarker::nPitch,200,2000);
+      SliderInt(mouse,"Number lifetime",&Vars::Hitmarker::nDurationMs,400,3000);
+     }
     Checkbox(mouse,"Radar",&Vars::Radar::bEnabled);
     Checkbox(mouse,"Spectators",&Vars::Radar::bSpectators);
     Checkbox(mouse,"Alerts",&Vars::Alerts::bEnabled);
@@ -333,6 +344,36 @@ void CFeatures_Menu::Render(){
     SliderInt(mouse,"Aim FOV x10",&Vars::Aimbot::nFOVSlider,5,300);
     SliderInt(mouse,"Smoothing",&Vars::Aimbot::nSmoothSlider,0,60);
     BindRow(mouse,"Aimbot key",&Vars::Aimbot::nKey);
+    Checkbox(mouse,"Per-weapon aim",&Vars::AimbotWpn::bEnabled);
+    if (Vars::AimbotWpn::bEnabled)
+    {
+     static const char* szWpnGroups[] = {"Rifles","SMG","Shotguns","Snipers","Pistols"};
+     static char szWpnGroup[32]; sprintf_s(szWpnGroup,"Weapon group: %s >",szWpnGroups[U::Math.Clamp(Vars::AimbotWpn::nGroup,0,4)]);
+     Button(mouse,szWpnGroup,[](){ Vars::AimbotWpn::nGroup=(Vars::AimbotWpn::nGroup+1)%5; });
+     float* pWpnFov = &Vars::AimbotWpn::flRifleFov; int* pWpnFovS = &Vars::AimbotWpn::nRifleFovS;
+     int* pWpnSmooth = &Vars::AimbotWpn::nRifleSmooth; int* pWpnHb = &Vars::AimbotWpn::nRifleHitbox;
+     switch (U::Math.Clamp(Vars::AimbotWpn::nGroup,0,4))
+     {
+      case 1: pWpnFov=&Vars::AimbotWpn::flSmgFov; pWpnFovS=&Vars::AimbotWpn::nSmgFovS; pWpnSmooth=&Vars::AimbotWpn::nSmgSmooth; pWpnHb=&Vars::AimbotWpn::nSmgHitbox; break;
+      case 2: pWpnFov=&Vars::AimbotWpn::flShotgunFov; pWpnFovS=&Vars::AimbotWpn::nShotgunFovS; pWpnSmooth=&Vars::AimbotWpn::nShotgunSmooth; pWpnHb=&Vars::AimbotWpn::nShotgunHitbox; break;
+      case 3: pWpnFov=&Vars::AimbotWpn::flSniperFov; pWpnFovS=&Vars::AimbotWpn::nSniperFovS; pWpnSmooth=&Vars::AimbotWpn::nSniperSmooth; pWpnHb=&Vars::AimbotWpn::nSniperHitbox; break;
+      case 4: pWpnFov=&Vars::AimbotWpn::flPistolFov; pWpnFovS=&Vars::AimbotWpn::nPistolFovS; pWpnSmooth=&Vars::AimbotWpn::nPistolSmooth; pWpnHb=&Vars::AimbotWpn::nPistolHitbox; break;
+      default: break;
+     }
+     SliderInt(mouse,"Wpn FOV x10",pWpnFovS,5,300);
+     SliderInt(mouse,"Wpn smoothing",pWpnSmooth,0,60);
+     static char szWpnHb[32]; sprintf_s(szWpnHb,"Wpn hitbox: %s >",*pWpnHb?"Center":"Head");
+     Button(mouse,szWpnHb,[](){
+      switch (U::Math.Clamp(Vars::AimbotWpn::nGroup,0,4))
+      {
+       case 1: Vars::AimbotWpn::nSmgHitbox^=1; break;
+       case 2: Vars::AimbotWpn::nShotgunHitbox^=1; break;
+       case 3: Vars::AimbotWpn::nSniperHitbox^=1; break;
+       case 4: Vars::AimbotWpn::nPistolHitbox^=1; break;
+       default: Vars::AimbotWpn::nRifleHitbox^=1; break;
+      }});
+     *pWpnFov = *pWpnFovS / 10.0f;
+    }
     Checkbox(mouse,"Trigger bot",&Vars::TriggerBot::bEnabled);
     Checkbox(mouse,"Trigger visible only",&Vars::TriggerBot::bVisibleOnly);
     BindRow(mouse,"Trigger key",&Vars::TriggerBot::nKey);
@@ -343,11 +384,16 @@ void CFeatures_Menu::Render(){
    }
   default:{
     Button(mouse,"Save config",[](){F::Config.Save();});
-    Button(mouse,"Load config",[](){F::Config.Load();
-     // слайдеры - источник правды для меню, подтянем их из загруженных float
-     Vars::Aimbot::nFOVSlider=U::Math.Clamp((int)(Vars::Aimbot::flFOV*10.0f),5,300);
-     Vars::Aimbot::nSmoothSlider=U::Math.Clamp((int)Vars::Aimbot::flSmoothing,0,60);
-     Vars::Visuals::nViewFOVSlider=U::Math.Clamp((int)(Vars::Visuals::flViewFOV*100.0f),50,300);});
+     Button(mouse,"Load config",[](){F::Config.Load();
+      // слайдеры - источник правды для меню, подтянем их из загруженных float
+      Vars::Aimbot::nFOVSlider=U::Math.Clamp((int)(Vars::Aimbot::flFOV*10.0f),5,300);
+      Vars::Aimbot::nSmoothSlider=U::Math.Clamp((int)Vars::Aimbot::flSmoothing,0,60);
+      Vars::Visuals::nViewFOVSlider=U::Math.Clamp((int)(Vars::Visuals::flViewFOV*100.0f),50,300);
+      Vars::AimbotWpn::nRifleFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flRifleFov*10.0f),5,300);
+      Vars::AimbotWpn::nSmgFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flSmgFov*10.0f),5,300);
+      Vars::AimbotWpn::nShotgunFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flShotgunFov*10.0f),5,300);
+      Vars::AimbotWpn::nSniperFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flSniperFov*10.0f),5,300);
+      Vars::AimbotWpn::nPistolFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flPistolFov*10.0f),5,300);});
     BindRow(mouse,"Menu key",&Vars::Menu::nKey);
     static char szLang[32]; sprintf_s(szLang,"Language: %s >",Vars::Menu::bRussian?"Russian":"English");
     Button(mouse,szLang,[](){ Vars::Menu::bRussian=!Vars::Menu::bRussian; });

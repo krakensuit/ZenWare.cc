@@ -3,6 +3,7 @@
 #include "../../Entry/Entry.h"
 #include "../../Features/ESP/ESP.h"
 #include "../../Features/Killfeed/Killfeed.h"
+#include "../../Features/Hitmarker/Hitmarker.h"
 #include "../../Features/Menu/Menu.h"
 #include "../../Features/Radar/Radar.h"
 #include "../../Features/Alerts/Alerts.h"
@@ -69,14 +70,18 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 	{
 		F::Visuals.UpdateThirdPerson();
 		F::Killfeed.OnTick();
+		F::Hitmarker.OnTick();
 		F::ESP.Render();
 		F::Radar.Render();
 		F::Alerts.Render();
 		F::Menu.Render();
 		F::Visuals.DrawCrosshair();
+		F::Visuals.DrawGrenade();
 		F::Visuals.DrawOverlay();
 		if (Vars::Killfeed::bEnabled)
 			F::Killfeed.Draw();
+		if (Vars::Hitmarker::bEnabled)
+			F::Hitmarker.Draw();
 
 		F::JumpStats.Draw();
 	}

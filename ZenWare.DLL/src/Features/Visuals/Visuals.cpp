@@ -35,6 +35,95 @@ void CFeatures_Visuals::UpdateThirdPerson()
 	}
 }
 
+void CFeatures_Visuals::DrawGrenade()
+{
+	if (!Vars::Grenade::bEnabled || !I::EngineClient || !I::EngineClient->IsInGame() || !I::ClientEntityList)
+		return;
+
+	C_TerrorPlayer* pLocal = nullptr;
+	{
+		const int nLocalIdx = I::EngineClient->GetLocalPlayer();
+		if (nLocalIdx > 0)
+		{
+			IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
+			if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+		}
+	}
+	if (!pLocal || pLocal->deadflag() || pLocal->m_lifeState() != 0)
+		return;
+
+	// Только с throwable в руках: молотов / пайп / желчь.
+	C_BaseCombatWeapon* pBase = pLocal->GetActiveWeapon();
+	C_TerrorWeapon* pWpn = pBase ? pBase->As<C_TerrorWeapon*>() : nullptr;
+	if (!pWpn)
+		return;
+	if (!U::Math.CompareGroup(pWpn->GetWeaponID(), WEAPON_MOLOTOV, WEAPON_PIPEBOMB, WEAPON_VOMITJAR))
+		return;
+
+	Vector vAng;
+	I::EngineClient->GetViewAngles(vAng);
+	Vector vFwd;
+	U::Math.AngleVectors(vAng, &vFwd);
+
+	// Старт из глаз + чуть вперёд, начальная скорость вдоль взгляда + наследие бега.
+	Vector vPos = G::Util.GetEyePosition(pLocal) + vFwd * 16.0f;
+	Vector vVel = vFwd * 900.0f + Vector(0.0f, 0.0f, 150.0f) + pLocal->m_vecVelocity() * 0.5f;
+
+	constexpr float flStep = 1.0f / 30.0f;
+	constexpr float flGravity = 800.0f;
+	const Color clrPath(0, 255, 171, 220);
+	const Color clrLand(255, 70, 70, 255);
+
+	CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
+	Vector vSeg = vPos;
+	Vector vLand;
+	bool bLanded = false;
+	int nBounces = 0;
+
+	for (int i = 0; i < 90 && !bLanded; i++)
+	{
+		vVel.z -= flGravity * flStep;
+		const Vector vNext = vSeg + vVel * flStep;
+
+		trace_t tr;
+		G::Util.Trace(vSeg, vNext, MASK_SOLID, &filter, &tr);
+
+		Vector vEnd = vNext;
+		if (tr.DidHit())
+		{
+			vEnd = tr.endpos;
+			// Отражение от плоскости с потерей скорости.
+			const Vector& n = tr.plane.normal;
+			vVel = (vVel - n * (2.0f * vVel.Dot(n))) * 0.45f;
+			if (++nBounces >= 2 || vVel.LenghtSqr() < 900.0f) // <30 u/s — легла
+			{
+				vLand = vEnd;
+				bLanded = true;
+			}
+		}
+
+		Vector vA, vB;
+		if (G::Util.W2S(vSeg, vA) && G::Util.W2S(vEnd, vB))
+			G::Draw.Line((int)vA.x, (int)vA.y, (int)vB.x, (int)vB.y, clrPath);
+
+		vSeg = bLanded ? vEnd : (tr.DidHit() ? vEnd + tr.plane.normal * 1.0f : vNext);
+	}
+
+	if (bLanded && Vars::Grenade::bLanding)
+	{
+		Vector vS;
+		if (G::Util.W2S(vLand, vS))
+		{
+			const int x = (int)vS.x, y = (int)vS.y;
+			G::Draw.OutlinedCircle(x, y, 8, 16, clrLand);
+			G::Draw.Line(x - 12, y, x - 4, y, clrLand);
+			G::Draw.Line(x + 4, y, x + 12, y, clrLand);
+			G::Draw.Line(x, y - 12, x, y - 4, clrLand);
+			G::Draw.Line(x, y + 4, x, y + 12, clrLand);
+		}
+	}
+}
+
 void CFeatures_Visuals::DrawCrosshair()
 {
 	if (!Vars::Visuals::bCrosshair || !G::Draw.m_nScreenW)

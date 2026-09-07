@@ -25,6 +25,24 @@ namespace Vars
 		inline bool bTargetSpecials = true; //also lock hunters/smokers/.../tank
 	}
 
+	// Per-weapon overrides: FOV/smoothing/hitbox per gun group.
+	// Groups: 0 rifles, 1 smg, 2 shotguns, 3 snipers, 4 pistols.
+	namespace AimbotWpn
+	{
+		inline bool bEnabled = false;
+		inline int nGroup = 0; // menu selector
+		inline float flRifleFov = 5.0f;   inline int nRifleFovS = 50;
+		inline int nRifleSmooth = 0;      inline int nRifleHitbox = 0;
+		inline float flSmgFov = 6.0f;     inline int nSmgFovS = 60;
+		inline int nSmgSmooth = 0;        inline int nSmgHitbox = 1;
+		inline float flShotgunFov = 4.0f; inline int nShotgunFovS = 40;
+		inline int nShotgunSmooth = 0;    inline int nShotgunHitbox = 1;
+		inline float flSniperFov = 8.0f;  inline int nSniperFovS = 80;
+		inline int nSniperSmooth = 0;     inline int nSniperHitbox = 0;
+		inline float flPistolFov = 5.0f;  inline int nPistolFovS = 50;
+		inline int nPistolSmooth = 0;     inline int nPistolHitbox = 0;
+	}
+
 	namespace TriggerBot
 	{
 		inline bool bEnabled = false;
@@ -139,8 +157,23 @@ namespace Vars
 		inline bool bEnabled = true;
 	}
 
+	namespace Hitmarker
+	{
+		inline bool bEnabled = false;
+		inline bool bSound = true;
+		inline bool bNumbers = true;
+		inline int nPitch = 1000;      // Hz, menu 200..2000
+		inline int nDurationMs = 1200; // ms, menu 400..3000
+	}
+
 	namespace VisualRecoil
 	{
 		inline bool bEnabled = false;
+	}
+
+	namespace Grenade
+	{
+		inline bool bEnabled = false; // trajectory preview for held throwables
+		inline bool bLanding = true;  // landing marker circle
 	}
 }

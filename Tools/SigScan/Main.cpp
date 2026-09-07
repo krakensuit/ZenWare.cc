@@ -32,7 +32,7 @@ static Pattern_t g_aPatterns[] =
 	{ "ClientMode(ptr)",         "client",          "89 04 B5 ? ? ? ? E8", 3 },
 	{ "GlobalVars(ptr)",         "client",          "A1 ? ? ? ? D9 40 0C 51 D9 1C 24 57", 1 },
 	{ "MoveHelper(ptr)",         "client",          "8B 0D ? ? ? ? 8B 11 8B 52 34", 2 },
-	{ "StartDrawing",            "vguimatsurface",  "33 C5 50 8D 45 F4 64 A3 ? ? ? ? 8B F9 80 3D", -19 },
+	{ "StartDrawing",            "vguimatsurface",  "33 C5 50 8D 45 F4 64 A3 ? ? ? ? 8B F9 80 3D", -27 },
 	{ "FinishDrawing",           "vguimatsurface",  "51 56 A1 ? ? ? ? 33 C5 50 8D 45 F4 64 A3 ? ? ? ? 6A", -17 },
 };
 

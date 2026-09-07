@@ -77,7 +77,8 @@ Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). 
 - **ESP** — boxes, health bar, names, distance, weapons/items, commons, all Special Infected incl. Boomer (class-name fallback for foreign builds)
 - **Chams** — 5 palettes, allies / enemies / all SI, through walls
 - **World** — NoFog, world + viewmodel FOV, thirdperson, custom crosshair, FPS overlay
-- **Intel** — 2D radar, spectator list, Tank / Witch alerts, killfeed
+- **Intel** — 2D radar, spectator list, Tank / Witch alerts, killfeed, hitmarker (hitsound + damage numbers)
+- **Throwables** — grenade trajectory preview (molotov / pipe / bile) with landing marker
 
 </details>
 
@@ -85,6 +86,7 @@ Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). 
 <summary><b>Combat</b> — aim assist</summary>
 
 - **Aimbot** — silent, FOV / Distance priority, head / center, smoothing, visible-only, commons + all SI
+- **Per-weapon** — own FOV / smoothing / hitbox per group (rifles, SMG, shotguns, snipers, pistols)
 - **Helpers** — TriggerBot, AutoShove, AutoPistol, NoSpread (toggleable)
 
 </details>
@@ -103,6 +105,7 @@ Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). 
 - `INSERT` menu · `F11` unload · RU/EN toggle (button + `F7`) · animated RGB logo · `?` help icons · tabs
 - Config — `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
 - Logger — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid fallback)
+- Offsets cache — `<gamedir>/ZenWare.offsets` (auto, delete to force rescan)
 
 </details>
 
@@ -163,14 +166,15 @@ Rebind: `Misc → Menu key / Aimbot key` — click → `[press key]` → press a
 ZenWare.cc/
 ├── ZenWare.sln                  solution (DLL + Loader + External)
 ├── ZenWare.DLL/                 internal module (+ MinHook, SDK, Features, Hooks)
-├── ZenWare.Loader/              GUI loader — local build only
+├── ZenWare.Loader/              GUI loader — local build only, no auto-update
 ├── ZenWare.External/            external overlay — ESP, Memory, Movement, Overlay
 ├── Tools/SigScan/               signature verifier for your local client.dll
 ├── .github/workflows/           CI compile check — no binary upload
 ├── dist/                        local output only (git-ignored)
 ├── Build-SingleFile.ps1         local builder (no Publish)
+├── Verify-Signatures.bat        one-click pattern check vs your game files
 ├── START-ZenWare.bat            local external launcher
-├── README.md · LICENSE · NOTICE.md · SECURITY.md
+├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md
 ```
 
 <a id="faq-en"></a>
@@ -178,7 +182,7 @@ ZenWare.cc/
 
 | Symptom | Fix |
 |---|---|
-| `XorString` MessageBox on start | Signature broke after a game update → run `Tools/SigScan` on `left4dead2/bin/client.dll`, update `Offsets.cpp` |
+| `XorString` MessageBox on start | Signature broke after a game update → double-click `Verify-Signatures.bat`, update `Offsets.cpp` |
 | Crash after `Paint` | Open the log → find `[!!!] EXCEPTION` → report `module+0x...`, no dumps |
 | Antivirus flag | Folder → exclusions (heuristic on `WriteProcessMemory` / `CreateRemoteThread`) |
 | Squares instead of letters | Press `F7` (font fallback / language) |
@@ -207,7 +211,8 @@ ZenWare.cc/
 - **ESP** — боксы, HP, ники, дистанция, оружие/предметы, обычные, все СИ включая бумера (фолбэк по именам)
 - **Chams** — 5 палитр, союзники / враги / все СИ, сквозь стены
 - **Мир** — NoFog, FOV мира + модели, 3-е лицо, прицел, FPS-оверлей
-- **Инфо** — 2D-радар, наблюдатели, алерты танка / ведьмы, киллфид
+- **Инфо** — 2D-радар, наблюдатели, алерты танка / ведьмы, киллфид, хитмаркер (звук + цифры урона)
+- **Гранаты** — предпросмотр траектории (молотов / пайп / желчь) с маркером падения
 
 </details>
 
@@ -215,6 +220,7 @@ ZenWare.cc/
 <summary><b>Combat</b> — аим</summary>
 
 - **Aimbot** — silent, приоритет FOV / Distance, head / center, сглаживание, только видимые, обычные + все СИ
+- **По оружию** — свои FOV / сглаживание / хитбокс на группу (винтовки, ПП, дробовики, снайперки, пистолеты)
 - **Помощники** — TriggerBot, AutoShove, AutoPistol, NoSpread (отключаемый)
 
 </details>
@@ -233,6 +239,7 @@ ZenWare.cc/
 - Меню `INSERT` · выгрузка `F11` · RU/EN (кнопка + `F7`) · RGB-логотип · иконки `?` · табы
 - Конфиг — `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
 - Лог — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid фолбэк)
+- Кэш оффсетов — `<gamedir>/ZenWare.offsets` (авто, удали для перескана)
 
 </details>
 
@@ -293,14 +300,15 @@ map c1m1_hotel
 ZenWare.cc/
 ├── ZenWare.sln                  солюшен (DLL + Loader + External)
 ├── ZenWare.DLL/                 internal-модуль (+ MinHook, SDK, Features, Hooks)
-├── ZenWare.Loader/              GUI-лоадер — только локально
+├── ZenWare.Loader/              GUI-лоадер — только локально, без автообновлений
 ├── ZenWare.External/            внешний оверлей — ESP, Memory, Movement, Overlay
 ├── Tools/SigScan/               проверка сигнатур твоего client.dll
 ├── .github/workflows/           CI-проверка сборки — без выгрузки exe
 ├── dist/                        только локальный выход (игнорируется гитом)
 ├── Build-SingleFile.ps1         локальный сборщик (без Publish)
+├── Verify-Signatures.bat        проверка паттернов в один клик
 ├── START-ZenWare.bat            локальный запуск External
-├── README.md · LICENSE · NOTICE.md · SECURITY.md
+├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md
 ```
 
 <a id="faq-ru"></a>
@@ -308,7 +316,7 @@ ZenWare.cc/
 
 | Симптом | Решение |
 |---|---|
-| `XorString` при старте | Умер паттерн после обновы → прогони `Tools/SigScan` на `left4dead2/bin/client.dll`, обнови `Offsets.cpp` |
+| `XorString` при старте | Умер паттерн после обновы → дважды кликни `Verify-Signatures.bat`, обнови `Offsets.cpp` |
 | Краш после `Paint` | Открой лог → найди `[!!!] EXCEPTION` → пришли `module+0x...`, без дампов |
 | Антивирус | Папку в исключения (эвристика на `WriteProcessMemory` / `CreateRemoteThread`) |
 | Квадратики вместо букв | Нажми `F7` (шрифт / язык) |

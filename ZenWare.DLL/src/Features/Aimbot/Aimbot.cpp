@@ -33,6 +33,46 @@ namespace
 		return !tr.DidHit();
 	}
 
+	// Per-Run snapshot: global aimbot values, overridden by weapon group.
+	struct WpnCfg_t { float flFOV; float flSmooth; int nHitbox; int nPrio; };
+	WpnCfg_t s_wpn = { 5.0f, 0.0f, 0, 0 };
+
+	// -1 = прочие (global defaults), иначе 0..4 индекс группы Vars::AimbotWpn.
+	int WpnGroupFor(int nID)
+	{
+		switch (nID)
+		{
+			case WEAPON_M16A1: case WEAPON_SCAR: case WEAPON_AK47: case WEAPON_SSG552: case WEAPON_M60:
+				return 0; // rifles
+			case WEAPON_UZI: case WEAPON_MAC10: case WEAPON_MP5:
+				return 1; // smg
+			case WEAPON_PUMP_SHOTGUN: case WEAPON_AUTO_SHOTGUN: case WEAPON_CHROME_SHOTGUN: case WEAPON_SPAS:
+				return 2; // shotguns
+			case WEAPON_HUNTING_RIFLE: case WEAPON_MILITARY_SNIPER: case WEAPON_SCOUT: case WEAPON_AWP:
+				return 3; // snipers
+			case WEAPON_PISTOL: case WEAPON_DEAGLE:
+				return 4; // pistols
+			default:
+				return -1;
+		}
+	}
+
+	void ResolveWpnCfg(C_TerrorWeapon* pWpn)
+	{
+		s_wpn = { Vars::Aimbot::flFOV, Vars::Aimbot::flSmoothing, Vars::Aimbot::nHitbox, Vars::Aimbot::nTargetPriority };
+		if (!Vars::AimbotWpn::bEnabled || !pWpn)
+			return;
+		switch (WpnGroupFor(pWpn->GetWeaponID()))
+		{
+			case 0: s_wpn = { Vars::AimbotWpn::flRifleFov, (float)Vars::AimbotWpn::nRifleSmooth, Vars::AimbotWpn::nRifleHitbox, s_wpn.nPrio }; break;
+			case 1: s_wpn = { Vars::AimbotWpn::flSmgFov, (float)Vars::AimbotWpn::nSmgSmooth, Vars::AimbotWpn::nSmgHitbox, s_wpn.nPrio }; break;
+			case 2: s_wpn = { Vars::AimbotWpn::flShotgunFov, (float)Vars::AimbotWpn::nShotgunSmooth, Vars::AimbotWpn::nShotgunHitbox, s_wpn.nPrio }; break;
+			case 3: s_wpn = { Vars::AimbotWpn::flSniperFov, (float)Vars::AimbotWpn::nSniperSmooth, Vars::AimbotWpn::nSniperHitbox, s_wpn.nPrio }; break;
+			case 4: s_wpn = { Vars::AimbotWpn::flPistolFov, (float)Vars::AimbotWpn::nPistolSmooth, Vars::AimbotWpn::nPistolHitbox, s_wpn.nPrio }; break;
+			default: break;
+		}
+	}
+
 	bool FindCommonTarget(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vViewAngles, Vector& vOut)
 	{
 		bool bFound = false;
@@ -74,7 +114,7 @@ namespace
 
 			const float flFov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAim));
 
-			if (flFov > Vars::Aimbot::flFOV)
+			if (flFov > s_wpn.flFOV)
 				continue;
 
 			if (flFov < flBest)
@@ -141,7 +181,7 @@ namespace
 
 			const float flFov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAim));
 
-			if (flFov > Vars::Aimbot::flFOV)
+			if (flFov > s_wpn.flFOV)
 				continue;
 
 			if (flFov < flBest)
@@ -160,6 +200,8 @@ void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUse
 {
 	if (!ShouldRun(pLocal, pWeapon, cmd))
 		return;
+
+	ResolveWpnCfg(pWeapon);
 
 	const Vector vEyePos = G::Util.GetEyePosition(pLocal);
 	Vector vViewAngles = cmd->viewangles;
@@ -225,9 +267,9 @@ void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUse
 
 	Vector vAngleTo = U::Math.GetAngleToPosition(vEyePos, vAimPoint);
 
-	if (Vars::Aimbot::flSmoothing > 0.0f && !Vars::Aimbot::bSilent)
+	if (s_wpn.flSmooth > 0.0f && !Vars::Aimbot::bSilent)
 	{
-		const float flSmooth = U::Math.Clamp(Vars::Aimbot::flSmoothing, 1.0f, 64.0f);
+		const float flSmooth = U::Math.Clamp(s_wpn.flSmooth, 1.0f, 64.0f);
 		vAngleTo -= vViewAngles;
 		U::Math.ClampAngles(vAngleTo);
 		vAngleTo /= flSmooth;
@@ -279,7 +321,7 @@ C_TerrorPlayer* CFeatures_Aimbot::FindTarget(C_TerrorPlayer* pLocal, const Vecto
 		const Vector vAngleTo = U::Math.GetAngleToPosition(vEyePos, vAimPoint);
 		const float flFov = U::Math.GetFovBetween(vViewAngles, vAngleTo);
 
-		if (flFov > Vars::Aimbot::flFOV)
+		if (flFov > s_wpn.flFOV)
 			continue;
 
 		const float flWeight = GetWeight(pPlayer, vViewAngles, vEyePos, vAngleTo);
@@ -299,7 +341,7 @@ bool CFeatures_Aimbot::GetAimPoint(C_TerrorPlayer* pTarget, Vector& vOut)
 	if (!pTarget)
 		return false;
 
-	switch (Vars::Aimbot::nHitbox)
+	switch (s_wpn.nHitbox)
 	{
 		case 0: //Head
 		{
@@ -320,7 +362,7 @@ bool CFeatures_Aimbot::GetAimPoint(C_TerrorPlayer* pTarget, Vector& vOut)
 
 float CFeatures_Aimbot::GetWeight(C_TerrorPlayer* pTarget, const Vector& vFrom, const Vector& vEyePos, const Vector& vAngleTo) const
 {
-	switch (Vars::Aimbot::nTargetPriority)
+	switch (s_wpn.nPrio)
 	{
 		case 1: //Distance
 		{
