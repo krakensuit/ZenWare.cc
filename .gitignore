@@ -31,6 +31,12 @@ x64/
 # Logs next to sources
 *.log
 
+# SAFETY: never commit built binaries or auto-downloaded updates.
+# Repo is source-only. Local builds stay in dist/ and %TEMP%.
+dist/*.exe
+ZenWare_*.exe
+ZenWare.cfg
+
 # OS junk
 Thumbs.db
 Desktop.ini

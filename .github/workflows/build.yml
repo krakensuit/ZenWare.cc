@@ -24,8 +24,6 @@ jobs:
           "Loader: $kb KB"
           if ((Get-Item $exe).Length -lt 2097152) { throw "Resources not embedded" }
 
-      - name: Upload loader artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ZenWare-Loader
-          path: ZenWare.Loader/bin/Release/ZenWare.Loader.exe
+      # SAFETY: no binary distribution via CI.
+      # Proveryaem chto proekt sobiraetsya, no NE zagruzhaem exe v artifacts/Releases.
+      # Repo rasprostranyaetsya TOLKO ishodnikami.

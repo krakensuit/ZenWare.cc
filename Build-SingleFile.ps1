@@ -1,13 +1,16 @@
-# ZenWare single-file builder.
-# Sobiraet DLL + External + Loader i kladet ODIN file v dist\ dlya otpravki drugu.
+# ZenWare local-only builder (NO public publish).
+# Sobiraet DLL + External + Loader v ODIN file v dist\ TOLKO dlya localnogo ispolzovaniya.
 # Vnutri loadera uzhe vshity ZenWare.dll, ZenWare.External.exe i logotip -
 # na chuzhom PK oni sami raspakuyutsya v %TEMP% pri nazhatii knopok.
+#
+# SAFETY POLICY: ne zagruzhay gotovyy exe v public GitHub Releases.
+# Rasprostranenie idet TOLKO ishodnikami. Sobrannyy exe ne kommititsya (sm. .gitignore)
+# i ne publikuetsya avtomaticheski. Druzyam peredavay privatno, ne cherez Releases.
 #
 # Zapusk: powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1
 param(
 	[string]$Configuration = "Release",
-	[string]$OutName = "ZenWare.exe",
-	[switch]$Publish
+	[string]$OutName = "ZenWare.exe"
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -54,14 +57,5 @@ $howto = @(
 )
 $howto | Set-Content "$dist\KAK-ZAPUSTIT.txt" -Encoding UTF8
 
-"Gotovo: $dist\$OutName - etot ODIN file i kiday drugu."
-if ($Publish) {
-	$m = Select-String -Pattern 'define ZENWARE_VER_STR "([^"]+)"' -Path "$root\ZenWare.Loader\resource.h"
-	if (-not $m) { throw "Ne nashel versiyu v resource.h" }
-	$tag = "v" + $m.Matches[0].Groups[1].Value
-	$gh = Get-Command gh -ErrorAction SilentlyContinue
-	if (-not $gh) { throw "Net GitHub CLI (gh). Postav: winget install GitHub.cli, zatem gh auth login. Ili sozday reliz v web: tag $tag + asset dist\$OutName" }
-	& gh release create $tag "$dist\$OutName" --title $tag --notes "ZenWare $tag single-file (loader + DLL + external + logo)"
-	if ($LASTEXITCODE -ne 0) { throw "gh release create upal (mozhet, takoy tag uzhe est?)" }
-	"Opublikovano: $tag - druzya poluchat obnovu avtomaticheski pri zapuske."
-}
+"Gotovo (LOCAL ONLY): $dist\$OutName - sobran dlya lichnogo ispolzovaniya."
+"NE zagruzhay etot exe v public GitHub Releases. Repo rasprostranyaetsya TOLKO ishodnikami."
