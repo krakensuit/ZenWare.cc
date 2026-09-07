@@ -1,46 +1,58 @@
-<p align="center">
-  <img src="ZenWare.Loader/zenwareLOGO.png" width="160" alt="ZenWare logo" />
-</p>
+<div align="center">
 
-<h1 align="center">ZenWare.cc</h1>
+<img src="ZenWare.Loader/zenwareLOGO.png" width="170" alt="ZenWare logo" />
 
-<p align="center">
-  Internal + External training software for <b>Left 4 Dead 2</b><br />
-  x86 · C++17 · Visual Studio 2022 · MinHook · v3.5
-</p>
+# ZenWare.cc
 
-<p align="center">
-  <a href="https://github.com/krakensuit/ZenWare.cc/actions"><img src="https://github.com/krakensuit/ZenWare.cc/actions/workflows/build.yml/badge.svg" alt="build" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="license: MIT" /></a>
-  <a href="SECURITY.md"><img src="https://img.shields.io/badge/distribution-source--only-blue.svg" alt="source only" /></a>
-  <a href="https://store.steampowered.com/app/550/Left_4_Dead_2/"><img src="https://img.shields.io/badge/game-L4D2-2a475e.svg" alt="L4D2" /></a>
-  <img src="https://img.shields.io/badge/platform-Win32%20x86-lightgrey.svg" alt="Win32 x86" />
-</p>
+**Internal + External training software for Left 4 Dead 2**
 
-<p align="center">
-  <b>Language / Язык:</b>
-  <a href="#english">English</a> ·
-  <a href="#russian">Русский</a> ·
-  <a href="#legal">Legal</a>
-</p>
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.5`
 
-> **Source-only. Education and local servers only.**
-> This repository contains **no prebuilt binaries**. Build from source and play
-> on your own server with `-insecure` (e.g. `map c1m1_hotel`).
-> Using it on VAC-secured servers can ban your account. Use at your own risk.
->
-> **Только исходники. Только обучение и локальный сервер.**
-> Готовых `.exe` / `.dll` в репозитории и релизах **нет**. Собери из исходников
-> и играй на своём сервере с `-insecure` (например `map c1m1_hotel`).
-> Игра на VAC-серверах = бан. Всё на твой риск.
+<br />
+
+<a href="https://github.com/krakensuit/ZenWare.cc/actions"><img src="https://github.com/krakensuit/ZenWare.cc/actions/workflows/build.yml/badge.svg?style=flat-square" alt="build" /></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="license: MIT" /></a>
+<a href="SECURITY.md"><img src="https://img.shields.io/badge/distribution-source--only-blue.svg?style=flat-square" alt="source only" /></a>
+<a href="https://store.steampowered.com/app/550/Left_4_Dead_2/"><img src="https://img.shields.io/badge/game-L4D2-2a475e.svg?style=flat-square" alt="L4D2" /></a>
+<img src="https://img.shields.io/badge/platform-Win32_x86-lightgrey.svg?style=flat-square" alt="Win32 x86" />
+
+<br /><br />
+
+**Language / Язык:**
+<a href="#english">English</a> ·
+<a href="#russian">Русский</a> ·
+<a href="#legal">Legal</a>
+
+</div>
 
 ---
 
-## Contents
+> **Source-only · Education and local servers only.**
+> No prebuilt `.exe` / `.dll` in this repo or Releases — build from source,
+> launch the game with `-insecure`, play your own map (`map c1m1_hotel`).
+> VAC-secured servers = ban risk. Use at your own risk.
+>
+> **Только исходники · Только обучение и локальный сервер.**
+> Готовых `.exe` / `.dll` в репозитории и релизах нет — собери из исходников,
+> запускай игру с `-insecure`, играй на своей карте (`map c1m1_hotel`).
+> VAC-серверы = риск бана. Всё на твой риск.
 
-- [English](#english) — about, features, requirements, build, hotkeys, troubleshooting
-- [Русский](#russian) — о проекте, возможности, сборка, клавиши, проблемы
-- [Legal](#legal) — license, notices, trademarks, distribution policy
+## Navigate
+
+| | | | |
+|---|---|---|---|
+| [About](#english) | [Build & Run](#build-en) | [Hotkeys](#hotkeys-en) | [FAQ](#faq-en) |
+| [О проекте](#russian) | [Сборка](#build-ru) | [Клавиши](#hotkeys-ru) | [Проблемы](#faq-ru) |
+
+## At a glance
+
+| Component | Mode | What it does |
+|---|---|---|
+| `ZenWare.DLL` | Internal (injected) | ESP, Chams, Aimbot, Movement, Menu — `bin/Release/ZenWare.dll` |
+| `ZenWare.Loader` | GUI launcher, local build only | Single-file assembly, themes, language — `dist/` stays on your PC |
+| `ZenWare.External` | External (no injection) | RPM + GDI overlay + `SendInput` bhop/strafe — safest to study first |
+
+Details: [SECURITY.md](SECURITY.md) · Third-party: [NOTICE.md](NOTICE.md) · License: [LICENSE](LICENSE)
 
 ---
 
@@ -49,118 +61,128 @@
 
 ### About
 
-ZenWare.cc is based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base) and has 3 parts:
+Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). Three parts, one solution (`ZenWare.sln`, `Release | Win32`):
 
-| Part | What it is | Output |
-| ---- | ---------- | ------ |
-| `ZenWare.DLL` | Internal module injected into the game | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` | GUI loader, local single-file build, themes | local `dist/ZenWare.exe` (not published) |
-| `ZenWare.External` | Read-only overlay, no injection (RPM + GDI + `SendInput`) | `bin/Release/ZenWare.External.exe` |
-
-No binaries are published. See [SECURITY.md](SECURITY.md).
+| Part | Output |
+|---|---|
+| `ZenWare.DLL` — internal module | `bin/Release/ZenWare.dll` (x86, /MT) |
+| `ZenWare.Loader` — GUI loader | local `dist/ZenWare.exe`, never published |
+| `ZenWare.External` — read-only overlay | `bin/Release/ZenWare.External.exe` |
 
 ### Features
 
-<details>
-<summary><b>Visuals</b> — ESP, Chams, overlays</summary>
+<details open>
+<summary><b>Visuals</b> — ESP · Chams · Overlays</summary>
 
-- ESP: boxes, health bar, names, distance, weapons/items, commons, all Special Infected incl. Boomer (class-name fallback for foreign builds)
-- Chams: 5 palettes, allies / enemies / all SI, through walls
-- NoFog, world + viewmodel FOV, thirdperson, custom crosshair, FPS overlay
-- 2D radar, spectator list, Tank / Witch alerts, killfeed
+- **ESP** — boxes, health bar, names, distance, weapons/items, commons, all Special Infected incl. Boomer (class-name fallback for foreign builds)
+- **Chams** — 5 palettes, allies / enemies / all SI, through walls
+- **World** — NoFog, world + viewmodel FOV, thirdperson, custom crosshair, FPS overlay
+- **Intel** — 2D radar, spectator list, Tank / Witch alerts, killfeed
 
 </details>
 
 <details>
 <summary><b>Combat</b> — aim assist</summary>
 
-- Aimbot: silent, FOV / Distance priority, head / center, smoothing, visible-only, commons + all SI
-- TriggerBot, AutoShove, AutoPistol, NoSpread (toggleable)
+- **Aimbot** — silent, FOV / Distance priority, head / center, smoothing, visible-only, commons + all SI
+- **Helpers** — TriggerBot, AutoShove, AutoPistol, NoSpread (toggleable)
 
 </details>
 
 <details>
-<summary><b>Movement</b> — bhop and strafe</summary>
+<summary><b>Movement</b> — bhop & strafe</summary>
 
-- BunnyHop (perfect / legit), EdgeJump, EdgeBug, JumpBug, LongJump, FastStop, Prestrafe, AutoDuck, JumpStats, SpeedHUD
-- AutoStrafe: legit / rage / w-only / directional
+- **Bhop kit** — perfect / legit BunnyHop, EdgeJump, EdgeBug, JumpBug, LongJump, FastStop, Prestrafe, AutoDuck, JumpStats, SpeedHUD
+- **Strafe** — legit / rage / w-only / directional AutoStrafe
 
 </details>
 
 <details>
 <summary><b>Menu / System</b></summary>
 
-- `INSERT` menu, `F11` unload, RU/EN toggle (button + `F7`), animated RGB logo, `?` help icons, tabs
-- Config: `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
-- Logger: `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid fallback)
+- `INSERT` menu · `F11` unload · RU/EN toggle (button + `F7`) · animated RGB logo · `?` help icons · tabs
+- Config — `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
+- Logger — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid fallback)
 
 </details>
 
-### Requirements
+<a id="build-en"></a>
+### Build and run — local only
 
-- Windows 10/11 x64, Steam + Left 4 Dead 2
-- Build: Visual Studio 2022 + `Desktop development with C++` + `Windows SDK 10.0.26100.0`
-- Target: `Release | Win32` (x86)
-
-### Build and run (local only)
+**1. Build**
 
 ```powershell
-# 1. Build everything locally (DLL -> External -> Loader)
 powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1
+```
 
-# 2. Steam -> L4D2 -> launch options:
+**2. Prepare the game** — Steam → L4D2 → launch options:
+
+```text
 -insecure -windowed -console
+```
 
-# 3. In-game console:
+**3. Load a local map** — in-game console:
+
+```text
 map c1m1_hotel
 ```
 
-Then run the locally built loader **as administrator** and press `INJECT`.
-External-only mode (no injection): run your local
+**4. Inject** — run your locally built loader **as administrator** → `INJECT`.
+
+External-only (no injection): run your local
 `ZenWare.External/bin/Release/ZenWare.External.exe` or `START-ZenWare.bat`.
 
-Do not upload the built `exe` to public GitHub Releases.
+> Do not upload the built `exe` to public GitHub Releases. Source-only policy: [SECURITY.md](SECURITY.md).
 
+### Requirements
+
+| Item | Version |
+|---|---|
+| OS | Windows 10/11 x64 |
+| Game | Steam + Left 4 Dead 2 |
+| IDE | Visual Studio 2022 + `Desktop development with C++` |
+| SDK | Windows SDK `10.0.26100.0` |
+| Target | `Release` · `Win32` (x86) |
+
+<a id="hotkeys-en"></a>
 ### Hotkeys
 
 | Key | Action |
-| --- | ------ |
+|:---:|---|
 | `INSERT` | Open / close menu |
 | `F11` | Unload |
 | `F7` | Language RU / EN |
 | `Space` (hold) | BunnyHop (default) |
 | `MOUSE4` (hold) | Aimbot (default) |
 
-Rebind in `Misc → Menu key / Aimbot key`: click → `[press key]` → press a key, `ESC` = off.
+Rebind: `Misc → Menu key / Aimbot key` — click → `[press key]` → press a key, `ESC` = off.
 
 ### Project structure
 
 ```text
 ZenWare.cc/
-├── ZenWare.sln
-├── ZenWare.DLL/            internal module (+ MinHook, SDK, Features, Hooks)
-├── ZenWare.Loader/         GUI loader (local build only, no auto-download)
-├── ZenWare.External/       external overlay (src: ESP, Memory, Movement, Overlay)
-├── Tools/SigScan/          signature verifier for your local client.dll
-├── .github/workflows/      CI: compile check only, no binary upload
-├── dist/                   local output only (git-ignored, never committed)
-├── Build-SingleFile.ps1    local builder, no Publish
-├── START-ZenWare.bat       local external launcher
-├── README.md
-├── LICENSE                 MIT
-├── NOTICE.md               third-party notices
-└── SECURITY.md             source-only policy
+├── ZenWare.sln                  solution (DLL + Loader + External)
+├── ZenWare.DLL/                 internal module (+ MinHook, SDK, Features, Hooks)
+├── ZenWare.Loader/              GUI loader — local build only
+├── ZenWare.External/            external overlay — ESP, Memory, Movement, Overlay
+├── Tools/SigScan/               signature verifier for your local client.dll
+├── .github/workflows/           CI compile check — no binary upload
+├── dist/                        local output only (git-ignored)
+├── Build-SingleFile.ps1         local builder (no Publish)
+├── START-ZenWare.bat            local external launcher
+├── README.md · LICENSE · NOTICE.md · SECURITY.md
 ```
 
+<a id="faq-en"></a>
 ### Troubleshooting
 
 | Symptom | Fix |
-| ------- | --- |
-| `XorString` MessageBox on start | A signature broke after a game update. Run `Tools/SigScan` on `left4dead2/bin/client.dll`, update `Offsets.cpp`. |
-| Crash after `Paint` | Open the log, find `[!!!] EXCEPTION`, report `module+0x...` without dumps. |
-| Antivirus flag | Project folder → exclusions (heuristic on `WriteProcessMemory` / `CreateRemoteThread`). |
-| Squares instead of letters | Press `F7` (font fallback / language). |
-| External shows no boxes | Check the top overlay lines (resolver diagnostics) and signatures. |
+|---|---|
+| `XorString` MessageBox on start | Signature broke after a game update → run `Tools/SigScan` on `left4dead2/bin/client.dll`, update `Offsets.cpp` |
+| Crash after `Paint` | Open the log → find `[!!!] EXCEPTION` → report `module+0x...`, no dumps |
+| Antivirus flag | Folder → exclusions (heuristic on `WriteProcessMemory` / `CreateRemoteThread`) |
+| Squares instead of letters | Press `F7` (font fallback / language) |
+| External: no boxes | Check top overlay lines (resolver diagnostics) and signatures |
 
 ---
 
@@ -169,137 +191,147 @@ ZenWare.cc/
 
 ### О проекте
 
-ZenWare.cc собран на базе [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base), 3 части:
+База — [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). Три части, один солюшен (`ZenWare.sln`, `Release | Win32`):
 
-| Часть | Что это | Выход |
-| ----- | ------- | ----- |
-| `ZenWare.DLL` | Модуль, инжектится в игру | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` | GUI-лоадер, локальный однофайловый билд, темы | локальный `dist/ZenWare.exe` (не публикуется) |
-| `ZenWare.External` | Оверлей без инжекта (RPM + GDI + `SendInput`) | `bin/Release/ZenWare.External.exe` |
-
-Бинарников в раздаче нет. См. [SECURITY.md](SECURITY.md).
+| Часть | Выход |
+|---|---|
+| `ZenWare.DLL` — internal-модуль | `bin/Release/ZenWare.dll` (x86, /MT) |
+| `ZenWare.Loader` — GUI-лоадер | локальный `dist/ZenWare.exe`, не публикуется |
+| `ZenWare.External` — оверлей без инжекта | `bin/Release/ZenWare.External.exe` |
 
 ### Возможности
 
-<details>
-<summary><b>Visuals</b> — ESP, Chams, оверлеи</summary>
+<details open>
+<summary><b>Visuals</b> — ESP · Chams · Оверлеи</summary>
 
-- ESP: боксы, HP, ники, дистанция, оружие/предметы, обычные, все СИ включая бумера (фолбэк по именам)
-- Chams: 5 палитр, союзники / враги / все СИ, сквозь стены
-- NoFog, FOV мира + модели, 3-е лицо, прицел, FPS-оверлей
-- 2D-радар, наблюдатели, алерты танка / ведьмы, киллфид
+- **ESP** — боксы, HP, ники, дистанция, оружие/предметы, обычные, все СИ включая бумера (фолбэк по именам)
+- **Chams** — 5 палитр, союзники / враги / все СИ, сквозь стены
+- **Мир** — NoFog, FOV мира + модели, 3-е лицо, прицел, FPS-оверлей
+- **Инфо** — 2D-радар, наблюдатели, алерты танка / ведьмы, киллфид
 
 </details>
 
 <details>
 <summary><b>Combat</b> — аим</summary>
 
-- Aimbot: silent, приоритет FOV / Distance, head / center, сглаживание, только видимые, обычные + все СИ
-- TriggerBot, AutoShove, AutoPistol, NoSpread (отключаемый)
+- **Aimbot** — silent, приоритет FOV / Distance, head / center, сглаживание, только видимые, обычные + все СИ
+- **Помощники** — TriggerBot, AutoShove, AutoPistol, NoSpread (отключаемый)
 
 </details>
 
 <details>
 <summary><b>Movement</b> — баннихоп и стрейфы</summary>
 
-- BunnyHop (perfect / legit), EdgeJump, EdgeBug, JumpBug, LongJump, FastStop, Prestrafe, AutoDuck, JumpStats, SpeedHUD
-- AutoStrafe: legit / rage / w-only / directional
+- **Bhop-набор** — perfect / legit BunnyHop, EdgeJump, EdgeBug, JumpBug, LongJump, FastStop, Prestrafe, AutoDuck, JumpStats, SpeedHUD
+- **Стрейф** — legit / rage / w-only / directional AutoStrafe
 
 </details>
 
 <details>
 <summary><b>Меню / Система</b></summary>
 
-- Меню на `INSERT`, выгрузка `F11`, RU/EN (кнопка + `F7`), RGB-логотип, иконки `?`, табы
-- Конфиг: `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
-- Лог: `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid фолбэк)
+- Меню `INSERT` · выгрузка `F11` · RU/EN (кнопка + `F7`) · RGB-логотип · иконки `?` · табы
+- Конфиг — `<gamedir>/ZenWare.cfg` (`bool / int / float / Color`)
+- Лог — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid фолбэк)
 
 </details>
 
-### Требования
+<a id="build-ru"></a>
+### Сборка и запуск — только локально
 
-- Windows 10/11 x64, Steam + Left 4 Dead 2
-- Сборка: Visual Studio 2022 + `Desktop development with C++` + `Windows SDK 10.0.26100.0`
-- Цель: `Release | Win32` (x86)
-
-### Сборка и запуск (только локально)
+**1. Сборка**
 
 ```powershell
-# 1. Собрать всё локально (DLL -> External -> Loader)
 powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1
+```
 
-# 2. Steam -> L4D2 -> параметры запуска:
+**2. Игра** — Steam → L4D2 → параметры запуска:
+
+```text
 -insecure -windowed -console
+```
 
-# 3. Консоль игры:
+**3. Карта** — консоль игры:
+
+```text
 map c1m1_hotel
 ```
 
-Дальше запусти собранный лоадер **от администратора** и нажми `ИНЖЕКТ`.
-Режим External без инжекта: твой локальный
+**4. Инжект** — собранный лоадер **от администратора** → `ИНЖЕКТ`.
+
+Только External (без инжекта): твой локальный
 `ZenWare.External/bin/Release/ZenWare.External.exe` или `START-ZenWare.bat`.
 
-Собранный `exe` в public Releases не загружай.
+> Собранный `exe` в public Releases не загружай. Политика: [SECURITY.md](SECURITY.md).
 
+### Требования
+
+| Что | Версия |
+|---|---|
+| ОС | Windows 10/11 x64 |
+| Игра | Steam + Left 4 Dead 2 |
+| IDE | Visual Studio 2022 + `Desktop development with C++` |
+| SDK | Windows SDK `10.0.26100.0` |
+| Цель | `Release` · `Win32` (x86) |
+
+<a id="hotkeys-ru"></a>
 ### Клавиши
 
 | Клавиша | Действие |
-| ------- | -------- |
+|:---:|---|
 | `INSERT` | Меню |
 | `F11` | Выгрузка |
 | `F7` | Язык RU / EN |
 | `Space` (держать) | BunnyHop (по умолчанию) |
 | `MOUSE4` (держать) | Aimbot (по умолчанию) |
 
-Смена в `Misc → Menu key / Aimbot key`: клик → `[press key]` → нажми клавишу, `ESC` = выкл.
+Смена: `Misc → Menu key / Aimbot key` — клик → `[press key]` → нажми клавишу, `ESC` = выкл.
 
 ### Структура
 
 ```text
 ZenWare.cc/
-├── ZenWare.sln
-├── ZenWare.DLL/            internal-модуль (+ MinHook, SDK, Features, Hooks)
-├── ZenWare.Loader/         GUI-лоадер (только локально, без автозагрузки)
-├── ZenWare.External/       внешний оверлей (src: ESP, Memory, Movement, Overlay)
-├── Tools/SigScan/          проверка сигнатур для твоего client.dll
-├── .github/workflows/      CI: только проверка сборки, без выгрузки exe
-├── dist/                   только локальный выход (в гите нет, игнорируется)
-├── Build-SingleFile.ps1    локальный сборщик, без Publish
-├── START-ZenWare.bat       локальный запуск External
-├── README.md
-├── LICENSE                 MIT
-├── NOTICE.md               сторонние компоненты
-└── SECURITY.md             политика source-only
+├── ZenWare.sln                  солюшен (DLL + Loader + External)
+├── ZenWare.DLL/                 internal-модуль (+ MinHook, SDK, Features, Hooks)
+├── ZenWare.Loader/              GUI-лоадер — только локально
+├── ZenWare.External/            внешний оверлей — ESP, Memory, Movement, Overlay
+├── Tools/SigScan/               проверка сигнатур твоего client.dll
+├── .github/workflows/           CI-проверка сборки — без выгрузки exe
+├── dist/                        только локальный выход (игнорируется гитом)
+├── Build-SingleFile.ps1         локальный сборщик (без Publish)
+├── START-ZenWare.bat            локальный запуск External
+├── README.md · LICENSE · NOTICE.md · SECURITY.md
 ```
 
+<a id="faq-ru"></a>
 ### Частые проблемы
 
 | Симптом | Решение |
-| ------- | ------- |
-| `XorString` при старте | Умер паттерн после обновы. Прогони `Tools/SigScan` на `left4dead2/bin/client.dll`, обнови `Offsets.cpp`. |
-| Краш после `Paint` | Открой лог, найди `[!!!] EXCEPTION`, пришли `module+0x...` без дампов. |
-| Антивирус | Папку проекта в исключения (эвристика на `WriteProcessMemory` / `CreateRemoteThread`). |
-| Квадратики вместо букв | Нажми `F7` (шрифт / язык). |
-| В External нет боксов | Смотри верхние строки оверлея (диагностика), проверь сигнатуры. |
+|---|---|
+| `XorString` при старте | Умер паттерн после обновы → прогони `Tools/SigScan` на `left4dead2/bin/client.dll`, обнови `Offsets.cpp` |
+| Краш после `Paint` | Открой лог → найди `[!!!] EXCEPTION` → пришли `module+0x...`, без дампов |
+| Антивирус | Папку в исключения (эвристика на `WriteProcessMemory` / `CreateRemoteThread`) |
+| Квадратики вместо букв | Нажми `F7` (шрифт / язык) |
+| External: нет боксов | Смотри верхние строки оверлея (диагностика), проверь сигнатуры |
 
 ---
 
 <a id="legal"></a>
 ## Legal / Право
 
-- **License:** MIT — see [LICENSE](LICENSE). Provided `AS IS`, without warranty.
-- **Third-party:** see [NOTICE.md](NOTICE.md) (MinHook, FontAwesome, Valve SDK headers, base).
-- **Trademarks:** Left 4 Dead 2 and Steam are trademarks of Valve Corporation. Not affiliated, not endorsed.
-- **Distribution:** source-only — see [SECURITY.md](SECURITY.md). No prebuilt binaries in repo or Releases.
-- **Use:** education and local `-insecure` servers only. No VAC bypass support. Bans are your responsibility.
-- **Лицензия:** MIT — смотри [LICENSE](LICENSE). Код `AS IS`, без гарантий.
-- **Чужие компоненты:** смотри [NOTICE.md](NOTICE.md).
-- **Товарные знаки:** Left 4 Dead 2 и Steam принадлежат Valve. Проект не связан с Valve.
-- **Распространение:** только исходники — смотри [SECURITY.md](SECURITY.md).
-- **Использование:** обучение и локальный `-insecure`. Обхода VAC нет и не будет. Баны — твоя ответственность.
+| Topic | EN | RU |
+|---|---|---|
+| License | MIT — [LICENSE](LICENSE), `AS IS`, no warranty | MIT — [LICENSE](LICENSE), `AS IS`, без гарантий |
+| Third-party | [NOTICE.md](NOTICE.md): MinHook, FontAwesome, Valve SDK headers, base | [NOTICE.md](NOTICE.md): MinHook, FontAwesome, заголовки Valve, база |
+| Trademarks | Left 4 Dead 2 / Steam by Valve. Not affiliated, not endorsed | Left 4 Dead 2 / Steam принадлежат Valve. Не связан, не одобрен |
+| Distribution | Source-only — [SECURITY.md](SECURITY.md), no binaries | Только исходники — [SECURITY.md](SECURITY.md), без бинарников |
+| Use | Local `-insecure` only. No VAC bypass. Bans are yours | Только локальный `-insecure`. Обхода VAC нет. Баны — твои |
 
-### Credits
+<div align="center">
 
-- Base: [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base)
-- Hook engine: MinHook (Tsuda Kageyu, BSD-style, headers preserved)
-- Icons: [FontAwesome 6 Free](https://fontawesome.com)
+**Credits** ·
+Base: [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base) ·
+Hook engine: MinHook (Tsuda Kageyu, BSD-style) ·
+Icons: [FontAwesome 6 Free](https://fontawesome.com)
+
+</div>
