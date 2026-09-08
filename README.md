@@ -54,11 +54,6 @@
 
 Details: [SECURITY.md](SECURITY.md) · Third-party: [NOTICE.md](NOTICE.md) · License: [LICENSE](LICENSE)
 
-## Screenshots
-
-Game shots live in [`docs/screenshots/`](docs/screenshots/) (`menu.png`, `esp.png`, `loader.png` wanted — see the HOWTO there).
-Скриншоты лежат в [`docs/screenshots/`](docs/screenshots/) (нужны `menu.png`, `esp.png`, `loader.png` — см. HOWTO).
-
 ---
 
 <a id="english"></a>
@@ -180,7 +175,6 @@ ZenWare.cc/
 ├── dist/                        local output only (git-ignored)
 ├── Build-SingleFile.ps1         local builder (no Publish)
 ├── Verify-Signatures.bat        one-click pattern check vs your game files
-├── docs/screenshots/            game shots (see HOWTO)
 ├── START-ZenWare.bat            local external launcher
 ├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md · ARCHITECTURE.md
 ```
@@ -317,7 +311,6 @@ ZenWare.cc/
 ├── dist/                        только локальный выход (игнорируется гитом)
 ├── Build-SingleFile.ps1         локальный сборщик (без Publish)
 ├── Verify-Signatures.bat        проверка паттернов в один клик
-├── docs/screenshots/            скриншоты игры (см. HOWTO)
 ├── START-ZenWare.bat            локальный запуск External
 ├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md · ARCHITECTURE.md
 ```
