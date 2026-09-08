@@ -25,12 +25,15 @@ namespace
 		return false;
 	}
 
-	bool IsPointVisible(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vAimPoint)
+	// Точка прицеливания лежит ВНУТРИ тела цели (голова/грудь), поэтому
+	// строгий !DidHit() всегда false: луч честно упирается в саму цель.
+	// Засчитываем видимость, если трейс закончился на нашей цели.
+	bool IsPointVisible(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vAimPoint, C_BaseEntity* pTarget)
 	{
 		trace_t tr{};
 		CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
 		G::Util.Trace(vEyePos, vAimPoint, MASK_SHOT, &filter, &tr);
-		return !tr.DidHit();
+		return !tr.DidHit() || (pTarget && tr.m_pEnt == pTarget);
 	}
 
 	// Per-Run snapshot: global aimbot values, overridden by weapon group.
@@ -109,7 +112,7 @@ namespace
 			if ((vAim - vEyePos).LenghtSqr() < 1.0f)
 				continue;
 
-			if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAim))
+			if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAim, pEnt))
 				continue;
 
 			const float flFov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAim));
@@ -176,7 +179,7 @@ namespace
 			if ((vAim - vEyePos).LenghtSqr() < 1.0f)
 				continue;
 
-			if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAim))
+			if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAim, pEnt))
 				continue;
 
 			const float flFov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, vAim));

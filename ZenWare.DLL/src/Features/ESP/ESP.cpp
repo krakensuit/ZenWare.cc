@@ -157,19 +157,9 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 
 		if (Vars::ESP::bFilled)
 			G::Draw.Rect(x, y, w, h, { clrBox.r(), clrBox.g(), clrBox.b(), 40 });
+		//Чистый бокс как у space: тёмная подложка + одна цветная рамка.
 		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 		G::Draw.OutlinedRect(x, y, w, h, clrBox);
-		G::Draw.OutlinedRect(x - 2, y - 2, w + 4, h + 4, { clrBox.r(), clrBox.g(), clrBox.b(), 40 });
-		//Corner ticks outside the box.
-		const int nTick = U::Math.Clamp(w / 4, 6, 16);
-		G::Draw.Line(x - 3, y - 3, x - 3 + nTick, y - 3, clrTeam);
-		G::Draw.Line(x - 3, y - 3, x - 3, y - 3 + nTick, clrTeam);
-		G::Draw.Line(x + w + 3 - nTick, y - 3, x + w + 3, y - 3, clrTeam);
-		G::Draw.Line(x + w + 3, y - 3, x + w + 3, y - 3 + nTick, clrTeam);
-		G::Draw.Line(x - 3, y + h + 3 - nTick, x - 3, y + h + 3, clrTeam);
-		G::Draw.Line(x - 3, y + h + 3, x - 3 + nTick, y + h + 3, clrTeam);
-		G::Draw.Line(x + w + 3, y + h + 3 - nTick, x + w + 3, y + h + 3, clrTeam);
-		G::Draw.Line(x + w + 3 - nTick, y + h + 3, x + w + 3, y + h + 3, clrTeam);
 	}
 
 	//Snapline from the bottom of the screen.
@@ -543,46 +533,36 @@ bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w,
 	if (!pBaseEntity)
 		return false;
 
-	Vector vPoints[8];
-	U::Math.BuildTransformedBox(vPoints, pBaseEntity->m_vecMins(), pBaseEntity->m_vecMaxs(), pBaseEntity->RenderableToWorldTransform());
+	// Как у space: никаких виртуалок (RenderableToWorldTransform лежит на
+	// непроверенном слоте и кривил боксы). Только нетвары: низ/верх корпуса
+	// проецируем в экран, ширину берём пропорцией от высоты.
+	const Vector vOrigin = pBaseEntity->m_vecOrigin();
+	const float flBottomZ = vOrigin.z + pBaseEntity->m_vecMins().z;
+	const float flTopZ = vOrigin.z + pBaseEntity->m_vecMaxs().z;
+	const float flHullH = flTopZ - flBottomZ;
 
-	Vector flb, brt, blb, frt, frb, brb, blt, flt;
-	if (G::Util.W2S(vPoints[3], flb) && G::Util.W2S(vPoints[5], brt)
-		&& G::Util.W2S(vPoints[0], blb) && G::Util.W2S(vPoints[4], frt)
-		&& G::Util.W2S(vPoints[2], frb) && G::Util.W2S(vPoints[1], brb)
-		&& G::Util.W2S(vPoints[6], blt) && G::Util.W2S(vPoints[7], flt))
-	{
-		const Vector vTransformed[8] = { flb, brt, blb, frt, frb, brb, blt, flt };
+	if (flHullH < 2.0f)
+		return false;
 
-		float left = flb.x;
-		float top = flb.y;
-		float righ = flb.x;
-		float bottom = flb.y;
+	Vector vFeetS, vHeadS;
+	if (!G::Util.W2S(Vector(vOrigin.x, vOrigin.y, flBottomZ), vFeetS)
+		|| !G::Util.W2S(Vector(vOrigin.x, vOrigin.y, flTopZ), vHeadS))
+		return false;
 
-		for (int n = 1; n < 8; n++)
-		{
-			if (left > vTransformed[n].x)
-				left = vTransformed[n].x;
+	const float flH = vFeetS.y - vHeadS.y;
 
-			if (top < vTransformed[n].y)
-				top = vTransformed[n].y;
+	if (flH < 4.0f)
+		return false;
 
-			if (righ < vTransformed[n].x)
-				righ = vTransformed[n].x;
+	const float flW = flH * 0.55f;
+	const float flCX = (vFeetS.x + vHeadS.x) * 0.5f;
 
-			if (bottom > vTransformed[n].y)
-				bottom = vTransformed[n].y;
-		}
+	x = static_cast<int>(flCX - flW * 0.5f);
+	y = static_cast<int>(vHeadS.y);
+	w = static_cast<int>(flW);
+	h = static_cast<int>(flH);
 
-		x = static_cast<int>(left);
-		y = static_cast<int>(bottom);
-		w = static_cast<int>(righ - left);
-		h = static_cast<int>(top - bottom);
-
-		return !(x > G::Draw.m_nScreenW || (x + w) < 0 || y > G::Draw.m_nScreenH || (y + h) < 0);
-	}
-
-	return false;
+	return !(x > G::Draw.m_nScreenW || (x + w) < 0 || y > G::Draw.m_nScreenH || (y + h) < 0);
 }
 
 void CFeatures_ESP::DrawTeam(C_TerrorPlayer* pLocal)

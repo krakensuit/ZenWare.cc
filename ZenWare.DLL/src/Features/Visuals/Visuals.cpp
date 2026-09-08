@@ -2,6 +2,7 @@
 
 #include "../Vars.h"
 #include "../Hitmarker/Hitmarker.h"
+#include "../../SDK/L4D2/Interfaces/Cvar.h"
 
 static const Color CLR_TEXT_HINT(140, 160, 152, 255);
 
@@ -12,15 +13,19 @@ void CFeatures_Visuals::UpdateThirdPerson()
 	const bool bWant = Vars::Visuals::bThirdPerson && I::EngineClient && I::EngineClient->IsInGame();
 	const int nDist = U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200);
 
+	// Как у space: консоль не трогаем вообще (ClientCmd_Unrestricted лежит
+	// на непроверенном слоте vtable и ронял игру при включении).
+	// Камера отъезжает через z_view_distance: 0 = от 1-го лица, <0 = дистанция.
+	if (!I::Cvar)
+		return;
+
 	if (bWant)
 	{
 		// Дистанцию досылаем и на ходу, а не только в момент включения.
 		if (!s_bWasOn || nDist != s_nLastDist)
 		{
-			char szCmd[96] = { };
-			//локальный сервер: включаем камеру и дистанцию
-			sprintf_s(szCmd, "sv_cheats 1; cam_idealdist %d; cam_idealpitch 0; thirdperson", nDist);
-			I::EngineClient->ClientCmd_Unrestricted(szCmd);
+			if (ConVar* pView = I::Cvar->FindVar("z_view_distance"))
+				pView->SetValue(-nDist);
 			s_nLastDist = nDist;
 		}
 		s_bWasOn = true;
@@ -31,8 +36,8 @@ void CFeatures_Visuals::UpdateThirdPerson()
 	{
 		s_bWasOn = false;
 		s_nLastDist = -1;
-		if (I::EngineClient)
-			I::EngineClient->ClientCmd_Unrestricted("firstperson");
+		if (ConVar* pView = I::Cvar->FindVar("z_view_distance"))
+			pView->SetValue(0);
 	}
 }
 

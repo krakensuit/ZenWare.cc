@@ -19,6 +19,15 @@ All notable changes to ZenWare.cc are documented here.
 - Common counter: alive commons within ~40m in the overlay corner.
   Счётчик живых обычных рядом.
 
+### Changed
+
+- Thirdperson without console (space method): camera distance now goes
+  through `z_view_distance` via `VEngineCvar007` instead of
+  `ClientCmd` (`sv_cheats 1; ...; thirdperson`), which crashed the game.
+- Aimbot locks by default: `bSilent` default is now off (visible lock like
+  space; silent is still a toggle), commons/specials visibility fixed (below).
+- Player ESP box: clean single outline like space; bounds are now netvar-only
+  (origin + mins/maxs height), no `RenderableToWorldTransform` call.
 ### Fixed / Исправлено
 
 - Silent-death hunt (landing crashes with zero telemetry): removed the

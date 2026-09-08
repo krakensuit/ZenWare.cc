@@ -180,6 +180,7 @@
     <ClInclude Include="src\SDK\L4D2\Includes\usercmd.h" />
     <ClInclude Include="src\SDK\L4D2\Interfaces\BaseClientDLL.h" />
     <ClInclude Include="src\SDK\L4D2\Interfaces\ClientEntityList.h" />
+    <ClInclude Include="src\SDK\L4D2\Interfaces\Cvar.h" />
     <ClInclude Include="src\SDK\L4D2\Interfaces\DebugOverlay.h" />
     <ClInclude Include="src\SDK\L4D2\Interfaces\EngineClient.h" />
     <ClInclude Include="src\SDK\L4D2\Interfaces\EngineTrace.h" />

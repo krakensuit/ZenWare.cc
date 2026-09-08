@@ -10,7 +10,7 @@ namespace Vars
 	namespace Aimbot
 	{
 		inline bool bEnabled = false;
-		inline bool bSilent = true;
+		inline bool bSilent = false; //видимый лок: как у space, silent включается отдельно
 		inline bool bAutoShoot = false;
 		inline bool bVisibleOnly = true;
 		inline bool bIgnoreIncapped = false;

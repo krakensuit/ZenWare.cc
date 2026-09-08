@@ -5,6 +5,7 @@
 
 #include "../Util/Logger/Logger.h"
 #include "../Features/Config/Config.h"
+#include "../SDK/L4D2/Interfaces/Cvar.h"
 
 namespace
 {
@@ -159,6 +160,7 @@ void CGlobal_ModuleEntry::Load()
 		I::MatSystemSurface = U::Interface.Get<IMatSystemSurface*>("vguimatsurface.dll", "VGUI_Surface031");
 
 		I::MaterialSystem   = U::Interface.Get<IMaterialSystem*>("materialsystem.dll", "VMaterialSystem080");
+		I::Cvar             = U::Interface.Get<ICvar*>("engine.dll", "VEngineCvar007");
 
 		U::Log.Write("[+] Interfaces fetched (see XASSERT popups for any failures).");
 
@@ -182,6 +184,7 @@ void CGlobal_ModuleEntry::Load()
 			{ "VGUI_Surface031", I::VGuiSurface },
 			{ "vguimatsurface/VGUI_Surface031", I::MatSystemSurface },
 			{ "VMaterialSystem080", I::MaterialSystem },
+			{ "VEngineCvar007", I::Cvar },
 		};
 		char szMissing[512] = { };
 		for (size_t i = 0; i < sizeof(aNeed) / sizeof(aNeed[0]); i++)

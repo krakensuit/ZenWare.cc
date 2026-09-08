@@ -139,7 +139,10 @@ float CUtil_Math::GetFovBetween(const Vector vSrc, const Vector vDst)
 	Vector v_dst = { };
 	AngleVectors(vDst, &v_dst);
 
-	float result = RAD2DEG(acos(v_dst.Dot(v_src) / v_dst.LenghtSqr()));
+	// Оба вектора единичные: угол = acos(dot). Косинус клампим,
+	// иначе fp-мусор >1.0 даёт NaN -> FLT_MAX -> цель никогда не лочится.
+	const float flDot = U::Math.Clamp(v_dst.Dot(v_src), -1.0f, 1.0f);
+	float result = RAD2DEG(acos(flDot));
 
 	if (!isfinite(result) || isinf(result) || isnan(result))
 		result = FLT_MAX;
