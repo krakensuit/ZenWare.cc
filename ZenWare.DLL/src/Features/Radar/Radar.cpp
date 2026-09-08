@@ -41,7 +41,7 @@ void CFeatures_Radar::Render()
 
 	const int nLocalIdx = I::EngineClient->GetLocalPlayer();
 	C_TerrorPlayer* pLocal = nullptr;
-	if (nLocalIdx >= 0)
+	if (nLocalIdx >= 0 && I::ClientEntityList)
 	{
 		IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
 		if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
@@ -147,7 +147,7 @@ void CFeatures_Radar::Render()
 			C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
 			if (!pPl)
 				continue;
-			player_info_t pi;
+			player_info_t pi = {};
 			if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 				continue;
 			// Только те, кто реально не играет (спектаторы и мёртвые).

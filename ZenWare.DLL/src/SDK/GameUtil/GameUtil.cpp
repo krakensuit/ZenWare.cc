@@ -2,6 +2,8 @@
 
 void CGlobal_GameUtil::FixMovement(const Vector vAngle, CUserCmd* cmd)
 {
+	if (!cmd)
+		return;
 	Vector vMove = { cmd->forwardmove, cmd->sidemove, cmd->upmove }, vMoveAng;
 	U::Math.VectorAngles(vMove, vMoveAng);
 
@@ -14,12 +16,16 @@ void CGlobal_GameUtil::FixMovement(const Vector vAngle, CUserCmd* cmd)
 
 void CGlobal_GameUtil::Trace(const Vector& start, const Vector& end, unsigned int mask, ITraceFilter* filter, trace_t* trace)
 {
+	if (!I::EngineTrace || !filter || !trace)
+		return;
 	Ray_t ray = { start, end };
 	I::EngineTrace->TraceRay(ray, mask, filter, trace);
 }
 
 bool CGlobal_GameUtil::W2S(const Vector vWorld, Vector& vScreen)
 {
+	if (!I::DebugOverlay)
+		return false;
 	return !(I::DebugOverlay->ScreenPosition(vWorld, vScreen));
 }
 
@@ -47,6 +53,8 @@ bool CGlobal_GameUtil::IsInfectedAlive(const int nSolidFlags, const int nSequenc
 
 Color CGlobal_GameUtil::GetHealthColor(const int nHealth, const int nMaxHealth)
 {
+	if (nMaxHealth <= 0)
+		return { 200u, 0u, 0u, 255u };
 	if (nHealth > nMaxHealth)
 		return { 44u, 130u, 201u, 255u };
 
@@ -66,6 +74,9 @@ IMaterial* CGlobal_GameUtil::CreateMaterial(const char* const szVars)
 	// Return a cached flat material from the engine's own library.
 	// Caller (Chams) will set ignorez/color per-draw.
 	UNREFERENCED_PARAMETER(szVars);
+
+	if (!I::MaterialSystem)
+		return nullptr;
 
 	static IMaterial* s_pFlat = nullptr;
 	if (s_pFlat && !IsErrorMaterial(s_pFlat))
@@ -87,7 +98,7 @@ IMaterial* CGlobal_GameUtil::CreateMaterial(const char* const szVars)
 	sprintf_s(szOut, sizeof(szOut), _("pol_mat_%i.vmt"), nCreated++);
 
 	char szMat[DT_MAX_STRING_BUFFERSIZE];
-	sprintf_s(szMat, sizeof(szMat), szVars);
+	sprintf_s(szMat, sizeof(szMat), "%s", szVars ? szVars : "");
 
 	KeyValues* pKvals = new KeyValues;
 	if (!G::KeyVals.Init(pKvals, (char*)szOut))
@@ -155,10 +166,7 @@ bool CGlobal_GameUtil::IsTargetVisible(C_TerrorPlayer* pLocal, C_TerrorPlayer* p
 	if (!pLocal || !pTarget)
 		return false;
 
-	CBaseTrace baseTrace;
-	memset(&baseTrace, 0, sizeof(baseTrace));
-
-	trace_t tr;
+	trace_t tr{};
 	CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
 
 	Trace(vEyePos, GetEyePosition(pTarget), MASK_SHOT, &filter, &tr);

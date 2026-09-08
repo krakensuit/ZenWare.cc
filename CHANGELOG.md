@@ -5,6 +5,15 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+### Fixed / Исправлено
+
+- ESP item crash: pills/medkits/bile no longer touch `CWeaponSpawn` virtuals.
+  Вылет ESP на таблетках/аптечках: чужие классы больше не дёргают виртуалки.
+- NoSpread guarded against missing patterns; interface/trace/material null guards.
+- Zero-initialized `trace_t` / `player_info_t`; safe format strings; HealthColor div-zero guard.
+- Corner brackets on SI/witch/common boxes (same style as players).
+  Уголки на боксах СИ/ведьмы/обычных.
+
 ## [3.6] — 2026-09-08
 
 ### Added / Добавлено

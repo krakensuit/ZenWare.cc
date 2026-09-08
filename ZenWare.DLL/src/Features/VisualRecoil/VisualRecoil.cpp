@@ -13,10 +13,18 @@ void CFeatures_VisualRecoil::FrameStageNotify(ClientFrameStage_t curStage)
 	const int nLocalIndex = I::EngineClient->GetLocalPlayer();
 
 	C_TerrorPlayer* pLocal = nullptr;
-	if (nLocalIndex >= 0)
+	if (nLocalIndex >= 0 && I::ClientEntityList)
 	{
 		IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
-		if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+		if (pEnt)
+		{
+			// Пишем 12 байт по оффсету: убеждаемся что это правда игрок,
+			// иначе молча выходим (NetVarManager мог вернуть 0).
+			ClientClass* pCC = pEnt->GetClientClass();
+			if (!pCC || (pCC->m_ClassID != CTerrorPlayer && pCC->m_ClassID != SurvivorBot))
+				return;
+			pLocal = pEnt->As<C_TerrorPlayer*>();
+		}
 	}
 
 	if (!pLocal)

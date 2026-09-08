@@ -76,7 +76,7 @@ namespace
 
 	bool IsVisibleTo(C_TerrorPlayer* pLocal, const Vector& vEye, const Vector& vPoint)
 	{
-		trace_t tr;
+		trace_t tr{};
 		CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
 		G::Util.Trace(vEye, vPoint, MASK_SHOT, &filter, &tr);
 		return !tr.DidHit();

@@ -91,7 +91,7 @@ void CFeatures_Visuals::DrawGrenade()
 		vVel.z -= flGravity * flStep;
 		const Vector vNext = vSeg + vVel * flStep;
 
-		trace_t tr;
+		trace_t tr{};
 		G::Util.Trace(vSeg, vNext, MASK_SOLID, &filter, &tr);
 
 		Vector vEnd = vNext;

@@ -54,7 +54,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 				Vector origin = pLocal->m_vecOrigin();
 				Vector down = origin; down.z -= 160.0f;
 
-				trace_t tr;
+				trace_t tr{};
 				CTraceFilterHitAll filter(pLocal);
 				G::Util.Trace(origin, down, MASK_PLAYERSOLID, &filter, &tr);
 
@@ -159,7 +159,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			Vector origin = pLocal->m_vecOrigin();
 			Vector down = origin; down.z -= 160.0f;
 
-			trace_t tr;
+			trace_t tr{};
 			CTraceFilterHitAll filter(pLocal);
 			G::Util.Trace(origin, down, MASK_PLAYERSOLID, &filter, &tr);
 

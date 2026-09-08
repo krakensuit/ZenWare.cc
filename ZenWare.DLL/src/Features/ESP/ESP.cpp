@@ -8,6 +8,23 @@
 #include <cstring>
 #include <map>
 
+namespace
+{
+	// Уголки как у боксов игроков: единый стиль ESP.
+	void DrawCorners(int x, int y, int w, int h, const Color& clr)
+	{
+		const int nTick = U::Math.Clamp(w / 4, 6, 16);
+		G::Draw.Line(x - 3, y - 3, x - 3 + nTick, y - 3, clr);
+		G::Draw.Line(x - 3, y - 3, x - 3, y - 3 + nTick, clr);
+		G::Draw.Line(x + w + 3 - nTick, y - 3, x + w + 3, y - 3, clr);
+		G::Draw.Line(x + w + 3, y - 3, x + w + 3, y - 3 + nTick, clr);
+		G::Draw.Line(x - 3, y + h + 3 - nTick, x - 3, y + h + 3, clr);
+		G::Draw.Line(x - 3, y + h + 3, x - 3 + nTick, y + h + 3, clr);
+		G::Draw.Line(x + w + 3, y + h + 3 - nTick, x + w + 3, y + h + 3, clr);
+		G::Draw.Line(x + w + 3 - nTick, y + h + 3, x + w + 3, y + h + 3, clr);
+	}
+}
+
 void CFeatures_ESP::Render()
 {
 	U::Log.Crumb("ESP::Render");
@@ -120,7 +137,7 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 	if (Vars::ESP::bDistance)
 		swprintf_s(wszDist, L" [%.0fm]", G::Util.GetEyePosition(pLocal).DistTo(G::Util.GetEyePosition(pPlayer)) / 52.5f);
 
-	player_info_t pi;
+	player_info_t pi = { };
 
 	//Box outline around the model bounds (pulses red on low HP).
 	if (Vars::ESP::bBox)
@@ -179,6 +196,7 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 	//Nickname (+distance) and HP text above the box.
 	if (Vars::ESP::bName && I::EngineClient->GetPlayerInfo(nEntityIndex, &pi))
 	{
+		pi.name[31] = '\0';
 		const int nCenterX = x + (w / 2);
 
 		char szDistNarrow[16] = { };
@@ -217,16 +235,18 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 					bHasName = true;
 				}
 			}
-			if (!bHasName)
-			{
-				ClientClass* pWCC = pActive->GetClientClass();
-				const char* szName = (pWCC && pWCC->m_pNetworkName) ? pWCC->m_pNetworkName : pActive->GetPrintName();
+		if (!bHasName)
+		{
+			// pActive из хендла без проверки класса: виртуалку дёргаем
+			// только если класс известен, иначе статичная строка.
+			ClientClass* pWCC = pActive->GetClientClass();
+			const char* szName = (pWCC && pWCC->m_pNetworkName) ? pWCC->m_pNetworkName : "weapon";
 				if (szName && szName[0])
 				{
 					if (szName[0] == 'C') szName++;
 					if (szName[0] == '#') szName++;
-					if (!strncmp(szName, "Weapon", 6)) szName += 6;
-					wsprintfW(wszDisplay, L"%hs", szName);
+				if (!strncmp(szName, "Weapon", 6)) szName += 6;
+				swprintf_s(wszDisplay, L"%hs", szName);
 					if (wcsstr(wszDisplay, L"unknown")) bHasName = false;
 					else bHasName = wszDisplay[0] != L'\0';
 				}
@@ -254,6 +274,8 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 		return;
 
 	ClientClass* pCC = pEntity->GetClientClass();
+	if (!pCC)
+		return;
 
 	//Mounted guns show their heat instead of a weapon name.
 	if (U::Math.CompareGroup(pCC->m_ClassID, CPropMinigun, CPropMountedGun))
@@ -265,6 +287,34 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 
 		G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), { 204, 204, 204, 255 }, TXT_CENTERXY,
 			L"gun | heat %.0f%%", U::Math.Clamp(pMounted->m_heat() * 100.0f, 0.0f, 100.0f));
+		return;
+	}
+
+	// m_weaponID/GetWeaponID существуют ТОЛЬКО у CWeaponSpawn. Таблетки,
+	// аптечки, bile и прочие пикапы — другие серверные классы с другой
+	// таблицей виртуалок: дёргать их методы = вылет. Им только имя класса.
+	const Color clrItemNone(200, 200, 200, 255);
+	if (pCC->m_ClassID != CWeaponSpawn)
+	{
+		const char* szCls = (pCC->m_pNetworkName && pCC->m_pNetworkName[0]) ? pCC->m_pNetworkName : "item";
+		wchar_t wszCls[64] = { };
+		swprintf_s(wszCls, L"%hs", szCls);
+		if (Vars::ESP::bDistance)
+		{
+			wchar_t wszD[16] = { };
+			swprintf_s(wszD, L" [%.0fm]", G::Util.GetEyePosition(pLocal).DistTo(pEntity->m_vecOrigin()) / 52.5f);
+			wcscat_s(wszCls, wszD);
+		}
+		const int nTick = 5;
+		G::Draw.Line(x, y, x + nTick, y, clrItemNone);
+		G::Draw.Line(x, y, x, y + nTick, clrItemNone);
+		G::Draw.Line(x + w - nTick, y, x + w, y, clrItemNone);
+		G::Draw.Line(x + w, y, x + w, y + nTick, clrItemNone);
+		G::Draw.Line(x, y + h - nTick, x, y + h, clrItemNone);
+		G::Draw.Line(x, y + h, x + nTick, y + h, clrItemNone);
+		G::Draw.Line(x + w, y + h - nTick, x + w, y + h, clrItemNone);
+		G::Draw.Line(x + w - nTick, y + h, x + w, y + h, clrItemNone);
+		G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItemNone, TXT_CENTERXY, L"%ls", wszCls);
 		return;
 	}
 
@@ -288,7 +338,7 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 		if (szClass)
 		{
 			// e.g., "CWeaponSpawn" -> show as "weapon"
-			wsprintfW(wszFallback, L"%hs", szClass);
+			swprintf_s(wszFallback, L"%hs", szClass);
 			pName = wszFallback;
 		}
 	}
@@ -317,7 +367,7 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 	G::Draw.Line(x, y + h, x + nTick, y + h, clrItem);
 	G::Draw.Line(x + w, y + h - nTick, x + w, y + h, clrItem);
 	G::Draw.Line(x + w - nTick, y + h, x + w, y + h, clrItem);
-	G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItem, TXT_CENTERXY, wszLine);
+	G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItem, TXT_CENTERXY, L"%ls", wszLine);
 }
 
 void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
@@ -341,6 +391,7 @@ void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
 		G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
 	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrCommon);
+	DrawCorners(x, y, w, h, clrCommon);
 }
 
 void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const int nClassID)
@@ -382,6 +433,7 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
 	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrTeam);
+	DrawCorners(x, y, w, h, clrTeam);
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szName);
 
 	//HP и дистанция для спец-заражённых
@@ -411,6 +463,7 @@ void CFeatures_ESP::DrawBoss(C_BaseEntity* pEntity)
 	const Color clrBoss(200, 0, 255, 255);
 	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 	G::Draw.OutlinedRect(x, y, w, h, clrBoss);
+	DrawCorners(x, y, w, h, clrBoss);
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrBoss, TXT_CENTERXY, "WITCH");
 }
 
@@ -445,15 +498,26 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 		return;
 
 	// Обычные: team=0, жизненный цикл не как у игроков — только бокс.
-	if (pFound->bCommon)
+	// Ведьма тоже идёт сюда: она C_Infected, а не C_BasePlayer — каст ниже
+	// читал бы чужой оффсет. Проверка живости как у DrawBoss.
+	if (pFound->bCommon || !strcmp(szShow, "WITCH"))
 	{
-		if (!Vars::ESP::bCommon)
+		if (!strcmp(szShow, "WITCH"))
+		{
+			C_Infected* pWitch = pEntity->As<C_Infected*>();
+			if (!pWitch || !G::Util.IsInfectedAlive(pWitch->m_usSolidFlags(), pWitch->m_nSequence()))
+				return;
+			if (!Vars::ESP::bBossBoxes)
+				return;
+		}
+		else if (!Vars::ESP::bCommon)
 			return;
 		const Color clrCommon(170, 60, 60, 220);
 		if (Vars::ESP::bFilled)
 			G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
 		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
 		G::Draw.OutlinedRect(x, y, w, h, clrCommon);
+		DrawCorners(x, y, w, h, clrCommon);
 		G::Draw.String(EFonts::ESP, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP), clrCommon, TXT_CENTERXY, "%s", szShow);
 		return;
 	}
@@ -476,6 +540,9 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 
 bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w, int& h)
 {
+	if (!pBaseEntity)
+		return false;
+
 	Vector vPoints[8];
 	U::Math.BuildTransformedBox(vPoints, pBaseEntity->m_vecMins(), pBaseEntity->m_vecMaxs(), pBaseEntity->RenderableToWorldTransform());
 
@@ -545,7 +612,7 @@ void CFeatures_ESP::DrawTeam(C_TerrorPlayer* pLocal)
 		const int nHp = pT->GetHealth();
 		if (pT->deadflag() || pT->m_lifeState() != 0 || nHp <= 0)
 			continue;
-		player_info_t pi;
+		player_info_t pi = { };
 		if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 			continue;
 

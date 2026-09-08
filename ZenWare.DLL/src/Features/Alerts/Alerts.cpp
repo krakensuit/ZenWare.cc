@@ -151,7 +151,7 @@ void CFeatures_Alerts::Render()
 				continue;
 			if (!pT->m_isIncapacitated())
 				continue;
-			player_info_t pi;
+			player_info_t pi = {};
 			if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 				continue;
 			const float flD = (pT->m_vecOrigin() - vEye).Lenght() / 52.5f;

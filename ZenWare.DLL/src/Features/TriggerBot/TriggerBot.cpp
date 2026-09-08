@@ -16,7 +16,7 @@ namespace
 
 		CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
 
-		trace_t tr;
+		trace_t tr{};
 		G::Util.Trace(vEye, vEye + vForward * 8192.0f, MASK_SHOT, &filter, &tr);
 
 		return tr.m_pEnt;

@@ -9,6 +9,9 @@ void CFeatures_NoSpread::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CU
 	if (!ShouldRun(pLocal, pWeapon, cmd))
 		return;
 
+	if (!pfSharedRandomFloat)
+		return;
+
 	Vector vAngle = cmd->viewangles;
 
 	//Remove spread from current viewangles
@@ -37,6 +40,10 @@ void CFeatures_NoSpread::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CU
 bool CFeatures_NoSpread::ShouldRun(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUserCmd* cmd)
 {
 	if (!Vars::NoSpread::bEnabled || !pLocal || !pWeapon || !cmd)
+		return false;
+
+	// Паттерны могли не найтись (обнова игры): зов виртуалок по нулю = вылет.
+	if (!U::Offsets.m_dwSharedRandomFloat || !U::Offsets.m_dwUpdateSpread)
 		return false;
 
 	if (!(cmd->buttons & IN_ATTACK) || (cmd->buttons & IN_USE))

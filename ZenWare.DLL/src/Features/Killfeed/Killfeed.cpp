@@ -69,7 +69,7 @@ bool CFeatures_Killfeed::PinKillerName(C_TerrorPlayer* pVictim, char* szOut, siz
         if (!h.IsValid()) continue;
         IClientEntity* pEnt = I::ClientEntityList->GetClientEntityFromHandle(h);
         if (!pEnt) continue;
-        player_info_t pi;
+        player_info_t pi = {};
         if (I::EngineClient->GetPlayerInfo(h.GetEntryIndex(), &pi) && pi.name[0])
         {
             strcpy_s(szOut, nOut, pi.name);
@@ -95,7 +95,7 @@ void CFeatures_Killfeed::OnTick()
         if (!pEntity || pEntity->IsDormant()) continue;
         C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
         if (!pPlayer) continue;
-        player_info_t pi;
+        player_info_t pi = {};
         // Только именованные игроки (выжившие, боты, особые за другую команду).
         if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0]) continue;
         const bool bAlive = !pPlayer->deadflag() && pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0;
