@@ -28,6 +28,9 @@ namespace Hook
 	public:
 		inline bool Init(const void* pTable)
 		{
+			if (!pTable)
+				return false;
+
 			m_pBase = (unsigned int**)(pTable);
 
 			while (reinterpret_cast<unsigned int*>(*m_pBase)[m_nSize])
@@ -63,6 +66,9 @@ namespace Hook
 	public:
 		inline bool Initialize(const void* pTable)
 		{
+			if (!pTable)
+				return false;
+
 			m_pTable = (uintptr_t**)(pTable);
 
 			if (m_nSize <= 0u)

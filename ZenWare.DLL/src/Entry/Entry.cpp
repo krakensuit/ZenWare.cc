@@ -110,6 +110,54 @@ void CGlobal_ModuleEntry::Load()
 
 		U::Log.Write("[+] Interfaces fetched (see XASSERT popups for any failures).");
 
+		// Fail-closed: дальше идут прямые разыменования указателей и хуки.
+		// На чужом билде игры лучше честный MessageBox и тихий выход,
+		// чем вылет процесса без объяснений.
+		struct Need_t { const char* m_szName; const void* m_pPtr; };
+		const Need_t aNeed[] = {
+			{ "VClient016", I::BaseClient },
+			{ "VClientEntityList003", I::ClientEntityList },
+			{ "VClientPrediction001", I::Prediction },
+			{ "GameMovement001", I::GameMovement },
+			{ "VEngineClient013", I::EngineClient },
+			{ "EngineTraceClient003", I::EngineTrace },
+			{ "VEngineVGui001", I::EngineVGui },
+			{ "VEngineRenderView013", I::RenderView },
+			{ "VDebugOverlay003", I::DebugOverlay },
+			{ "VModelInfoClient004", I::ModelInfo },
+			{ "VEngineModel016", I::ModelRender },
+			{ "VGUI_Panel009", I::VGuiPanel },
+			{ "VGUI_Surface031", I::VGuiSurface },
+			{ "vguimatsurface/VGUI_Surface031", I::MatSystemSurface },
+			{ "VMaterialSystem080", I::MaterialSystem },
+		};
+		char szMissing[512] = { };
+		for (size_t i = 0; i < sizeof(aNeed) / sizeof(aNeed[0]); i++)
+		{
+			U::Log.Write("[*] iface %-32s : %s", aNeed[i].m_szName, aNeed[i].m_pPtr ? "(ok)" : "(MISSING!)");
+			if (!aNeed[i].m_pPtr)
+			{
+				strcat_s(szMissing, aNeed[i].m_szName);
+				strcat_s(szMissing, "\n");
+			}
+		}
+
+		if (!U::Offsets.m_dwClientMode || !U::Offsets.m_dwGlobalVars)
+			strcat_s(szMissing, "ClientMode/GlobalVars patterns\n");
+		if (!U::Offsets.m_dwMoveHelper)
+			strcat_s(szMissing, "MoveHelper pattern\n");
+
+		if (szMissing[0])
+		{
+			U::Log.Write("[!] Critical data missing, aborting init (game left untouched).");
+			char szMsg[1024] = { };
+			sprintf_s(szMsg, sizeof(szMsg),
+				"ZenWare: initialization failed, game left untouched.\nMissing:\n%s\nSee ZenWare.log. Probably a game update - run Verify-Signatures.bat.",
+				szMissing);
+			MessageBoxA(HWND_DESKTOP, szMsg, "ZenWare", MB_ICONERROR);
+			return;
+		}
+
 		I::ClientMode = **reinterpret_cast<void***>(U::Offsets.m_dwClientMode);
 		U::Log.Write("[*] ClientMode    : 0x%08X %s", reinterpret_cast<DWORD>(I::ClientMode), I::ClientMode ? "(ok)" : "(NULL!)");
 		XASSERT(I::ClientMode == nullptr);
