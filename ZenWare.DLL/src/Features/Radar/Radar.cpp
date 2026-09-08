@@ -2,6 +2,7 @@
 
 #include "../Lang/Lang.h"
 #include "../Vars.h"
+#include "../../Util/Logger/Logger.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -36,6 +37,7 @@ namespace
 
 void CFeatures_Radar::Render()
 {
+	U::Log.Crumb("Radar::Render");
 	if ((!Vars::Radar::bEnabled && !Vars::Radar::bSpectators) || !I::EngineClient || !I::EngineClient->IsInGame())
 		return;
 
@@ -44,7 +46,7 @@ void CFeatures_Radar::Render()
 	if (nLocalIdx >= 0 && I::ClientEntityList)
 	{
 		IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
-		if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+		if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
 	}
 	if (!pLocal)
 		return;
@@ -141,12 +143,17 @@ void CFeatures_Radar::Render()
 		{
 			if (n == nLocalIdx)
 				continue;
-			IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
-			if (!pEntity || pEntity->IsDormant())
-				continue;
-		C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
-		if (!pPl)
+		IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+		if (!pEntity || pEntity->IsDormant())
 			continue;
+		// Без проверки класса As<> отдаёт любой объект за игрока, а дальше
+		// deadflag()/m_lifeState() читают чужой/полу-созданный объект
+		// (краш при загрузке карты и на переходных сущностях в игре).
+		if (!G::Util.IsPlayerEntity(pEntity))
+			continue;
+	C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
+	if (!pPl)
+		continue;
 		// Сначала дешёвые нетвары, GetPlayerInfo — последним и только для
 		// реальных кандидатов: раньше дёргали движок по всем слотам каждый кадр.
 		// Только те, кто реально не играет (спектаторы и мёртвые).

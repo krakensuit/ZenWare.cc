@@ -7,6 +7,16 @@ All notable changes to ZenWare.cc are documented here.
 
 ### Fixed / Исправлено
 
+- Crash in Radar spectators (log: `EXCEPTION ... ZenWare.dll+0x12DF9`,
+  `last breadcrumb: ESP::Render`): the spectator loop called
+  `deadflag()/m_lifeState()` on ANY non-dormant entity without a ClassID
+  check, so a half-created slot (map load) or a transient entity (in game)
+  killed the process. Gated by `IsPlayerEntity`, same for the Radar local
+  player. `Radar::Render` now sets its own breadcrumb so the next log
+  points at the real site.
+  Краш в спектаторах радара: чтение нетваров игрока с любых сущностей без
+  проверки класса (падение при загрузке карты и в игре). Гейт
+  `IsPlayerEntity` + свой breadcrumb у радара.
 - Menu mouse: the OS cursor was hidden every frame while the menu was open,
   so there was no cursor without ESC/console (and clicks landed in the game
   menu afterwards). The cursor is now force-shown while open, camera stays
