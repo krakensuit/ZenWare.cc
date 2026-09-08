@@ -6,12 +6,12 @@
 namespace
 {
 	//Ray straight down the crosshair; returns the entity it ends on.
-	C_BaseEntity* TraceCrosshair(C_TerrorPlayer* pLocal)
+	//Триггер по углам cmd после аима, а не по прошлому кадру из движка:
+	//иначе при включённом аиме выстрел отстаёт на тик.
+	C_BaseEntity* TraceCrosshair(C_TerrorPlayer* pLocal, const Vector& vView)
 	{
 		const Vector vEye = G::Util.GetEyePosition(pLocal);
 		Vector vForward = { };
-		Vector vView = { };
-		I::EngineClient->GetViewAngles(vView);
 		U::Math.AngleVectors(vView, &vForward);
 
 		CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
@@ -35,7 +35,7 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 	if (!pWeapon->CanPrimaryAttack())
 		return;
 
-	C_BaseEntity* pHit = TraceCrosshair(pLocal);
+	C_BaseEntity* pHit = TraceCrosshair(pLocal, cmd->viewangles);
 
 	if (!pHit)
 		return;
@@ -80,6 +80,15 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 					if ((nTeam == TEAM_SURVIVOR || nTeam == TEAM_INFECTED) && pLocal && nTeam != pLocal->GetTeamNumber())
 						cmd->buttons |= IN_ATTACK;
 				}
+			}
+			else if (G::Util.IsSpecialByName(pCC->m_pNetworkName))
+			{
+				//Бумер и классы со сдвинутыми ID: точного типа не знаем — виртуалок
+				//не дёргаем, только нетвар команды C_BaseEntity. Для триггера хватает.
+				const int nTeam = pHit->m_iTeamNum();
+
+				if ((nTeam == TEAM_SURVIVOR || nTeam == TEAM_INFECTED) && pLocal && nTeam != pLocal->GetTeamNumber())
+					cmd->buttons |= IN_ATTACK;
 			}
 		}
 	}

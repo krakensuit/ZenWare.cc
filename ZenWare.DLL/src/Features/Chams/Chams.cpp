@@ -54,8 +54,12 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 	// Чамсы свои: выжившие, боты и ВСЕ особые + танк.
 	// IsValidTarget не подходит: он режет свою команду и классы СИ.
 	ClientClass* pCC = pIClient->GetClientClass();
-	if (!pCC || !U::Math.CompareGroup(pCC->m_ClassID,
-		CTerrorPlayer, SurvivorBot, Hunter, Smoker, Jockey, Spitter, Charger, Tank))
+	if (!pCC)
+		return false;
+	//Бумер: ID нет в дампе — ловим по имени класса как ESP::DrawUnknown.
+	if (!U::Math.CompareGroup(pCC->m_ClassID,
+		CTerrorPlayer, SurvivorBot, Hunter, Smoker, Jockey, Spitter, Charger, Tank)
+		&& !G::Util.IsSpecialByName(pCC->m_pNetworkName))
 		return false;
 
 	C_TerrorPlayer* pPlayer = pIClient->As<C_TerrorPlayer*>();
@@ -140,6 +144,13 @@ void CFeatures_Chams::ApplyPalette()
 	constexpr int nCount = 5;
 
 	Vars::Chams::nPalette = U::Math.Clamp(Vars::Chams::nPalette, 0, nCount - 1);
+
+	//Палитра применяется только при смене: иначе каждый DrawModel затирал
+	//ручные свотчи (ESP enemy/ally, Chams tank) значениями палитры.
+	static int s_nLastPalette = -1;
+	if (s_nLastPalette == Vars::Chams::nPalette)
+		return;
+	s_nLastPalette = Vars::Chams::nPalette;
 
 	const auto& p = sc_palettes[Vars::Chams::nPalette];
 	Vars::Chams::clrEnemy = p[0];

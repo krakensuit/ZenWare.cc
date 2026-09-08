@@ -1,5 +1,8 @@
 #include "GameUtil.h"
 
+#include <cctype>
+#include <cstring>
+
 void CGlobal_GameUtil::FixMovement(const Vector vAngle, CUserCmd* cmd)
 {
 	if (!cmd)
@@ -173,5 +176,46 @@ bool CGlobal_GameUtil::IsTargetVisible(C_TerrorPlayer* pLocal, C_TerrorPlayer* p
 
 	//Visible when the trace ended on the target itself or hit nothing solid before it.
 	return (tr.m_pEnt == pTarget) || (!tr.DidHit());
+}
+
+bool CGlobal_GameUtil::IsPlayerEntity(IClientEntity* pEntity)
+{
+	if (!pEntity)
+		return false;
+	ClientClass* pCC = pEntity->GetClientClass();
+	return (pCC && U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot, Tank));
+}
+
+bool CGlobal_GameUtil::IsWeaponEntity(IClientEntity* pEntity)
+{
+	if (!pEntity)
+		return false;
+	ClientClass* pCC = pEntity->GetClientClass();
+	if (!pCC)
+		return false;
+	//Все классы носимого оружия из дампа (винтовки/дроби/снайпы/пилы/пистолеты/меле/пила/гренник).
+	//CSubMachinegun/CTerrorGun покрывают UZI/MAC10/помпу/автошотган базовых слотов.
+	return U::Math.CompareGroup(pCC->m_ClassID, CTerrorWeapon, CTerrorGun, CTerrorMeleeWeapon,
+		CAssaultRifle, CAutoShotgun, CBaseAutoShotgun, CBaseRifle, CBaseShotgun, CBaseSniperRifle,
+		CPumpShotgun, CRifle_AK47, CRifle_Desert, CRifle_M60, CRifle_SG552,
+		CShotgun_Chrome, CShotgun_SPAS, CSMG_MP5, CSMG_Silenced,
+		CSniper_AWP, CSniper_Military, CSniper_Scout, CSniperRifle, CSubMachinegun,
+		CPistol, CMagnumPistol, CChainsaw, CGrenadeLauncher);
+}
+
+bool CGlobal_GameUtil::IsSpecialByName(const char* szNet)
+{
+	if (!szNet || !szNet[0])
+		return false;
+	char szLower[64] = { };
+	int i = 0;
+	for (; i < 63 && szNet[i]; i++)
+		szLower[i] = (char)tolower((unsigned char)szNet[i]);
+	szLower[i] = '\0';
+	static const char* kSubs[] = { "hunter", "smoker", "boomer", "jockey", "spitter", "charger", "tank" };
+	for (size_t k = 0; k < sizeof(kSubs) / sizeof(kSubs[0]); k++)
+		if (strstr(szLower, kSubs[k]))
+			return true;
+	return false;
 }
 

@@ -15,8 +15,15 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	if (!Vars::BunnyHop::bEnabled || !pLocal || !cmd || !cmd->command_number)
 		return;
 
+	//Статик EdgeJump живёт здесь (до ранних return): иначе смерть/лестница
+	//оставляют s_bWasOnGround=true и дарят ложный EdgeJump после респауна.
+	static bool s_bWasOnGround = true;
+
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
+	{
+		s_bWasOnGround = true;
 		return;
+	}
 
 	if (!G::Util.IsValidTeam(pLocal->GetTeamNumber()))
 		return;
@@ -25,7 +32,10 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	const unsigned char nMoveType = pLocal->m_MoveType();
 
 	if (nMoveType == MOVETYPE_LADDER || nMoveType == MOVETYPE_NOCLIP || nMoveType == MOVETYPE_OBSERVER)
+	{
+		s_bWasOnGround = true;
 		return;
+	}
 
 	const bool bOnGround = (pLocal->m_fFlags() & FL_ONGROUND) != 0;
 	const bool bDucking = (pLocal->m_fFlags() & FL_DUCKING) != 0;
@@ -90,13 +100,14 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	//Perfect style accepts any jump source (space / wheel / bound key);
 	//legit style only honors the game's own IN_JUMP bit for this tick.
-	const bool bPhysicalJump = ((GetAsyncKeyState(VK_SPACE) & 0x8000) || (GetAsyncKeyState(VK_XBUTTON1) & 0x8000));
+	//При открытом меню физическую клаву не читаем: иначе прыжки при печати в чат/консоль.
+	const bool bPhysicalJump = !Vars::Menu::bOpen
+		&& ((GetAsyncKeyState(VK_SPACE) & 0x8000) || (GetAsyncKeyState(VK_XBUTTON1) & 0x8000));
 	const bool bWantJump = (Vars::BunnyHop::nBhopStyle == 0)
 		? ((cmd->buttons & IN_JUMP) || bPhysicalJump)
 		: ((cmd->buttons & IN_JUMP) != 0);
 
 	//EdgeJump: walked off an edge while holding jump -> jump anyway.
-	static bool s_bWasOnGround = true;
 	bool bEdgeJumped = false;
 
 	if (Vars::BunnyHop::bEdgeJump && s_bWasOnGround && !bOnGround && bWantJump)

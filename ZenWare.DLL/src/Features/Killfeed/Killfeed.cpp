@@ -99,7 +99,12 @@ void CFeatures_Killfeed::OnTick()
         ClientClass* pCC = pEntity->GetClientClass();
         if (!pCC) continue;
         const int nID = pCC->m_ClassID;
-        if (nID != CTerrorPlayer && nID != SurvivorBot && nID != Tank) continue;
+        //Смерти СИ тоже в ленту: классы особых + бумер по имени (ID нет в дампе).
+        //GetPlayerInfo для ботов-СИ вернёт false — такие строки тихо пропускаются.
+        if (nID != CTerrorPlayer && nID != SurvivorBot && nID != Tank
+            && nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter
+            && nID != Charger && nID != Witch && !G::Util.IsSpecialByName(pCC->m_pNetworkName))
+            continue;
         C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
         if (!pPlayer) continue;
         const bool bAlive = !pPlayer->deadflag() && pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0;

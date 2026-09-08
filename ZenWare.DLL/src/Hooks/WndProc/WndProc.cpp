@@ -13,6 +13,12 @@ LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN)
 		F::Menu.PollMenuKey();
 
+	//F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
+	//Здесь, а не в Render: работает и при закрытом меню, повторных срабатываний
+	//нет — кейдаун приходит один раз на нажатие.
+	if ((uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) && wParam == VK_F7)
+		Vars::Menu::bRussian = !Vars::Menu::bRussian;
+
 	// Колесо крутит вкладки меню, в игру не уходит.
 	if (uMsg == WM_MOUSEWHEEL && Vars::Menu::bOpen)
 	{

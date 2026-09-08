@@ -52,15 +52,16 @@ void CFeatures_Visuals::DrawGrenade()
 		if (nLocalIdx > 0)
 		{
 			IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
-			if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+			if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
 		}
 	}
 	if (!pLocal || pLocal->deadflag() || pLocal->m_lifeState() != 0)
 		return;
 
 	// Только с throwable в руках (молотов/пайп/желчь) или гранатомётом.
+	// Каст после проверки класса: в руках может быть медкит/меле с другой таблицей.
 	C_BaseCombatWeapon* pBase = pLocal->GetActiveWeapon();
-	C_TerrorWeapon* pWpn = pBase ? pBase->As<C_TerrorWeapon*>() : nullptr;
+	C_TerrorWeapon* pWpn = (pBase && G::Util.IsWeaponEntity(pBase)) ? pBase->As<C_TerrorWeapon*>() : nullptr;
 	if (!pWpn)
 		return;
 	float flSpeed = 900.0f, flUp = 150.0f, flElast = 0.45f;

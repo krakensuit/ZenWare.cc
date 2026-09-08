@@ -266,12 +266,14 @@ void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUse
 	if ((vAimPoint - vEyePos).LenghtSqr() < 1.0f)
 		return;
 
-	if (bHavePlayer && Vars::Aimbot::bVisibleOnly && !G::Util.IsTargetVisible(pLocal, pTarget, vEyePos))
+	if (bHavePlayer && Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAimPoint, pTarget))
 		return;
 
 	Vector vAngleTo = U::Math.GetAngleToPosition(vEyePos, vAimPoint);
 
-	if (s_wpn.flSmooth > 0.0f && !Vars::Aimbot::bSilent)
+	//Смус считаем всегда (и для сайлента — серверу едет сглаженный угол),
+	//на экран углы выводим только без сайлента (ниже).
+	if (s_wpn.flSmooth > 0.0f)
 	{
 		const float flSmooth = U::Math.Clamp(s_wpn.flSmooth, 1.0f, 64.0f);
 		vAngleTo -= vViewAngles;
@@ -319,7 +321,9 @@ C_TerrorPlayer* CFeatures_Aimbot::FindTarget(C_TerrorPlayer* pLocal, const Vecto
 		if ((vAimPoint - vEyePos).LenghtSqr() < 1.0f)
 			continue;
 
-		if (Vars::Aimbot::bVisibleOnly && !G::Util.IsTargetVisible(pLocal, pPlayer, vEyePos))
+		//Видимость к точке аима, а не глаз-в-глаза: голова за крышкой при видимой
+		//груди (и наоборот) раньше давала неверное решение.
+		if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAimPoint, pPlayer))
 			continue;
 
 		const Vector vAngleTo = U::Math.GetAngleToPosition(vEyePos, vAimPoint);

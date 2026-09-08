@@ -7,7 +7,7 @@
 #define FL_ONGROUND (1 << 0)
 #endif
 
-void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
+void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float flRawSide, int nRawMouseX)
 {
 	U::Log.Crumb("JumpStats::OnTick");
 	if (!Vars::BunnyHop::bJumpStats || !pLocal || !cmd || !cmd->command_number)
@@ -58,11 +58,12 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		if (flHeight > m_fMaxHeight)
 			m_fMaxHeight = flHeight;
 
+		//Сырой ввод из снапшота CreateMove (до мутаций AutoStrafe).
 		int side = 0;
 
-		if (cmd->sidemove > 10.0f)
+		if (flRawSide > 10.0f)
 			side = 1;
-		else if (cmd->sidemove < -10.0f)
+		else if (flRawSide < -10.0f)
 			side = -1;
 
 		if (side)
@@ -75,7 +76,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 			//Synced when the mouse turn matches the strafe side
 			//(or when strafing cleanly with no mouse input).
-			if (cmd->mousedx == 0 || ((cmd->mousedx > 0) == (side > 0)))
+			if (nRawMouseX == 0 || ((nRawMouseX > 0) == (side > 0)))
 				m_nGoodTicks++;
 		}
 
@@ -107,18 +108,26 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			m_last.strafes = m_nStrafes;
 			m_last.syncPct = (m_nMoveTicks > 0) ? (m_nGoodTicks * 100 / m_nMoveTicks) : 0;
 			m_last.landTick = tick;
-		m_last.edge = (m_nTakeTick - m_nLastGroundTick) <= 2;
+		//[edge] — только реальный EdgeJump: файр showtick на тике схода.
+		//Старое (TakeTick-LastGroundTick) врало в обе стороны: перфект-бхоп
+		//без касаний давал false, простой сход с бордюра — true.
+		m_last.edge = (m_nTakeTick - Vars::BunnyHop::nEjShowTick) <= 2;
 		const bool bDucked = m_bDuckAtLand || ((cmd->buttons & IN_DUCK) != 0);
-		m_last.eb = bDucked && m_fMaxFall < -500.0f && dist > 150.0f;
+		//Считаем только фактические срабатывания: свежий showtick (<=6 тиков) +
+		//включённая фича + посадка в приседе. Ручной дак — только без AutoDuck
+		//(иначе каждый прыжок с зажатым приседом был бы "+1 JB/EB").
+		const bool bEbFired = Vars::BunnyHop::bEdgeBug && (tick - Vars::BunnyHop::nEbShowTick) <= 6;
+		const bool bJbFired = Vars::BunnyHop::bJumpBug && (tick - Vars::BunnyHop::nJbShowTick) <= 6;
+		const bool bManualEb = !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -500.0f && dist > 150.0f;
+		const bool bManualJb = !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -350.0f;
+		m_last.eb = bDucked && (bEbFired || bManualEb);
 		m_last.fall = m_fMaxFall;
 		m_last.height = (m_fMaxHeight > 0.0f) ? m_fMaxHeight : 0.0f;
 		m_last.airSec = m_nAirTicks * (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
-		// Сессионные счётчики: showTick-гейт убран — иначе ручной дак перед
-		// касанием (без чита) никогда не считался. EB важнее JB: eb включает
-		// и условия JB, считаем только раз.
+		// EB важнее JB: eb включает и условия JB, считаем только раз.
 		if (m_last.eb)
 			Vars::BunnyHop::nEbCount++;
-		else if (bDucked && m_fMaxFall < -350.0f)
+		else if (bDucked && (bJbFired || bManualJb))
 			Vars::BunnyHop::nJbCount++;
 		m_last.valid = true;
 		m_nShowUntil = tick + 264; //~4 seconds at 66 ticks

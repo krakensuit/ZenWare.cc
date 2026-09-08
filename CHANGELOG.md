@@ -5,6 +5,39 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+### Fixed / Исправлено
+
+- Crash on inject: weapon code called `GetWeaponID()` virtual on unchecked
+  entities from `m_hActiveWeapon` (viewmodel/hands/stale slots have a
+  different vtable). New `G::Util.IsPlayerEntity/IsWeaponEntity` ClassID gates
+  in ESP weapon text, grenade preview, and CreateMove; local player is also
+  class-checked now. Melee/meds in hands no longer crash combat features.
+  Краш при инжекте: виртуалка оружия на непроверенных сущностях из хендла
+  (viewmodel/руки). ClassID-гейты в ESP, превью гранат и CreateMove.
+- Config: `trigger.key` is saved now; sliders resync from floats inside
+  `Load()` (startup auto-load works, no truncation drift); enum/int clamps
+  against corrupt cfg; saved language no longer overwritten by system default;
+  F7 toggles RU/EN even with closed menu; crosshair size up to 40;
+  `Chams tank` color persisted + swatch in Misc.
+  Конфиг: сохраняется клавиша триггера, слайдеры ресинкаются при загрузке,
+  защита от битого cfg, язык не затирается, F7, прицел до 40, цвет танка.
+- JumpStats honesty: sync is measured on raw pre-AutoStrafe input; JB/EB
+  counters count real feature fires (showtick window + enabled + ducked
+  landing, EB wins) with manual-duck fallback only when AutoDuck is off;
+  `[edge]` only on real EdgeJump fire; no fake EdgeJump after death/ladder;
+  Perfect style ignores keyboard while menu is open.
+  Честная стата: синк по сырому вводу, счётчики по факту срабатываний,
+  [edge] только за реальный EJ, без ложных срабатываний.
+- Aimbot/trigger: player visibility is checked eye-to-aimpoint (not
+  eye-to-eye); trigger traces post-aim `cmd` angles (no 1-tick lag);
+  smoothing also applies to silent aim; trigger fires on Boomer/shifted IDs
+  via class-name fallback (no virtuals on unknown types).
+  Аим/триггер: видимость к точке аима, триггер по углам после аима, смус для
+  сайлента, бумер по имени класса.
+- Chams palette no longer stomps manual swatches every DrawModel (applied
+  only on palette change); Boomer caught by class name.
+  Палитра не затирает ручные цвета; бумер в чамсах.
+
 ### Added / Добавлено
 
 - ESP: space-style layout — yellow nickname above the box, white `[Nm]`

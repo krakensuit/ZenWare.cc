@@ -8,7 +8,7 @@
 class CFeatures_JumpStats
 {
 public:
-	void OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd);
+	void OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float flRawSide, int nRawMouseX);
 	void Draw();
 
 private:

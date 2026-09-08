@@ -62,6 +62,7 @@ namespace
 			//Trigger / shove / pistol
 			{ "trigger.enabled", &Vars::TriggerBot::bEnabled },
 			{ "trigger.visible", &Vars::TriggerBot::bVisibleOnly },
+			{ "trigger.key", &Vars::TriggerBot::nKey },
 			{ "autoshove.enabled", &Vars::AutoShove::bEnabled },
 			{ "autopistol.enabled", &Vars::AutoPistol::bEnabled },
 			{ "nospread.enabled", &Vars::NoSpread::bEnabled },
@@ -109,6 +110,7 @@ namespace
 			{ "chams.palette", &Vars::Chams::nPalette },
 			{ "chams.enemy", &Vars::Chams::clrEnemy },
 			{ "chams.ally", &Vars::Chams::clrAlly },
+			{ "chams.tank", &Vars::Chams::clrTank },
 
 		//ESP
 		{ "esp.enabled", &Vars::ESP::bEnabled },
@@ -294,6 +296,31 @@ void CFeatures_Config::Load()
 			break;
 		}
 	}
+
+	//Слайдеры — источник правды для меню: Render каждый кадр затирает float
+	//значениями слайдеров, поэтому после загрузки (включая авто-Load при старте)
+	//подтягиваем слайдеры из float. +0.5f = округление вместо усечения (5.05 -> 51 -> 5.1).
+	Vars::Aimbot::nFOVSlider = U::Math.Clamp((int)(Vars::Aimbot::flFOV * 10.0f + 0.5f), 5, 300);
+	Vars::Aimbot::nSmoothSlider = U::Math.Clamp((int)(Vars::Aimbot::flSmoothing + 0.5f), 0, 60);
+	Vars::Visuals::nViewFOVSlider = U::Math.Clamp((int)(Vars::Visuals::flViewFOV * 100.0f + 0.5f), 50, 300);
+	Vars::AimbotWpn::nRifleFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flRifleFov * 10.0f + 0.5f), 5, 300);
+	Vars::AimbotWpn::nSmgFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flSmgFov * 10.0f + 0.5f), 5, 300);
+	Vars::AimbotWpn::nShotgunFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flShotgunFov * 10.0f + 0.5f), 5, 300);
+	Vars::AimbotWpn::nSniperFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flSniperFov * 10.0f + 0.5f), 5, 300);
+	Vars::AimbotWpn::nPistolFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flPistolFov * 10.0f + 0.5f), 5, 300);
+	//Кривой cfg не должен выводить селекторы за диапазон: меню прикрыто Clamp, логика — нет.
+	Vars::BunnyHop::nBhopStyle = U::Math.Clamp(Vars::BunnyHop::nBhopStyle, 0, 1);
+	Vars::BunnyHop::nAutoStrafeMode = U::Math.Clamp(Vars::BunnyHop::nAutoStrafeMode, 0, 3);
+	Vars::Chams::nPalette = U::Math.Clamp(Vars::Chams::nPalette, 0, 4);
+	Vars::AimbotWpn::nGroup = U::Math.Clamp(Vars::AimbotWpn::nGroup, 0, 4);
+	Vars::Aimbot::nTargetPriority = U::Math.Clamp(Vars::Aimbot::nTargetPriority, 0, 1);
+	Vars::Aimbot::nHitbox = U::Math.Clamp(Vars::Aimbot::nHitbox, 0, 1);
+	Vars::Hitmarker::nPitch = U::Math.Clamp(Vars::Hitmarker::nPitch, 200, 2000);
+	Vars::Hitmarker::nDurationMs = U::Math.Clamp(Vars::Hitmarker::nDurationMs, 400, 3000);
+	Vars::Hitmarker::nMinDmg = U::Math.Clamp(Vars::Hitmarker::nMinDmg, 0, 100);
+	Vars::Visuals::nCrosshairSize = U::Math.Clamp(Vars::Visuals::nCrosshairSize, 2, 40);
+	Vars::Visuals::nThirdPersonDist = U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200);
+	Vars::BunnyHop::nJumpDelayTicks = U::Math.Clamp(Vars::BunnyHop::nJumpDelayTicks, 0, 20);
 
 	fclose(pFile);
 }

@@ -135,7 +135,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Menu accent","Menu accent","Main accent color of the whole menu.","Акцент меню","Главный акцентный цвет всего меню."},
 		{"ESP enemy","ESP enemy","Box color for enemies and specials.","ESP враги","Цвет боксов врагов и особых."},
 		{"ESP ally","ESP ally","Box color for teammates.","ESP союзники","Цвет боксов союзников."},
-		{"Crosshair","Crosshair","Color of the custom crosshair.","Прицел","Цвет кастомного прицела."},
+		{"Crosshair color","Crosshair","Color of the custom crosshair.","Прицел","Цвет кастомного прицела."},
 	};
 	static const HelpEntry_t* FindHelp(const char* szLabel){
 		for(size_t i=0;i<sizeof(kHelp)/sizeof(kHelp[0]);i++)
@@ -213,10 +213,8 @@ bool CFeatures_Menu::HandleOpenState(){
 }
 void CFeatures_Menu::Render(){
 	U::Log.Crumb("Menu::Render");
-	// F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
- // Работает и при закрытом меню: Render крутится каждый кадр.
- static bool s_bLangInit=false;
- if(!s_bLangInit){ s_bLangInit=true; Vars::Menu::bRussian=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN); }
+	//F7 вслепую переключает RU/EN (обработчик в WndProc::Detour, работает и при закрытом меню).
+	//Дефолт языка уже системный (Vars::Menu::bRussian), конфиг его перекрывает — не затираем.
  // анимация появления (fade-in) - не блокирует логику открытия
  static float s_alpha = 0.0f;
  bool bOpen = HandleOpenState();
@@ -328,7 +326,7 @@ void CFeatures_Menu::Render(){
     Checkbox(mouse,"Third person",&Vars::Visuals::bThirdPerson);
     if(Vars::Visuals::bThirdPerson) SliderInt(mouse,"3rd person distance",&Vars::Visuals::nThirdPersonDist,30,200);
      Checkbox(mouse,"Crosshair",&Vars::Visuals::bCrosshair);
-     SliderInt(mouse,"Crosshair size",&Vars::Visuals::nCrosshairSize,2,30);
+     SliderInt(mouse,"Crosshair size",&Vars::Visuals::nCrosshairSize,2,40);
      Checkbox(mouse,"Grenade path",&Vars::Grenade::bEnabled);
      if (Vars::Grenade::bEnabled)
       Checkbox(mouse,"Landing marker",&Vars::Grenade::bLanding);
@@ -420,16 +418,7 @@ void CFeatures_Menu::Render(){
      Button(mouse,"Save config",[](){F::Config.Save();});
      static char szSlot[32]; sprintf_s(szSlot,"Config slot: %d >",F::Config.GetSlot());
      Button(mouse,szSlot,[](){ F::Config.SetSlot(F::Config.GetSlot()%3+1); });
-     Button(mouse,"Load config",[](){F::Config.Load();
-      // слайдеры - источник правды для меню, подтянем их из загруженных float
-      Vars::Aimbot::nFOVSlider=U::Math.Clamp((int)(Vars::Aimbot::flFOV*10.0f),5,300);
-      Vars::Aimbot::nSmoothSlider=U::Math.Clamp((int)Vars::Aimbot::flSmoothing,0,60);
-      Vars::Visuals::nViewFOVSlider=U::Math.Clamp((int)(Vars::Visuals::flViewFOV*100.0f),50,300);
-      Vars::AimbotWpn::nRifleFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flRifleFov*10.0f),5,300);
-      Vars::AimbotWpn::nSmgFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flSmgFov*10.0f),5,300);
-      Vars::AimbotWpn::nShotgunFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flShotgunFov*10.0f),5,300);
-      Vars::AimbotWpn::nSniperFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flSniperFov*10.0f),5,300);
-      Vars::AimbotWpn::nPistolFovS=U::Math.Clamp((int)(Vars::AimbotWpn::flPistolFov*10.0f),5,300);});
+     Button(mouse,"Load config",[](){F::Config.Load();});
     BindRow(mouse,"Menu key",&Vars::Menu::nKey);
     static char szLang[32]; sprintf_s(szLang,"Language: %s >",Vars::Menu::bRussian?"Russian":"English");
     Button(mouse,szLang,[](){ Vars::Menu::bRussian=!Vars::Menu::bRussian; });
@@ -437,7 +426,8 @@ void CFeatures_Menu::Render(){
     ColorSwatches(mouse,"Menu accent",&Vars::Menu::clrAccent);
     ColorSwatches(mouse,"ESP enemy",&Vars::Chams::clrEnemy);
     ColorSwatches(mouse,"ESP ally",&Vars::Chams::clrAlly);
-    ColorSwatches(mouse,"Crosshair",&Vars::Visuals::clrCrosshair);
+    ColorSwatches(mouse,"Chams tank",&Vars::Chams::clrTank);
+    ColorSwatches(mouse,"Crosshair color",&Vars::Visuals::clrCrosshair);
    G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,Lang::T("F11 = unload cheat"));
    m_nItemY+=26; break;
    }

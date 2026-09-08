@@ -1,6 +1,7 @@
 #include "ClientMode.h"
 
 #include "../../Util/Logger/Logger.h"
+#include "../../SDK/GameUtil/GameUtil.h"
 #include "../../Entry/Entry.h"
 #include "../../Features/Vars.h"
 #include "../../Features/Aimbot/Aimbot.h"
@@ -52,7 +53,7 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
   if (nLocalIdx >= 0)
   {
    IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
-   if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+    if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
   }
  }
 
@@ -68,13 +69,19 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 		F::EnginePrediction.Start(pLocal, cmd);
 		{
 			// Movement features work without active weapon (infected claws etc.)
+			// Снапшот сырого ввода для статов: AutoStrafe ниже форсит sidemove=±450,
+			// синк по мутированному всегда показывал бы ~100% со своим же ботом.
+			const float flRawSide = cmd->sidemove;
+			const int nRawMouseX = cmd->mousedx;
 			F::BunnyHop.Run(pLocal, cmd);
 			F::AutoStrafe.Run(pLocal, cmd);
-			F::JumpStats.OnTick(pLocal, cmd);
+			F::JumpStats.OnTick(pLocal, cmd, flRawSide, nRawMouseX);
 			F::AutoShove.Run(pLocal, cmd);
 
+			//Активное оружие без проверки класса: когти/медпредметы/руки в тик
+			//смены имеют другую таблицу, виртуалки аима/спреда падали бы по чужому слоту.
 			C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
-			C_TerrorWeapon* pWeapon = pBaseWeapon ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
+			C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsWeaponEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
 
 			if (pWeapon)
 			{

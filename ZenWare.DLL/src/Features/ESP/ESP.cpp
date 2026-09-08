@@ -32,10 +32,14 @@ void CFeatures_ESP::Render()
 
 	const int nLocalIndex = I::EngineClient->GetLocalPlayer();
 
-	C_TerrorPlayer* pLocal = I::ClientEntityList->GetClientEntity(nLocalIndex)->As<C_TerrorPlayer*>();
+	//Локал без проверки класса: в переходных тиках в слоте может быть мир/прокси,
+	//а дальше по коду идут виртуалки GetTeamNumber/GetHealth.
+	IClientEntity* pLocalEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
 
-	if (!pLocal)
+	if (!G::Util.IsPlayerEntity(pLocalEnt))
 		return;
+
+	C_TerrorPlayer* pLocal = pLocalEnt->As<C_TerrorPlayer*>();
 
 	for (int n = 1; n < (I::ClientEntityList->GetMaxEntities() + 1); n++)
 	{
@@ -161,7 +165,7 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			G::Draw.Rect(nBarX, y, 4, h, { 0, 0, 0, 255 });
 
 			if (nFillH > 0)
-				G::Draw.Rect(nBarX + 1, y + h - nFillH, 2, nFillH, { 0, 255, 0, 255 });
+				G::Draw.Rect(nBarX + 1, y + h - nFillH, 2, nFillH, G::Util.GetHealthColor(nHealth, nMaxHp));
 		}
 
 		if (Vars::ESP::bHealthText)
@@ -198,10 +202,13 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 		EHANDLE hActive = pPlayer->m_hActiveWeapon();
 		C_BaseEntity* pEntActive = nullptr;
 
+		//Хендл в первом кадре после инжекта/смены оружия может указывать на
+		//viewmodel/руки/протухший слот: каст только после проверки класса,
+		//иначе виртуалка GetWeaponID идёт по чужой таблице (краш при инжекте).
 		if (hActive.IsValid())
 		{
 			IClientEntity* pViaHandle = I::ClientEntityList->GetClientEntityFromHandle(hActive);
-			if (pViaHandle) pEntActive = pViaHandle->As<C_BaseEntity*>();
+			if (G::Util.IsWeaponEntity(pViaHandle)) pEntActive = pViaHandle->As<C_BaseEntity*>();
 		}
 
 		C_BaseCombatWeapon* pActive = pEntActive ? pEntActive->As<C_BaseCombatWeapon*>() : nullptr;
@@ -416,6 +423,18 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	if (Vars::ESP::bFilled)
 		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
 	DrawEspBox(x, y, w, h, clrTeam);
+	//HP-бар слева как у игроков: доля от max HP (у танка 6000, не 100).
+	if (Vars::ESP::bHealthBar && x - 5 >= 0)
+	{
+		C_TerrorPlayer* pTP = pEntity->As<C_TerrorPlayer*>();
+		const int nMaxHp = U::Math.Clamp(pTP ? pTP->m_iMaxHealth() : 100, 1, 6000);
+		const int nHP = U::Math.Clamp(pPl->GetHealth(), 0, nMaxHp);
+		const int nFillH = (h * nHP) / nMaxHp;
+		G::Draw.Rect(x - 5, y, 4, h, { 0, 0, 0, 255 });
+
+		if (nFillH > 0)
+			G::Draw.Rect(x - 4, y + h - nFillH, 2, nFillH, G::Util.GetHealthColor(nHP, nMaxHp));
+	}
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szName);
 
 	//HP и дистанция для спец-заражённых
@@ -531,6 +550,7 @@ bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w,
 	const Vector vMaxs = pBaseEntity->m_vecMaxs();
 
 	float flMinX = 1e9f, flMinY = 1e9f, flMaxX = -1e9f, flMaxY = -1e9f;
+	int nHit = 0;
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -541,12 +561,29 @@ bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w,
 		Vector vS;
 
 		if (!G::Util.W2S(vP, vS))
-			return false;
+			continue;
+
+		nHit++;
 
 		if (vS.x < flMinX) flMinX = vS.x;
 		if (vS.y < flMinY) flMinY = vS.y;
 		if (vS.x > flMaxX) flMaxX = vS.x;
 		if (vS.y > flMaxY) flMaxY = vS.y;
+	}
+
+	//Часть углов за кадром (в упор/на краю экрана): бокс не дропаем, а клиппим.
+	//Best-effort: проекция из-за спины камеры всё равно режется финальной проверкой.
+	if (!nHit)
+		return false;
+
+	if (nHit < 8 && G::Draw.m_nScreenW > 0 && G::Draw.m_nScreenH > 0)
+	{
+		const float flScrW = (float)G::Draw.m_nScreenW;
+		const float flScrH = (float)G::Draw.m_nScreenH;
+		if (flMinX < 0.0f) flMinX = 0.0f;
+		if (flMinY < 0.0f) flMinY = 0.0f;
+		if (flMaxX > flScrW) flMaxX = flScrW;
+		if (flMaxY > flScrH) flMaxY = flScrH;
 	}
 
 	x = static_cast<int>(flMinX);
