@@ -1,6 +1,7 @@
 #include "JumpStats.h"
 #include "../Lang/Lang.h"
 #include "../Vars.h"
+#include "../../Util/Logger/Logger.h"
 
 #ifndef FL_ONGROUND
 #define FL_ONGROUND (1 << 0)
@@ -8,6 +9,7 @@
 
 void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 {
+	U::Log.Crumb("JumpStats::OnTick");
 	if (!Vars::BunnyHop::bJumpStats || !pLocal || !cmd || !cmd->command_number)
 		return;
 

@@ -45,6 +45,7 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 		return;
 
 	ZTRACE_FIRST("EngineVGui::Paint");
+	U::Log.Crumb("Paint");
 
 	//Panic unload (F11), edge-detected once per frame here.
 	static bool s_bPrevF11 = false;

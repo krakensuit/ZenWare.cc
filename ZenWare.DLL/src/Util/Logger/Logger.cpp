@@ -133,6 +133,13 @@ void CUtil_Logger::Open(const char* const szPath)
 	fflush(m_pFile);
 }
 
+void CUtil_Logger::Crumb(const char* szStage)
+{
+	if (!szStage || !szStage[0])
+		return;
+	strncpy_s(m_szCrumb, szStage, _TRUNCATE);
+}
+
 void CUtil_Logger::Write(const char* const szFormat, ...)
 {
 	if (!m_pFile)

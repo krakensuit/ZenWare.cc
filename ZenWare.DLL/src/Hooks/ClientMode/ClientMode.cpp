@@ -33,6 +33,7 @@ bool __fastcall ClientMode::ShouldDrawFog::Detour(void* ecx, void* edx)
 bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input_sample_frametime, CUserCmd* cmd)
 {
 	ZTRACE_FIRST("ClientMode::CreateMove");
+	U::Log.Crumb("CreateMove");
 	PASSIVE_IF_SHUTDOWN(Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd));
 
 	if (!cmd || !cmd->command_number)

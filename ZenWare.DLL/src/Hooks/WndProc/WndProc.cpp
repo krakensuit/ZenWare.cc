@@ -20,6 +20,11 @@ LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		return 0;
 	}
 
+	// Сырой ввод мыши глушим, пока меню открыто: иначе двигается камера,
+	// хотя курсор уже наш. Клавиши меню опрашиваются напрямую и не страдают.
+	if (uMsg == WM_INPUT && Vars::Menu::bOpen)
+		return 0;
+
 	if (F::Menu.ShouldBlockInput(uMsg))
 	return 0;
 

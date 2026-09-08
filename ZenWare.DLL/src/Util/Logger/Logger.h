@@ -22,6 +22,12 @@ public:
 
 	void Write(const char* const szFormat, ...);
 
+	// Хлебные крошки для диагностики вылетов: короткий след последнего места.
+	// Без аллокаций и без лока — безопасно звать из любого потока и читать
+	// из CrashRecorder на падающем потоке (строка может быть рваной, это ок).
+	void Crumb(const char* szStage);
+	const char* LastCrumb() const { return m_szCrumb; }
+
 private:
 	void Open(const char* const szPath);
 
@@ -30,7 +36,7 @@ private:
 
 	FILE* m_pFile = nullptr;
 	char m_szPath[MAX_PATH] = { };
-};
+	char m_szCrumb[64] = { "boot" };
 
 namespace U { inline CUtil_Logger Log; }
 

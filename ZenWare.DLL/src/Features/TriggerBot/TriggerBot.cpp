@@ -1,6 +1,7 @@
 #include "TriggerBot.h"
 
 #include "../Vars.h"
+#include "../../Util/Logger/Logger.h"
 
 namespace
 {
@@ -24,6 +25,7 @@ namespace
 
 void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUserCmd* cmd)
 {
+	U::Log.Crumb("TriggerBot::Run");
 	if (!Vars::TriggerBot::bEnabled || !pLocal || !pWeapon || !cmd || !cmd->command_number)
 		return;
 

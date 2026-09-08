@@ -1,5 +1,6 @@
 #include "Menu.h"
 #include "../Vars.h"
+#include "../../Util/Logger/Logger.h"
 #include "../Lang/Lang.h"
 #include "../Config/Config.h"
 #include "../Chams/Chams.h"
@@ -160,7 +161,7 @@ void CFeatures_Menu::Toggle(){
 void CFeatures_Menu::SetOpen(bool bOpen){
  if(Vars::Menu::bOpen==bOpen) return;
  Vars::Menu::bOpen=bOpen;
- if(bOpen){ while(ShowCursor(TRUE) < 0); } else { while(ShowCursor(FALSE) >= 0); }
+ if(bOpen){ while(ShowCursor(TRUE) < 0); } else { while(ShowCursor(FALSE) >= 0); ClipCursor(nullptr); }
  auto lock = [&](bool bLock){
   if(I::VGuiSurface) bLock?I::VGuiSurface->LockCursor():I::VGuiSurface->UnlockCursor();
   if(I::MatSystemSurface) bLock?I::MatSystemSurface->LockCursor():I::MatSystemSurface->UnlockCursor();
@@ -206,7 +207,8 @@ bool CFeatures_Menu::HandleOpenState(){
  return Vars::Menu::bOpen;
 }
 void CFeatures_Menu::Render(){
- // F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
+	U::Log.Crumb("Menu::Render");
+	// F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
  // Работает и при закрытом меню: Render крутится каждый кадр.
  static bool s_bLangInit=false;
  if(!s_bLangInit){ s_bLangInit=true; Vars::Menu::bRussian=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN); }
@@ -218,8 +220,9 @@ void CFeatures_Menu::Render(){
  m_flDt = dt; s_menuDt = dt;
  m_flAnim = s_alpha;
  s_alpha = Anim::Approach(s_alpha, bOpen ? 1.0f : 0.0f, dt, 9.0f);
- if(s_alpha < 0.01f){
-  static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
+  if(s_alpha < 0.01f){
+   ClipCursor(nullptr); // на всякий: отпускаем мышь, пока меню закрыто
+   static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
   m_szHelpId=nullptr; m_szHelpTitle=nullptr; m_szHelpText=nullptr;
   if(!Vars::Menu::bOpen && G::Draw.m_nScreenW > 0){
    const float whue=fmodf((float)GetTickCount64()/38.0f,360.0f);
@@ -227,10 +230,19 @@ void CFeatures_Menu::Render(){
   }
   return;
  }
- if(!G::Draw.m_nScreenW||!G::Draw.m_nScreenH||!Hooks::WndProc::hwGame) return;
- if(I::VGuiSurface) I::VGuiSurface->UnlockCursor();
- if(I::MatSystemSurface) I::MatSystemSurface->UnlockCursor();
- while(ShowCursor(FALSE) >= 0);
+  if(!G::Draw.m_nScreenW||!G::Draw.m_nScreenH||!Hooks::WndProc::hwGame) return;
+  if(I::VGuiSurface) I::VGuiSurface->UnlockCursor();
+  if(I::MatSystemSurface) I::MatSystemSurface->UnlockCursor();
+  // Забираем мышь у игры, пока меню открыто: курсор свободно ходит по окну,
+  // камера не крутится (сырой ввод глушим в WndProc), клики в игру не уходят.
+  // ESC для этого больше не нужен.
+  if(GetForegroundWindow()==Hooks::WndProc::hwGame){
+   RECT rcC; GetClientRect(Hooks::WndProc::hwGame,&rcC);
+   POINT lt{rcC.left,rcC.top}, rb{rcC.right,rcC.bottom};
+   ClientToScreen(Hooks::WndProc::hwGame,&lt); ClientToScreen(Hooks::WndProc::hwGame,&rb);
+   RECT rcClip{lt.x,lt.y,rb.x,rb.y}; ClipCursor(&rcClip);
+  } else ClipCursor(nullptr);
+  while(ShowCursor(FALSE) >= 0);
  const MouseState_t mouse=GetMouse();
  constexpr int HEADER_H=46, FOOTER_H=22;
  if(!m_bPosInit){ m_nPosX=(G::Draw.m_nScreenW-PANEL_W)/2; m_nPosY=(G::Draw.m_nScreenH-PANEL_H)/3; m_bPosInit=true; }
@@ -460,7 +472,10 @@ void CFeatures_Menu::Render(){
 }
 bool CFeatures_Menu::ShouldBlockInput(unsigned int uMsg){
  if(!Vars::Menu::bOpen) return false;
- switch(uMsg){case WM_LBUTTONDOWN:case WM_LBUTTONUP:case WM_RBUTTONDOWN:case WM_RBUTTONUP:case WM_MBUTTONDOWN:case WM_MBUTTONUP:case WM_MOUSEWHEEL:return true; default:return false;}
+ // Пока меню открыто игра не получает мышь вообще: ни кнопки, ни движение,
+ // ни колесо, ни сырой ввод (иначе крутится камера и клики уходят в игру).
+ // Наше меню опрашивает GetCursorPos/GetAsyncKeyState напрямую — ему сообщения не нужны.
+ switch(uMsg){case WM_LBUTTONDOWN:case WM_LBUTTONUP:case WM_RBUTTONDOWN:case WM_RBUTTONUP:case WM_MBUTTONDOWN:case WM_MBUTTONUP:case WM_MOUSEMOVE:case WM_MOUSEWHEEL:return true; default:return false;}
 }
 bool CFeatures_Menu::HelpMark(const MouseState_t& mouse,const char* const szId,const char* const szTitle,const char* const szText,int nX,int nY){
  constexpr int D=13;

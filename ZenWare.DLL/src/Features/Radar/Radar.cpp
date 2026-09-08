@@ -163,7 +163,7 @@ void CFeatures_Radar::Render()
 			nCount++;
 		}
 		const int nY0 = Vars::Radar::bEnabled ? (kY + kSize + 6) : 16;
-		G::Draw.String(EFonts::ESP, 16, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, "%s", Lang::T("Spectators (%d)"), nCount);
+		G::Draw.String(EFonts::ESP, 16, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, Lang::T("Spectators (%d)"), nCount);
 		for (int i = 0; i < nCount; i++)
 			G::Draw.String(EFonts::ESP, 16, nY0 + 14 + i * 13, Color(235, 245, 240, 255), TXT_DEFAULT, "%s", aNames[i]);
 	}

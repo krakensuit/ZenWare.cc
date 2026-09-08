@@ -44,6 +44,7 @@ namespace
 		}
 
 		U::Log.Write("[!!!] EXCEPTION 0x%08X at 0x%08X (%s)", dwCode, dwAddr, szWhere);
+		U::Log.Write("[!!!] last breadcrumb: %s", U::Log.LastCrumb());
 		U::Log.Write("[!!!] Process is dying. Send the last lines of this file to the developer.");
 
 		return EXCEPTION_CONTINUE_SEARCH;

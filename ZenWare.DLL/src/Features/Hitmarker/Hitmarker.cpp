@@ -1,6 +1,7 @@
 #include "Hitmarker.h"
 #include "../Vars.h"
 #include "../../SDK/DrawManager/DrawManager.h"
+#include "../../Util/Logger/Logger.h"
 
 #include <cctype>
 #include <cstring>
@@ -101,6 +102,7 @@ void CFeatures_Hitmarker::PlayHit(bool bKill)
 
 void CFeatures_Hitmarker::OnTick()
 {
+	U::Log.Crumb("Hitmarker::OnTick");
 	if (!Vars::Hitmarker::bEnabled || !I::EngineClient || !I::EngineClient->IsInGame() || !I::ClientEntityList || !I::GlobalVars)
 	{
 		if (!m_mHp.empty() || !m_aNums.empty() || m_nShots || m_nHits) { Clear(); }

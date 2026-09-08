@@ -11,6 +11,7 @@
 
 void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 {
+	U::Log.Crumb("BunnyHop::Run");
 	if (!Vars::BunnyHop::bEnabled || !pLocal || !cmd || !cmd->command_number)
 		return;
 

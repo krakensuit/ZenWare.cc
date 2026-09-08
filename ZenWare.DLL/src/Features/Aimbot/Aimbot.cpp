@@ -198,6 +198,7 @@ namespace
 
 void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUserCmd* cmd)
 {
+	U::Log.Crumb("Aimbot::Run");
 	if (!ShouldRun(pLocal, pWeapon, cmd))
 		return;
 

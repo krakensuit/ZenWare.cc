@@ -1,6 +1,7 @@
 #include "ESP.h"
 
 #include "../Vars.h"
+#include "../../Util/Logger/Logger.h"
 
 #include <cctype>
 #include <cmath>
@@ -9,6 +10,7 @@
 
 void CFeatures_ESP::Render()
 {
+	U::Log.Crumb("ESP::Render");
 	if (!Vars::ESP::bEnabled || !I::EngineClient->IsInGame() || I::EngineVGui->IsGameUIVisible())
 		return;
 
