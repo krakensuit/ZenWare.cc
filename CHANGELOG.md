@@ -7,6 +7,12 @@ All notable changes to ZenWare.cc are documented here.
 
 ### Added / Добавлено
 
+- ESP: space-style layout — yellow nickname above the box, white `[Nm]`
+  distance and `weapon [clip]` (m_iClip1) below it, green bottom-up HP bar on
+  the left (`Ammo count` and `Show teammates` toggles, saved to config).
+  ESP как у спейса: жёлтый ник сверху, дистанция и `оружие [патроны]` снизу,
+  зелёный ХП-бар слева (тумблеры в меню, сохраняются в конфиг).
+
 - JumpStats: peak height (H) and airtime row, plus session JB/EB success
   counters (the cheat's own duck-window landings).
   Высота прыжка и время полёта в JumpStats, счётчики удачных JB/EB за сессию.
@@ -26,9 +32,24 @@ All notable changes to ZenWare.cc are documented here.
   `ClientCmd` (`sv_cheats 1; ...; thirdperson`), which crashed the game.
 - Aimbot locks by default: `bSilent` default is now off (visible lock like
   space; silent is still a toggle), commons/specials visibility fixed (below).
+- ESP boxes: true 8-corner AABB projection (space method) instead of the
+  2-point vertical projection with a fixed 0.55 width — boxes no longer lag
+  behind chams at close range and screen edges; items are text-only.
+  Боксы ESP: проекция 8 углов как у спейса вместо 2 точек — боксы больше не
+  отстают от чамсов; предметы — только текст.
 - Player ESP box: clean single outline like space; bounds are now netvar-only
   (origin + mins/maxs height), no `RenderableToWorldTransform` call.
 ### Fixed / Исправлено
+
+- JumpStats JB/EB counters stuck at zero: BunnyHop strips `IN_DUCK` from cmd
+  on the landing tick before JumpStats reads it, so duck-at-land was always
+  false. Duck is now latched while airborne; counters also count manual bugs
+  (showTick gate removed), each landing counted once (EB wins over JB).
+  Счётчики JB/EB стояли на нуле: BunnyHop снимал присед до чтения статой.
+  Присед теперь запоминается в полёте; считаются и ручные баги.
+- JumpStats numbers: added peak fall speed to the main row, verdict uses the
+  finished jump's strafe count (not live), landing log gains fall/duck/eb.
+  Цифры статов: скорость падения в главной строке, вердикт по своему прыжку.
 
 - Silent-death hunt (landing crashes with zero telemetry): removed the
   XBUTTON1 ×5 `CL_Move` loop (engine movement simulated 6x per frame while the

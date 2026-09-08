@@ -144,23 +144,25 @@ void CFeatures_Radar::Render()
 			IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
 			if (!pEntity || pEntity->IsDormant())
 				continue;
-			C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
-			if (!pPl)
-				continue;
-			player_info_t pi = {};
-			if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
-				continue;
-			// Только те, кто реально не играет (спектаторы и мёртвые).
-			const bool bOut = pPl->deadflag() || pPl->m_lifeState() != 0;
-			const int nTeam = pPl->GetTeamNumber();
-			if (!bOut && nTeam != kTeamSpectator)
-				continue;
-			if (!pPl->m_hObserverTarget().IsValid())
-				continue;
-			if (pPl->m_hObserverTarget().GetEntryIndex() != nLocalIdx)
-				continue;
-			strcpy_s(aNames[nCount], pi.name);
-			nCount++;
+		C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
+		if (!pPl)
+			continue;
+		// Сначала дешёвые нетвары, GetPlayerInfo — последним и только для
+		// реальных кандидатов: раньше дёргали движок по всем слотам каждый кадр.
+		// Только те, кто реально не играет (спектаторы и мёртвые).
+		const bool bOut = pPl->deadflag() || pPl->m_lifeState() != 0;
+		const int nTeam = pPl->GetTeamNumber();
+		if (!bOut && nTeam != kTeamSpectator)
+			continue;
+		if (!pPl->m_hObserverTarget().IsValid())
+			continue;
+		if (pPl->m_hObserverTarget().GetEntryIndex() != nLocalIdx)
+			continue;
+		player_info_t pi = {};
+		if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
+			continue;
+		strcpy_s(aNames[nCount], pi.name);
+		nCount++;
 		}
 		const int nY0 = Vars::Radar::bEnabled ? (kY + kSize + 6) : 16;
 		G::Draw.String(EFonts::ESP, 16, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, Lang::T("Spectators (%d)"), nCount);

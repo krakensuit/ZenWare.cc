@@ -183,6 +183,7 @@ public:
 	M_NETVAR(m_iState, int, "CBaseCombatWeapon", "m_iState");
 	M_NETVAR(m_hOwner, int, "CBaseCombatWeapon", "m_hOwner");
 	M_NETVAR(m_bInReload, bool, "CBaseCombatWeapon", "m_bInReload");
+	M_NETVAR(m_iClip1, int, "CBaseCombatWeapon", "m_iClip1");
 };
 
 class C_WeaponCSBase : public C_BaseCombatWeapon

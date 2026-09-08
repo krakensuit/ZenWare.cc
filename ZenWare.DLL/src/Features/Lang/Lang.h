@@ -25,6 +25,7 @@ namespace Lang
 			{"ESP special infected","ESP особые"}, {"ESP witch","ESP ведьма"},
 			{"Snaplines","Снаплайны"}, {"Filled boxes","Заливка боксов"},
 			{"HP text near bar","HP текст"}, {"Weapon text","Текст оружия"},
+			{"Ammo count","Патроны"}, {"Show teammates","Показывать своих"},
 			{"Team HP panel","Панель HP команды"}, {"Throwable timers","Таймеры гранат"},
 			{"Chams","Чамсы"}, {"Chams through walls","Чамсы сквозь стены"}, {"Chams palette >","Палитра чамсов >"},
 			{"No visual recoil","Без виз. отдачи"},

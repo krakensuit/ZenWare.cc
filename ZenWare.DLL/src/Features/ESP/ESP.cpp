@@ -4,24 +4,23 @@
 #include "../../Util/Logger/Logger.h"
 
 #include <cctype>
-#include <cmath>
 #include <cstring>
 #include <map>
 
 namespace
 {
-	// Уголки как у боксов игроков: единый стиль ESP.
-	void DrawCorners(int x, int y, int w, int h, const Color& clr)
+	// Рамка как у space: цветная 1px + чёрная снаружи + чёрная изнутри.
+	// Уголки убраны: тройная вложенность выглядела криво на мелких боксах.
+	void DrawEspBox(int x, int y, int w, int h, const Color& clr)
 	{
-		const int nTick = U::Math.Clamp(w / 4, 6, 16);
-		G::Draw.Line(x - 3, y - 3, x - 3 + nTick, y - 3, clr);
-		G::Draw.Line(x - 3, y - 3, x - 3, y - 3 + nTick, clr);
-		G::Draw.Line(x + w + 3 - nTick, y - 3, x + w + 3, y - 3, clr);
-		G::Draw.Line(x + w + 3, y - 3, x + w + 3, y - 3 + nTick, clr);
-		G::Draw.Line(x - 3, y + h + 3 - nTick, x - 3, y + h + 3, clr);
-		G::Draw.Line(x - 3, y + h + 3, x - 3 + nTick, y + h + 3, clr);
-		G::Draw.Line(x + w + 3, y + h + 3 - nTick, x + w + 3, y + h + 3, clr);
-		G::Draw.Line(x + w + 3 - nTick, y + h + 3, x + w + 3, y + h + 3, clr);
+		if (w <= 2 || h <= 2)
+		{
+			G::Draw.OutlinedRect(x, y, w, h, clr);
+			return;
+		}
+		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 0, 0, 0, 255 });
+		G::Draw.OutlinedRect(x, y, w, h, clr);
+		G::Draw.OutlinedRect(x + 1, y + 1, w - 2, h - 2, { 0, 0, 0, 255 });
 	}
 }
 
@@ -61,6 +60,12 @@ void CFeatures_ESP::Render()
 				C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
 
 				if (G::Util.IsValidTarget(pLocal, pPlayer, false))
+					DrawPlayer(pLocal, pPlayer, n);
+				// Show Team как у space: своих рисуем только по тумблеру.
+				else if (Vars::ESP::bShowTeam && pPlayer && !pPlayer->deadflag()
+					&& pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0
+					&& pPlayer->GetTeamNumber() == pLocal->GetTeamNumber()
+					&& G::Util.IsValidTeam(pPlayer->GetTeamNumber()))
 					DrawPlayer(pLocal, pPlayer, n);
 
 				break;
@@ -123,92 +128,82 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 {
 	int x, y, w, h;
 
-	if (!GetBounds(pPlayer, x, y, w, h) || w <= 0 || h <= 0)
+	if (!GetBounds(pPlayer, x, y, w, h))
 		return;
 
 	const bool bIsEnemy = (pPlayer->GetTeamNumber() != pLocal->GetTeamNumber());
 	const Color clrTeam = bIsEnemy ? Vars::Chams::clrEnemy : Vars::Chams::clrAlly;
+	const int nMaxHp = U::Math.Clamp(pPlayer->m_iMaxHealth(), 1, 200);
+	const int nHealth = U::Math.Clamp(pPlayer->GetHealth(), 0, nMaxHp);
+	const int nCenterX = x + (w / 2);
+	const float flDistM = G::Util.GetEyePosition(pLocal).DistTo(G::Util.GetEyePosition(pPlayer)) / 52.5f;
 
-	const int nHealth = U::Math.Clamp(pPlayer->GetHealth(), 0, 100);
-	const Color clrHP(255 - (255 * nHealth) / 100, (255 * nHealth) / 100, 0, 255);
-
-	wchar_t wszDist[16] = { };
-
-	if (Vars::ESP::bDistance)
-		swprintf_s(wszDist, L" [%.0fm]", G::Util.GetEyePosition(pLocal).DistTo(G::Util.GetEyePosition(pPlayer)) / 52.5f);
-
-	player_info_t pi = { };
-
-	//Box outline around the model bounds (pulses red on low HP).
 	if (Vars::ESP::bBox)
 	{
-		Color clrBox = clrTeam;
-
-		if (nHealth <= 25)
-		{
-			const float flPulse = 0.5f + 0.5f * sinf(static_cast<float>(GetTickCount64() % 6283) / 1000.0f);
-			clrBox = {
-				clrTeam.r() + static_cast<int>((255 - clrTeam.r()) * flPulse),
-				clrTeam.g() + static_cast<int>((0 - clrTeam.g()) * flPulse),
-				clrTeam.b() + static_cast<int>((0 - clrTeam.b()) * flPulse),
-				255
-			};
-		}
-
 		if (Vars::ESP::bFilled)
-			G::Draw.Rect(x, y, w, h, { clrBox.r(), clrBox.g(), clrBox.b(), 40 });
-		//Чистый бокс как у space: тёмная подложка + одна цветная рамка.
-		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
-		G::Draw.OutlinedRect(x, y, w, h, clrBox);
+			G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
+		DrawEspBox(x, y, w, h, clrTeam);
 	}
 
 	//Snapline from the bottom of the screen.
 	if (Vars::ESP::bSnaplines)
 		G::Draw.Line(G::Draw.m_nScreenW / 2, G::Draw.m_nScreenH, x + (w / 2), y + h, clrTeam);
 
-	//Vertical health bar on the left side of the box (red -> green).
+	// ХП-бар слева как у space: чёрная подложка на всю высоту + зелёная
+	// заливка снизу вверх по доле от max HP (не от 100 — у СИ больше).
 	if (Vars::ESP::bHealthBar)
 	{
-		constexpr int nBarW = 4;
-		const int nBarH = static_cast<int>((h * nHealth) / 100.0f);
-		const int nBarTop = (y + h) - nBarH;
+		const int nBarX = x - 5;
 
-		G::Draw.Rect(x - nBarW - 3, y - 1, nBarW + 2, h + 2, { 10, 10, 12, 200 });
-		G::Draw.OutlinedRect(x - nBarW - 3, y - 1, nBarW + 2, h + 2, { 0, 0, 0, 160 });
-		G::Draw.Rect(x - nBarW - 2, nBarTop, nBarW, nBarH / 2,
-			{ clrHP.r() + 60 > 255 ? 255 : clrHP.r() + 60, clrHP.g() + 60 > 255 ? 255 : clrHP.g() + 60, clrHP.b(), 255 });
-		G::Draw.Rect(x - nBarW - 2, nBarTop + nBarH / 2, nBarW, nBarH - nBarH / 2, clrHP);
+		if (nBarX >= 0)
+		{
+			const int nFillH = (h * nHealth) / nMaxHp;
+			G::Draw.Rect(nBarX, y, 4, h, { 0, 0, 0, 255 });
+
+			if (nFillH > 0)
+				G::Draw.Rect(nBarX + 1, y + h - nFillH, 2, nFillH, { 0, 255, 0, 255 });
+		}
 
 		if (Vars::ESP::bHealthText)
-			G::Draw.String(EFonts::ESP, x - nBarW - 8, y + (h / 2) - G::Draw.GetFontHeight(EFonts::ESP) / 2, clrHP, TXT_CENTERXY, "%i", nHealth);
+			G::Draw.String(EFonts::ESP, nBarX - 4, y + (h / 2), Color(255, 255, 255, 255), TXT_CENTERXY, "%d", nHealth);
 	}
 
-	//Nickname (+distance) and HP text above the box.
-	if (Vars::ESP::bName && I::EngineClient->GetPlayerInfo(nEntityIndex, &pi))
+	// Ник жёлтым над боксом как у space (не цветом команды).
+	if (Vars::ESP::bName)
 	{
-		pi.name[31] = '\0';
-		const int nCenterX = x + (w / 2);
+		player_info_t pi = { };
 
-		char szDistNarrow[16] = { };
-		if (wszDist[0])
-			sprintf_s(szDistNarrow, " [%.0fm]", G::Util.GetEyePosition(pLocal).DistTo(G::Util.GetEyePosition(pPlayer)) / 52.5f);
+		if (I::EngineClient->GetPlayerInfo(nEntityIndex, &pi))
+		{
+			pi.name[31] = '\0';
 
-		int nTextY = y - G::Draw.GetFontHeight(EFonts::ESP_NAME);
-		G::Draw.String(EFonts::ESP_NAME, nCenterX, nTextY, clrTeam, TXT_CENTERXY, "%s%s", pi.name, szDistNarrow);
+			if (pi.name[0])
+				G::Draw.String(EFonts::ESP_NAME, nCenterX, y - 10, Color(230, 212, 50, 255), TXT_CENTERXY, "%s", pi.name);
+		}
+	}
 
-		nTextY -= G::Draw.GetFontHeight(EFonts::ESP);
-		G::Draw.String(EFonts::ESP, nCenterX, nTextY, clrHP, TXT_CENTERXY, "%ihp", nHealth);
+	// Низ бокса сверху вниз как у space: дистанция, под ней оружие+патроны.
+	int nBelow = y + h + 8;
 
-	// Held weapon - через netvar m_hActiveWeapon (надёжнее виртуалки)
+	if (Vars::ESP::bDistance)
+	{
+		G::Draw.String(EFonts::ESP, nCenterX, nBelow, Color(255, 255, 255, 255), TXT_CENTERXY, "[%.0fm]", flDistM);
+		nBelow += 13;
+	}
+
+	// Оружие в руках — через netvar m_hActiveWeapon (надёжнее виртуалки).
+	// Блок НЕ вложен в bName: раньше текст оружия пропадал вместе с ником.
 	if (Vars::ESP::bWeaponText)
 	{
-	EHANDLE hActive = pPlayer->m_hActiveWeapon();
+		EHANDLE hActive = pPlayer->m_hActiveWeapon();
 		C_BaseEntity* pEntActive = nullptr;
+
 		if (hActive.IsValid())
 		{
 			IClientEntity* pViaHandle = I::ClientEntityList->GetClientEntityFromHandle(hActive);
 			if (pViaHandle) pEntActive = pViaHandle->As<C_BaseEntity*>();
 		}
+
 		C_BaseCombatWeapon* pActive = pEntActive ? pEntActive->As<C_BaseCombatWeapon*>() : nullptr;
 
 		if (pActive)
@@ -216,41 +211,58 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			wchar_t wszDisplay[64] = { };
 			bool bHasName = false;
 			C_TerrorWeapon* pTW = pActive->As<C_TerrorWeapon*>();
+
 			if (pTW)
 			{
 				int id = pTW->GetWeaponID();
+
 				if (id > 0 && id < 38 && wcscmp(g_aSpawnInfo[id].m_szName, L"unknown") != 0)
 				{
 					wcscpy_s(wszDisplay, g_aSpawnInfo[id].m_szName);
 					bHasName = true;
 				}
 			}
-		if (!bHasName)
-		{
-			// pActive из хендла без проверки класса: виртуалку дёргаем
-			// только если класс известен, иначе статичная строка.
-			ClientClass* pWCC = pActive->GetClientClass();
-			const char* szName = (pWCC && pWCC->m_pNetworkName) ? pWCC->m_pNetworkName : "weapon";
+
+			if (!bHasName)
+			{
+				// pActive из хендла без проверки класса: виртуалку дёргаем
+				// только если класс известен, иначе статичная строка.
+				ClientClass* pWCC = pActive->GetClientClass();
+				const char* szName = (pWCC && pWCC->m_pNetworkName) ? pWCC->m_pNetworkName : "weapon";
+
 				if (szName && szName[0])
 				{
 					if (szName[0] == 'C') szName++;
 					if (szName[0] == '#') szName++;
-				if (!strncmp(szName, "Weapon", 6)) szName += 6;
-				swprintf_s(wszDisplay, L"%hs", szName);
+					if (!strncmp(szName, "Weapon", 6)) szName += 6;
+					swprintf_s(wszDisplay, L"%hs", szName);
+
 					if (wcsstr(wszDisplay, L"unknown")) bHasName = false;
 					else bHasName = wszDisplay[0] != L'\0';
 				}
 			}
+
 			if (bHasName)
 			{
-				// Иконка из игры: пробуем найти материал оружия (если есть - рисуем иконку рядом)
-				// Для простоты пока текст, иконку можно включить если материал найден
-				nTextY -= G::Draw.GetFontHeight(EFonts::ESP_WEAPON);
-				G::Draw.String(EFonts::ESP_WEAPON, nCenterX, nTextY, Color(220,220,220,255), TXT_CENTERXY, "%ls", wszDisplay);
+				wchar_t wszLine[80] = { };
+
+				// Патроны как у space: только m_iClip1 активного оружия.
+				// Оффсет 0 (нетвар не снялся) читал бы vtable — отсекаем sanity.
+				if (Vars::ESP::bAmmo)
+				{
+					const int nClip = pActive->m_iClip1();
+
+					if (nClip >= 0 && nClip <= 999)
+					{
+						swprintf_s(wszLine, L"%ls [%d]", wszDisplay, nClip);
+						wcscpy_s(wszDisplay, wszLine);
+					}
+				}
+
+				G::Draw.String(EFonts::ESP_WEAPON, nCenterX, nBelow, Color(220, 220, 220, 255), TXT_CENTERXY, "%ls", wszDisplay);
 			}
 		}
-	} // bWeaponText
-	} // bName
+	}
 }
 
 void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
@@ -295,15 +307,7 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 			swprintf_s(wszD, L" [%.0fm]", G::Util.GetEyePosition(pLocal).DistTo(pEntity->m_vecOrigin()) / 52.5f);
 			wcscat_s(wszCls, wszD);
 		}
-		const int nTick = 5;
-		G::Draw.Line(x, y, x + nTick, y, clrItemNone);
-		G::Draw.Line(x, y, x, y + nTick, clrItemNone);
-		G::Draw.Line(x + w - nTick, y, x + w, y, clrItemNone);
-		G::Draw.Line(x + w, y, x + w, y + nTick, clrItemNone);
-		G::Draw.Line(x, y + h - nTick, x, y + h, clrItemNone);
-		G::Draw.Line(x, y + h, x + nTick, y + h, clrItemNone);
-		G::Draw.Line(x + w, y + h - nTick, x + w, y + h, clrItemNone);
-		G::Draw.Line(x + w - nTick, y + h, x + w, y + h, clrItemNone);
+		// Как у space: предметам бокс не рисуем вообще, только текст по центру.
 		G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItemNone, TXT_CENTERXY, L"%ls", wszCls);
 		return;
 	}
@@ -348,15 +352,7 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 		wcscat_s(wszLine, wszDist);
 	}
 
-	const int nTick = 5;
-	G::Draw.Line(x, y, x + nTick, y, clrItem);
-	G::Draw.Line(x, y, x, y + nTick, clrItem);
-	G::Draw.Line(x + w - nTick, y, x + w, y, clrItem);
-	G::Draw.Line(x + w, y, x + w, y + nTick, clrItem);
-	G::Draw.Line(x, y + h - nTick, x, y + h, clrItem);
-	G::Draw.Line(x, y + h, x + nTick, y + h, clrItem);
-	G::Draw.Line(x + w, y + h - nTick, x + w, y + h, clrItem);
-	G::Draw.Line(x + w - nTick, y + h, x + w, y + h, clrItem);
+	// Как у space: оружию на земле бокс не рисуем, только цветной текст по центру.
 	G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItem, TXT_CENTERXY, L"%ls", wszLine);
 }
 
@@ -379,9 +375,7 @@ void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
 	const Color clrCommon(170, 60, 60, 220);
 	if (Vars::ESP::bFilled)
 		G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
-	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
-	G::Draw.OutlinedRect(x, y, w, h, clrCommon);
-	DrawCorners(x, y, w, h, clrCommon);
+	DrawEspBox(x, y, w, h, clrCommon);
 }
 
 void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const int nClassID)
@@ -421,9 +415,7 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	const Color& clrTeam = Vars::Chams::clrEnemy;
 	if (Vars::ESP::bFilled)
 		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
-	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
-	G::Draw.OutlinedRect(x, y, w, h, clrTeam);
-	DrawCorners(x, y, w, h, clrTeam);
+	DrawEspBox(x, y, w, h, clrTeam);
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szName);
 
 	//HP и дистанция для спец-заражённых
@@ -451,9 +443,7 @@ void CFeatures_ESP::DrawBoss(C_BaseEntity* pEntity)
 		return;
 
 	const Color clrBoss(200, 0, 255, 255);
-	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
-	G::Draw.OutlinedRect(x, y, w, h, clrBoss);
-	DrawCorners(x, y, w, h, clrBoss);
+	DrawEspBox(x, y, w, h, clrBoss);
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrBoss, TXT_CENTERXY, "WITCH");
 }
 
@@ -505,9 +495,7 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 		const Color clrCommon(170, 60, 60, 220);
 		if (Vars::ESP::bFilled)
 			G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
-		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
-		G::Draw.OutlinedRect(x, y, w, h, clrCommon);
-		DrawCorners(x, y, w, h, clrCommon);
+		DrawEspBox(x, y, w, h, clrCommon);
 		G::Draw.String(EFonts::ESP, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP), clrCommon, TXT_CENTERXY, "%s", szShow);
 		return;
 	}
@@ -523,8 +511,7 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	const Color& clrTeam = Vars::Chams::clrEnemy;
 	if (Vars::ESP::bFilled)
 		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
-	G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 10, 10, 12, 200 });
-	G::Draw.OutlinedRect(x, y, w, h, clrTeam);
+	DrawEspBox(x, y, w, h, clrTeam);
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szShow);
 }
 
@@ -533,34 +520,42 @@ bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w,
 	if (!pBaseEntity)
 		return false;
 
-	// Как у space: никаких виртуалок (RenderableToWorldTransform лежит на
-	// непроверенном слоте и кривил боксы). Только нетвары: низ/верх корпуса
-	// проецируем в экран, ширину берём пропорцией от высоты.
+	// Как у space: проекция всех 8 углов AABB (origin+mins/maxs), только нетвары.
+	// Старая проекция 2 точек (ступни/голова по центру + ширина 0.55 от высоты)
+	// врала ширину и центр на близких и на краях экрана — боксы "отставали".
+	if ((pBaseEntity->m_vecMaxs().z - pBaseEntity->m_vecMins().z) < 2.0f)
+		return false;
+
 	const Vector vOrigin = pBaseEntity->m_vecOrigin();
-	const float flBottomZ = vOrigin.z + pBaseEntity->m_vecMins().z;
-	const float flTopZ = vOrigin.z + pBaseEntity->m_vecMaxs().z;
-	const float flHullH = flTopZ - flBottomZ;
+	const Vector vMins = pBaseEntity->m_vecMins();
+	const Vector vMaxs = pBaseEntity->m_vecMaxs();
 
-	if (flHullH < 2.0f)
+	float flMinX = 1e9f, flMinY = 1e9f, flMaxX = -1e9f, flMaxY = -1e9f;
+
+	for (int i = 0; i < 8; i++)
+	{
+		const Vector vP(
+			vOrigin.x + ((i & 1) ? vMaxs.x : vMins.x),
+			vOrigin.y + ((i & 2) ? vMaxs.y : vMins.y),
+			vOrigin.z + ((i & 4) ? vMaxs.z : vMins.z));
+		Vector vS;
+
+		if (!G::Util.W2S(vP, vS))
+			return false;
+
+		if (vS.x < flMinX) flMinX = vS.x;
+		if (vS.y < flMinY) flMinY = vS.y;
+		if (vS.x > flMaxX) flMaxX = vS.x;
+		if (vS.y > flMaxY) flMaxY = vS.y;
+	}
+
+	x = static_cast<int>(flMinX);
+	y = static_cast<int>(flMinY);
+	w = static_cast<int>(flMaxX - flMinX);
+	h = static_cast<int>(flMaxY - flMinY);
+
+	if (w < 3 || h < 6)
 		return false;
-
-	Vector vFeetS, vHeadS;
-	if (!G::Util.W2S(Vector(vOrigin.x, vOrigin.y, flBottomZ), vFeetS)
-		|| !G::Util.W2S(Vector(vOrigin.x, vOrigin.y, flTopZ), vHeadS))
-		return false;
-
-	const float flH = vFeetS.y - vHeadS.y;
-
-	if (flH < 4.0f)
-		return false;
-
-	const float flW = flH * 0.55f;
-	const float flCX = (vFeetS.x + vHeadS.x) * 0.5f;
-
-	x = static_cast<int>(flCX - flW * 0.5f);
-	y = static_cast<int>(vHeadS.y);
-	w = static_cast<int>(flW);
-	h = static_cast<int>(flH);
 
 	return !(x > G::Draw.m_nScreenW || (x + w) < 0 || y > G::Draw.m_nScreenH || (y + h) < 0);
 }

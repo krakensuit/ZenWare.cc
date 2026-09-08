@@ -79,10 +79,16 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 				m_nGoodTicks++;
 		}
 
-		if (cmd->buttons & IN_DUCK)
-			m_bDuckAtLand = true;
-		else if (m_nAirTicks > 3)
-			m_bDuckAtLand = false;
+		// Латчим присед только в воздухе: на тике касания BunnyHop уже снял
+		// IN_DUCK с cmd (JB-релиз), и чтение cmd на лендинге врало бы "не присел" —
+		// из-за этого [eb] никогда не показывался, а jb/eb-счётчики стояли на нуле.
+		if (!bOnGround)
+		{
+			if (cmd->buttons & IN_DUCK)
+				m_bDuckAtLand = true;
+			else if (m_nAirTicks > 3)
+				m_bDuckAtLand = false;
+		}
 
 		if (!bOnGround)
 			return;
@@ -101,18 +107,23 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			m_last.strafes = m_nStrafes;
 			m_last.syncPct = (m_nMoveTicks > 0) ? (m_nGoodTicks * 100 / m_nMoveTicks) : 0;
 			m_last.landTick = tick;
-			m_last.edge = (m_nTakeTick - m_nLastGroundTick) <= 2;
-			m_last.eb = ((cmd->buttons & IN_DUCK) != 0) && m_fMaxFall < -500.0f && dist > 200.0f;
-			m_last.height = (m_fMaxHeight > 0.0f) ? m_fMaxHeight : 0.0f;
-			m_last.airSec = m_nAirTicks * (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
-			// Сессионные счётчики: чит сам жал присед в баг-окне незадолго до касания.
-			if (m_last.eb && (tick - Vars::BunnyHop::nEbShowTick) <= 8)
-				Vars::BunnyHop::nEbCount++;
-			if (((cmd->buttons & IN_DUCK) != 0) && m_fMaxFall < -350.0f && (tick - Vars::BunnyHop::nJbShowTick) <= 8)
-				Vars::BunnyHop::nJbCount++;
+		m_last.edge = (m_nTakeTick - m_nLastGroundTick) <= 2;
+		const bool bDucked = m_bDuckAtLand || ((cmd->buttons & IN_DUCK) != 0);
+		m_last.eb = bDucked && m_fMaxFall < -500.0f && dist > 150.0f;
+		m_last.fall = m_fMaxFall;
+		m_last.height = (m_fMaxHeight > 0.0f) ? m_fMaxHeight : 0.0f;
+		m_last.airSec = m_nAirTicks * (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
+		// Сессионные счётчики: showTick-гейт убран — иначе ручной дак перед
+		// касанием (без чита) никогда не считался. EB важнее JB: eb включает
+		// и условия JB, считаем только раз.
+		if (m_last.eb)
+			Vars::BunnyHop::nEbCount++;
+		else if (bDucked && m_fMaxFall < -350.0f)
+			Vars::BunnyHop::nJbCount++;
 		m_last.valid = true;
 		m_nShowUntil = tick + 264; //~4 seconds at 66 ticks
-		U::Log.Write("JumpStats: landed %.0fu pre %.0f max %.0f sync %d%%", dist, m_fTakeSpeed, m_fMaxSpeed, m_last.syncPct);
+		U::Log.Write("JumpStats: landed %.0fu pre %.0f max %.0f fall %.0f sync %d%% duck %d eb %d",
+			dist, m_fTakeSpeed, m_fMaxSpeed, m_fMaxFall, m_last.syncPct, bDucked ? 1 : 0, m_last.eb ? 1 : 0);
 		}
 		else
 		{
@@ -143,12 +154,12 @@ void CFeatures_JumpStats::Draw()
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 50, Color(0, 200, 255, 255), TXT_CENTERXY, "EDGEJUMP");
 
 	const Color clrGood(0, 255, 171, 255);
-	const bool bGood = (m_last.syncPct >= 90 && m_nStrafes >= 0);
+	const bool bGood = (m_last.syncPct >= 90 && m_last.strafes > 0);
 	const Color& clrVerdict = bGood ? clrGood : Color(200, 200, 200, 255);
 
 	char szMain[64] = { };
-	sprintf_s(szMain, sizeof(szMain), "%.0fu  pre %.0f  max %.0f",
-		m_last.dist, m_last.pre, m_last.max);
+	sprintf_s(szMain, sizeof(szMain), "%.0fu  pre %.0f  max %.0f  fall %.0f",
+		m_last.dist, m_last.pre, m_last.max, m_last.fall);
 	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy, Color(235, 245, 240, 255), TXT_CENTERXY, "%s", szMain);
 
 	char szSub[64] = { };

@@ -64,6 +64,8 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"ESP witch","ESP witch","Purple box around the witch.","ESP ведьма","Фиолетовый бокс вокруг ведьмы."},
 		{"HP text near bar","HP text near bar","Prints the HP number left of the health bar.","HP текст","Число HP слева от полосы здоровья."},
 		{"Weapon text","Weapon text","Active weapon name under the nickname.","Текст оружия","Название оружия в руках под ником."},
+		{"Ammo count","Ammo count","Clip ammo next to the weapon name, space-style.","Патроны","Патроны в магазине рядом с оружием, как у спейса."},
+		{"Show teammates","Show teammates","Draw ESP boxes on your own team too.","Показывать своих","Рисовать ESP-боксы и на своей команде."},
 		{"Hitbox: Head >","Hitbox","Where the aimbot aims: head or body center.","Хитбокс","Куда целится аимбот: голова или центр тела."},
 		{"Hitbox: Center >","Hitbox","Where the aimbot aims: head or body center.","Хитбокс","Куда целится аимбот: голова или центр тела."},
 		{"Priority: FOV >","Target priority","FOV picks the closest to the crosshair, Distance the nearest player.","Приоритет цели","FOV — ближайший к прицелу, Дистанция — ближайший игрок."},
@@ -289,6 +291,8 @@ void CFeatures_Menu::Render(){
      Checkbox(mouse,"Filled boxes",&Vars::ESP::bFilled);
     Checkbox(mouse,"HP text near bar",&Vars::ESP::bHealthText);
     Checkbox(mouse,"Weapon text",&Vars::ESP::bWeaponText);
+    Checkbox(mouse,"Ammo count",&Vars::ESP::bAmmo);
+    Checkbox(mouse,"Show teammates",&Vars::ESP::bShowTeam);
     Checkbox(mouse,"Team HP panel",&Vars::ESP::bTeamPanel);
     Checkbox(mouse,"Throwable timers",&Vars::ESP::bThrowTimers);
     BindRow(mouse,"ESP panic key",&Vars::ESP::nPanicKey);

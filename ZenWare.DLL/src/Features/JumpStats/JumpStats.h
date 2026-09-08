@@ -19,6 +19,7 @@ private:
 		float max = 0.0f;
 		float height = 0.0f; // peak takeoff->apex, units
 		float airSec = 0.0f; // airtime, seconds
+		float fall = 0.0f; // peak fall speed (negative), units/s
 		int strafes = 0;
 		int syncPct = 0;
 		int landTick = 0;

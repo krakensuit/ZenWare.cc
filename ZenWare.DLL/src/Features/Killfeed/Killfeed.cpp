@@ -93,11 +93,15 @@ void CFeatures_Killfeed::OnTick()
     {
         IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
         if (!pEntity || pEntity->IsDormant()) continue;
+        // Сначала дешёвый фильтр по классу: GetPlayerInfo по всем 2k слотам
+        // каждый кадр — лишний шторм вызовов движка. Имя нужно только в
+        // момент смерти (для строки киллфида), живые храним по индексу.
+        ClientClass* pCC = pEntity->GetClientClass();
+        if (!pCC) continue;
+        const int nID = pCC->m_ClassID;
+        if (nID != CTerrorPlayer && nID != SurvivorBot && nID != Tank) continue;
         C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
         if (!pPlayer) continue;
-        player_info_t pi = {};
-        // Только именованные игроки (выжившие, боты, особые за другую команду).
-        if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0]) continue;
         const bool bAlive = !pPlayer->deadflag() && pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0;
         if (bAlive)
         {
@@ -106,6 +110,8 @@ void CFeatures_Killfeed::OnTick()
         }
         if (m_alive.count(n))
         {
+            player_info_t pi = {};
+            if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0]) continue;
             char szKiller[32] = { };
             PinKillerName(pPlayer, szKiller, sizeof(szKiller));
             Push(szKiller, pi.name, "");

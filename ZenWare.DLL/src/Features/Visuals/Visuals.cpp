@@ -86,44 +86,75 @@ void CFeatures_Visuals::DrawGrenade()
 	const Color clrLand(255, 70, 70, 255);
 
 	CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
-	Vector vSeg = vPos;
-	Vector vLand;
-	bool bLanded = false;
-	int nBounces = 0;
 
-	for (int i = 0; i < 90 && !bLanded; i++)
+	// Кэш сегментов: симуляция делает до 90 трейсов движка, каждый кадр это
+	// роняло FPS с гранатой в руках. Пересчёт только когда съехали глаза/
+	// взгляд/скорость/оружие или прошло 100мс. Рисуем всегда из кэша.
+	static Vector s_vEyeK; static Vector s_vVelK; static int s_nWpnK = -1;
+	static unsigned long long s_ullK = 0;
+	static Vector s_aPath[96]; static int s_nPath = 0;
+	static Vector s_vLandK; static bool s_bLandK = false;
+
+	const unsigned long long ullNow = GetTickCount64();
+	const Vector vEye0 = G::Util.GetEyePosition(pLocal);
+	const Vector vVelKey = vVel; // vVel ниже мутирует в симуляции — ключ снимаем до.
+	const int nWpnID = pWpn->GetWeaponID();
+	const bool bSame = (s_nPath > 1 && s_nWpnK == nWpnID
+		&& (vEye0 - s_vEyeK).LenghtSqr() < 1.0f
+		&& (vVelKey - s_vVelK).LenghtSqr() < 1.0f
+		&& ullNow - s_ullK < 100);
+
+	if (!bSame)
 	{
-		vVel.z -= flGravity * flStep;
-		const Vector vNext = vSeg + vVel * flStep;
+		Vector vSeg = vPos;
+		s_aPath[0] = vSeg;
+		s_nPath = 1;
+		s_bLandK = false;
+		int nBounces = 0;
 
-		trace_t tr{};
-		G::Util.Trace(vSeg, vNext, MASK_SOLID, &filter, &tr);
-
-		Vector vEnd = vNext;
-		if (tr.DidHit())
+		for (int i = 0; i < 90 && !s_bLandK && s_nPath < 96; i++)
 		{
-			vEnd = tr.endpos;
-			// Отражение от плоскости с потерей скорости.
-			const Vector& n = tr.plane.normal;
-			vVel = (vVel - n * (2.0f * vVel.Dot(n))) * flElast;
-			if (++nBounces >= 2 || vVel.LenghtSqr() < 900.0f) // <30 u/s — легла
+			vVel.z -= flGravity * flStep;
+			const Vector vNext = vSeg + vVel * flStep;
+
+			trace_t tr{};
+			G::Util.Trace(vSeg, vNext, MASK_SOLID, &filter, &tr);
+
+			Vector vEnd = vNext;
+			if (tr.DidHit())
 			{
-				vLand = vEnd;
-				bLanded = true;
+				vEnd = tr.endpos;
+				// Отражение от плоскости с потерей скорости.
+				const Vector& n = tr.plane.normal;
+				vVel = (vVel - n * (2.0f * vVel.Dot(n))) * flElast;
+				if (++nBounces >= 2 || vVel.LenghtSqr() < 900.0f) // <30 u/s — легла
+				{
+					s_vLandK = vEnd;
+					s_bLandK = true;
+				}
 			}
+
+			s_aPath[s_nPath++] = vEnd;
+			vSeg = s_bLandK ? vEnd : (tr.DidHit() ? vEnd + tr.plane.normal * 1.0f : vNext);
 		}
 
-		Vector vA, vB;
-		if (G::Util.W2S(vSeg, vA) && G::Util.W2S(vEnd, vB))
-			G::Draw.Line((int)vA.x, (int)vA.y, (int)vB.x, (int)vB.y, clrPath);
-
-		vSeg = bLanded ? vEnd : (tr.DidHit() ? vEnd + tr.plane.normal * 1.0f : vNext);
+		s_vEyeK = vEye0;
+		s_vVelK = vVelKey;
+		s_nWpnK = nWpnID;
+		s_ullK = ullNow;
 	}
 
-	if (bLanded && Vars::Grenade::bLanding)
+	for (int i = 0; i + 1 < s_nPath; i++)
+	{
+		Vector vA, vB;
+		if (G::Util.W2S(s_aPath[i], vA) && G::Util.W2S(s_aPath[i + 1], vB))
+			G::Draw.Line((int)vA.x, (int)vA.y, (int)vB.x, (int)vB.y, clrPath);
+	}
+
+	if (s_bLandK && Vars::Grenade::bLanding)
 	{
 		Vector vS;
-		if (G::Util.W2S(vLand, vS))
+		if (G::Util.W2S(s_vLandK, vS))
 		{
 			const int x = (int)vS.x, y = (int)vS.y;
 			G::Draw.OutlinedCircle(x, y, 8, 16, clrLand);

@@ -109,6 +109,8 @@ namespace Vars
 		inline bool bFilled = false;    //translucent fill inside boxes
 		inline bool bHealthText = false; //HP number next to health bar
 		inline bool bWeaponText = true;  //active weapon name under nickname
+		inline bool bAmmo = true;        //clip ammo next to weapon name (m_iClip1)
+		inline bool bShowTeam = false;   //draw teammates too (space: Show Team)
 		inline bool bSpecialBoxes = true; //SI boxes/names
 		inline bool bBossBoxes = true;   //witch box
 		inline bool bTeamPanel = false;  //team HP panel (left side)

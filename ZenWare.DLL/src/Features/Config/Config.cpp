@@ -122,6 +122,8 @@ namespace
 		{ "esp.snaplines", &Vars::ESP::bSnaplines },
 		{ "esp.healthtext", &Vars::ESP::bHealthText },
 		{ "esp.weapontext", &Vars::ESP::bWeaponText },
+		{ "esp.ammo", &Vars::ESP::bAmmo },
+		{ "esp.showteam", &Vars::ESP::bShowTeam },
 		{ "esp.specialboxes", &Vars::ESP::bSpecialBoxes },
 		{ "esp.bossboxes", &Vars::ESP::bBossBoxes },
 		{ "esp.teampanel", &Vars::ESP::bTeamPanel },
