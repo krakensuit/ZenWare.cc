@@ -93,6 +93,13 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 void __fastcall ClientMode::DoPostScreenSpaceEffects::Detour(void* ecx, void* edx, const void* pSetup)
 {
 	PASSIVE_IF_SHUTDOWN(Table.Original<FN>(Index)(ecx, edx, pSetup));
+
+	//Чистый экран: пропуск оригинала режет рвоту/блюр/стан целиком.
+	//Дефолт true = прежнее поведение (детур и так никогда не вызывал оригинал).
+	if (Vars::Visuals::bNoScreenFx || !I::EngineClient || !I::EngineClient->IsInGame())
+		return;
+
+	Table.Original<FN>(Index)(ecx, edx, pSetup);
 }
 
 float __fastcall ClientMode::GetViewModelFOV::Detour(void* ecx, void* edx)

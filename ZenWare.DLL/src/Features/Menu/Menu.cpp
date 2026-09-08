@@ -92,7 +92,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Null movement","Null movement","Cancels opposite keys (A+D, W+S) for clean strafes.","Нулл-мувмент","Гасит противоположные клавиши (A+D, W+S) для чистых стрейфов."},
 		{"Fast stop","Fast stop","Counter-strafes to a full stop when no keys are held.","Быстрый стоп","Контр-стрейф до полной остановки, когда клавиши отпущены."},
 		{"Speed HUD","Speed HUD","Shows current velocity under the crosshair.","Скорость HUD","Показывает текущую скорость под прицелом."},
-		{"Jump stats","Jump stats","KZ-style panel: distance, prestrafe, max speed, strafes, sync, edge and EB marks.","Стата прыжка","Панель в стиле KZ: дистанция, престрейф, макс. скорость, стрейфы, синхрон, метки края и EB."},
+		{"Jump stats","Jump stats","KZ-style panel: distance, prestrafe, max speed, strafes, sync, height, airtime, JB/EB session counters.","Стата прыжка","Панель в стиле KZ: дистанция, престрейф, макс. скорость, стрейфы, синхрон, высота, время полёта, счётчики JB/EB за сессию."},
 		{"Auto duck","Auto duck","Holds duck through the whole airtime for longer jumps and duck-landings.","Авто-присед","Держит присед весь полёт: прыжки дальше, посадки в приседе."},
 		{"Prestrafe","Prestrafe","Forces full forward speed on ground jumps.","Престрейф","Форсирует полную скорость вперёд на прыжках с земли."},
 		{"Long jump helper","Long jump helper","Auto-ducks on jump for extra longjump distance.","Лонгджамп","Авто-присед в прыжке для extra-дистанции лонга."},
@@ -103,6 +103,9 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Crosshair","Crosshair","Custom center crosshair.","Прицел","Кастомный прицел по центру."},
 		{"Crosshair size","Crosshair size","Crosshair arm length in pixels.","Размер прицела","Длина рисок прицела в пикселях."},
 		{"FPS / pos overlay","FPS overlay","FPS and position readout in the bottom-left corner.","FPS / поз. оверлей","FPS и координаты в левом нижнем углу."},
+		{"No screen effects","No screen effects","Skips post-screen effects: bile overlay, blur, stun fade. Off restores the original picture.","Без эффектов экрана","Пропускает пост-эффекты: рвоту на экране, блюр, ослепление. Выкл возвращает обычную картинку."},
+		{"Common counter","Common counter","Alive common infected within ~40m, bottom-left above the speed readout.","Счётчик обычных","Живые обычные в радиусе ~40м, слева внизу над скоростью."},
+		{"Damage arrow","Damage arrow","Arrow toward the last attacker for 3 seconds (best-effort guess, no engine events).","Стрелка урона","Стрелка на последнего атакующего на 3 секунды (эвристика, ивентов в движке нет)."},
 		{"Aimbot","Aimbot","Silent aim at head or center within FOV. Hold the aim key.","Аимбот","Сайлент-наведение в голову или центр в пределах FOV. Держи клавишу аима."},
 		{"Auto shoot","Auto shoot","Fires automatically while a target is locked.","Авто-огонь","Автоматический огонь при захвате цели."},
 		{"Silent aim","Silent aim","The server sees aimed angles, your screen stays still.","Сайлент-аим","Сервер видит наведённые углы, твой экран стоит на месте."},
@@ -325,7 +328,9 @@ void CFeatures_Menu::Render(){
      Checkbox(mouse,"Grenade path",&Vars::Grenade::bEnabled);
      if (Vars::Grenade::bEnabled)
       Checkbox(mouse,"Landing marker",&Vars::Grenade::bLanding);
-    Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
+     Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
+     Checkbox(mouse,"No screen effects",&Vars::Visuals::bNoScreenFx);
+     Checkbox(mouse,"Common counter",&Vars::Visuals::bCommonCount);
      Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
      Checkbox(mouse,"Hitmarker",&Vars::Hitmarker::bEnabled);
      if (Vars::Hitmarker::bEnabled)
@@ -333,8 +338,9 @@ void CFeatures_Menu::Render(){
       Checkbox(mouse,"Hit sound",&Vars::Hitmarker::bSound);
       Checkbox(mouse,"Damage numbers",&Vars::Hitmarker::bNumbers);
       Checkbox(mouse,"Cross hitmark",&Vars::Hitmarker::bXMark);
-      Checkbox(mouse,"Session stats",&Vars::Hitmarker::bStats);
-      Checkbox(mouse,"Damage flash",&Vars::Hitmarker::bDmgFlash);
+       Checkbox(mouse,"Session stats",&Vars::Hitmarker::bStats);
+       Checkbox(mouse,"Damage flash",&Vars::Hitmarker::bDmgFlash);
+       Checkbox(mouse,"Damage arrow",&Vars::Hitmarker::bDmgArrow);
       SliderInt(mouse,"Hit pitch",&Vars::Hitmarker::nPitch,200,2000);
       SliderInt(mouse,"Number lifetime",&Vars::Hitmarker::nDurationMs,400,3000);
       SliderInt(mouse,"Min damage",&Vars::Hitmarker::nMinDmg,0,100);

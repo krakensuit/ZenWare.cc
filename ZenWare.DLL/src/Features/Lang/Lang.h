@@ -60,6 +60,8 @@ namespace Lang
 			{"Damage numbers","Цифры урона"}, {"Hit pitch","Тон хитсаунда"},
 			{"Number lifetime","Время цифр"}, {"Cross hitmark","Крест попадания"},
 			{"Session stats","Стата сессии"}, {"Damage flash","Вспышка урона"},
+			{"Damage arrow","Стрелка урона"}, {"No screen effects","Без эффектов экрана"},
+			{"Common counter","Счётчик обычных"},
 			{"Min damage","Мин. урон"}, {"ESP panic key","Паник-кнопка ESP"},
 			{"Radar","Радар"}, {"Spectators","Наблюдатели"},
 			{"Spectators (%d)","Наблюдатели (%d)"},

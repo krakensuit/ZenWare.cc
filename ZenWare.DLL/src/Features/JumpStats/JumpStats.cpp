@@ -33,6 +33,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		m_fTakeSpeed = speed2d;
 		m_fMaxSpeed = speed2d;
 		m_fMaxFall = vel.z;
+		m_fMaxHeight = 0.0f;
 		m_nTakeTick = tick;
 		m_nAirTicks = 0;
 		m_nMoveTicks = 0;
@@ -52,6 +53,10 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 		if (vel.z < m_fMaxFall)
 			m_fMaxFall = vel.z;
+
+		const float flHeight = pLocal->m_vecOrigin().z - m_vTakeoff.z;
+		if (flHeight > m_fMaxHeight)
+			m_fMaxHeight = flHeight;
 
 		int side = 0;
 
@@ -98,6 +103,13 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			m_last.landTick = tick;
 			m_last.edge = (m_nTakeTick - m_nLastGroundTick) <= 2;
 			m_last.eb = ((cmd->buttons & IN_DUCK) != 0) && m_fMaxFall < -500.0f && dist > 200.0f;
+			m_last.height = (m_fMaxHeight > 0.0f) ? m_fMaxHeight : 0.0f;
+			m_last.airSec = m_nAirTicks * (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
+			// Сессионные счётчики: чит сам жал присед в баг-окне незадолго до касания.
+			if (m_last.eb && (tick - Vars::BunnyHop::nEbShowTick) <= 8)
+				Vars::BunnyHop::nEbCount++;
+			if (((cmd->buttons & IN_DUCK) != 0) && m_fMaxFall < -350.0f && (tick - Vars::BunnyHop::nJbShowTick) <= 8)
+				Vars::BunnyHop::nJbCount++;
 		m_last.valid = true;
 		m_nShowUntil = tick + 264; //~4 seconds at 66 ticks
 		U::Log.Write("JumpStats: landed %.0fu pre %.0f max %.0f sync %d%%", dist, m_fTakeSpeed, m_fMaxSpeed, m_last.syncPct);
@@ -145,4 +157,9 @@ void CFeatures_JumpStats::Draw()
 		m_last.edge ? "  [edge]" : "",
 		m_last.eb ? "  [eb]" : "");
 	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy + 16, clrVerdict, TXT_CENTERXY, "%s", szSub);
+
+	char szExtra[64] = { };
+	sprintf_s(szExtra, sizeof(szExtra), "H %.0fu  air %.2fs  |  jb %d  eb %d",
+		m_last.height, m_last.airSec, Vars::BunnyHop::nJbCount, Vars::BunnyHop::nEbCount);
+	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy + 32, Color(140, 160, 152, 255), TXT_CENTERXY, "%s", szExtra);
 }

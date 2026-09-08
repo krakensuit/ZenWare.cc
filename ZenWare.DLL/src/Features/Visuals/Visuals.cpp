@@ -211,6 +211,34 @@ void CFeatures_Visuals::DrawOverlay()
 			s_flFpsAvg, vPos.x, vPos.y, vPos.z, pLocal->GetHealth());
 	}
 
+	// Common counter: alive commons near local (poll, no engine events).
+	if (Vars::Visuals::bCommonCount && I::ClientEntityList)
+	{
+		int nCommons = 0;
+		const Vector vMyPos = pLocal->m_vecOrigin();
+		const int nMax = I::ClientEntityList->GetMaxEntities();
+		for (int n = 1; n <= nMax; n++)
+		{
+			IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+			if (!pEntity || pEntity->IsDormant())
+				continue;
+			ClientClass* pCC = pEntity->GetClientClass();
+			if (!pCC || pCC->m_ClassID != Infected)
+				continue;
+			C_Infected* pInf = pEntity->As<C_Infected*>();
+			if (!pInf || !G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
+				continue;
+			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
+			if (!pEnt)
+				continue;
+			if ((pEnt->m_vecOrigin() - vMyPos).LenghtSqr() > 2000.0f * 2000.0f)
+				continue;
+			nCommons++;
+		}
+		G::Draw.String(EFonts::MENU_CONSOLAS, 8, G::Draw.m_nScreenH - 74,
+			(nCommons > 0) ? Color(255, 220, 0, 255) : CLR_TEXT_HINT, TXT_DEFAULT, "commons %d", nCommons);
+	}
+
 	// Speed HUD - movement feature
 	if (Vars::BunnyHop::bSpeedHUD)
 	{

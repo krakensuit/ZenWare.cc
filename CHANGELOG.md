@@ -5,6 +5,20 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+### Added / Добавлено
+
+- JumpStats: peak height (H) and airtime row, plus session JB/EB success
+  counters (the cheat's own duck-window landings).
+  Высота прыжка и время полёта в JumpStats, счётчики удачных JB/EB за сессию.
+- Damage arrow: 3-second pointer toward the last attacker (best-effort nearest
+  visible enemy, no engine events) with distance.
+  Стрелка на последнего атакующего на 3 секунды + дистанция.
+- No screen effects toggle (default on = previous behaviour): skips
+  `DoPostScreenSpaceEffects` (bile overlay, blur, stun).
+  Выключение пост-эффектов экрана (рвота/блюр/стан), по умолчанию как раньше.
+- Common counter: alive commons within ~40m in the overlay corner.
+  Счётчик живых обычных рядом.
+
 ### Fixed / Исправлено
 
 - Silent-death hunt (landing crashes with zero telemetry): removed the

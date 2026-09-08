@@ -72,6 +72,7 @@ namespace
 		{ "hitmarker.xmark", &Vars::Hitmarker::bXMark },
 		{ "hitmarker.stats", &Vars::Hitmarker::bStats },
 		{ "hitmarker.dmgflash", &Vars::Hitmarker::bDmgFlash },
+		{ "hitmarker.dmarrow", &Vars::Hitmarker::bDmgArrow },
 		{ "hitmarker.pitch", &Vars::Hitmarker::nPitch },
 		{ "hitmarker.duration", &Vars::Hitmarker::nDurationMs },
 		{ "hitmarker.mindmg", &Vars::Hitmarker::nMinDmg },
@@ -136,6 +137,8 @@ namespace
 		{ "visuals.chcolor", &Vars::Visuals::clrCrosshair },
 		{ "visuals.3rdperson", &Vars::Visuals::bThirdPerson },
 		{ "visuals.3rdpersondist", &Vars::Visuals::nThirdPersonDist },
+		{ "visuals.noscreenfx", &Vars::Visuals::bNoScreenFx },
+		{ "visuals.commoncount", &Vars::Visuals::bCommonCount },
 		{ "grenade.path", &Vars::Grenade::bEnabled },
 		{ "grenade.landing", &Vars::Grenade::bLanding },
 

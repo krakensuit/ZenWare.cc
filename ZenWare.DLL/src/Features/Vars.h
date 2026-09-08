@@ -75,6 +75,8 @@ namespace Vars
 		inline int nJbShowTick = 0;            // jumpbug notify timestamp (not saved)
 		inline int nEbShowTick = 0;            // edgebug notify timestamp (not saved)
 		inline int nEjShowTick = 0;            // edgejump notify timestamp (not saved)
+		inline int nJbCount = 0;               // successful jumpbugs this session (not saved)
+		inline int nEbCount = 0;               // successful edgebugs this session (not saved)
 		inline bool bFastStop = false;         // counter-strafe to stop instantly
 		inline bool bSpeedHUD = false;         // velocity display
 		inline bool bJumpStats = false;        // KZ-style jump statistics panel
@@ -125,6 +127,8 @@ namespace Vars
 		inline bool bOverlay = false;   //FPS + position overlay
 		inline bool bThirdPerson = false; //3rd person camera (local server)
 		inline int nThirdPersonDist = 100; //cam_idealdist
+		inline bool bNoScreenFx = true; //skip DoPostScreenSpaceEffects (bile/blur/stun)
+		inline bool bCommonCount = false; //alive commons counter in overlay corner
 	}
 
 	namespace Radar
@@ -172,6 +176,7 @@ namespace Vars
 		inline bool bXMark = true;     // крест на прицеле в момент попадания
 		inline bool bStats = false;    // панель статистики сессии
 		inline bool bDmgFlash = true;  // красная вспышка при уроне по тебе
+		inline bool bDmgArrow = true;  // стрелка на последнего атакующего
 		inline int nPitch = 1000;      // Hz, menu 200..2000
 		inline int nDurationMs = 1200; // ms, menu 400..3000
 		inline int nMinDmg = 0;        // скрывать цифры урона меньше N, 0 = все

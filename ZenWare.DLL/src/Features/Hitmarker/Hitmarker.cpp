@@ -4,6 +4,7 @@
 #include "../../Util/Logger/Logger.h"
 
 #include <cctype>
+#include <cmath>
 #include <cstring>
 #include <thread>
 
@@ -122,10 +123,14 @@ void CFeatures_Hitmarker::OnTick()
 		return;
 
 	// Урон по нам: просадка HP локального между кадрами.
+	bool bJustDamaged = false;
 	{
 		const int nHp = pLocal->GetHealth();
 		if (m_nLocalHp >= 0 && nHp < m_nLocalHp)
+		{
 			m_flLastDmgT = I::GlobalVars->curtime;
+			bJustDamaged = true;
+		}
 		m_nLocalHp = nHp;
 	}
 
@@ -186,6 +191,44 @@ void CFeatures_Hitmarker::OnTick()
 	}
 
 	m_mHp.swap(mSeen);
+
+	// Откуда прилетело: в кадр урона ищем ближайшего видимого врага.
+	// Дорогой скан (трейсы) — только по факту просадки HP, не каждый кадр.
+	if (bJustDamaged && Vars::Hitmarker::bDmgArrow)
+	{
+		float flBest = 2000.0f * 2000.0f;
+		Vector vBest;
+		bool bFound = false;
+
+		for (int n = 1; n <= nMax; n++)
+		{
+			IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+			if (!pEntity || pEntity->IsDormant())
+				continue;
+
+			int nHp = 0;
+			Vector vAnchor;
+			if (!GetEnemyHp(pEntity, pLocal, nHp, vAnchor))
+				continue;
+
+			const float flD2 = (vAnchor - vEye).LenghtSqr();
+			if (flD2 >= flBest)
+				continue;
+			if (!IsVisibleTo(pLocal, vEye, vAnchor))
+				continue;
+
+			flBest = flD2;
+			vBest = vAnchor;
+			bFound = true;
+		}
+
+		if (bFound)
+		{
+			m_vAttacker = vBest;
+			m_flAttackerT = flNow;
+			m_bHasAttacker = true;
+		}
+	}
 }
 
 void CFeatures_Hitmarker::Draw()
@@ -230,6 +273,49 @@ void CFeatures_Hitmarker::Draw()
 			G::Draw.Rect(0, H - nT, W, nT, clrF);
 			G::Draw.Rect(0, 0, nT, H, clrF);
 			G::Draw.Rect(W - nT, 0, nT, H, clrF);
+		}
+	}
+
+	// Стрелка на последнего атакующего: направление из углов обзора,
+	// не W2S — враг часто за спиной, проекции там нет.
+	if (Vars::Hitmarker::bDmgArrow && m_bHasAttacker && I::EngineClient && I::ClientEntityList)
+	{
+		const float flAtkAge = flNow - m_flAttackerT;
+		if (flAtkAge >= 0.0f && flAtkAge < 3.0f)
+		{
+			const int nLocalIdx = I::EngineClient->GetLocalPlayer();
+			IClientEntity* pEnt = (nLocalIdx > 0) ? I::ClientEntityList->GetClientEntity(nLocalIdx) : nullptr;
+			C_TerrorPlayer* pLocal = pEnt ? pEnt->As<C_TerrorPlayer*>() : nullptr;
+			if (pLocal && !pLocal->deadflag() && pLocal->m_lifeState() == 0)
+			{
+				const Vector vTo = m_vAttacker - G::Util.GetEyePosition(pLocal);
+				if (vTo.LenghtSqr() > 1.0f)
+				{
+					Vector vAng;
+					I::EngineClient->GetViewAngles(vAng);
+					const float flRel = (atan2f(vTo.y, vTo.x) * 180.0f / 3.14159265f) - vAng.y;
+					const float flRad = flRel * 3.14159265f / 180.0f;
+					float dx = -sinf(flRad), dy = -cosf(flRad);
+
+					const float cx = G::Draw.m_nScreenW * 0.5f, cy = G::Draw.m_nScreenH * 0.5f;
+					const float px = cx + dx * 110.0f, py = cy + dy * 110.0f;
+
+					const int nA = (int)(255.0f * (1.0f - flAtkAge / 3.0f));
+					const Color clrA(255, 70, 70, nA);
+					G::Draw.Line((int)cx, (int)cy, (int)px, (int)py, clrA);
+
+					Vector2D tri[3] = {
+						Vector2D(px + dx * 10.0f, py + dy * 10.0f),
+						Vector2D(px - dy * 7.0f - dx * 4.0f, py + dx * 7.0f - dy * 4.0f),
+						Vector2D(px + dy * 7.0f - dx * 4.0f, py - dx * 7.0f - dy * 4.0f)
+					};
+					G::Draw.Triangle(tri, clrA);
+
+					char szD[16] = { };
+					sprintf_s(szD, "%.0fm", sqrtf(vTo.LenghtSqr()) / 52.5f);
+					G::Draw.String(EFonts::ESP_NAME, (int)px, (int)py + 16, clrA, TXT_CENTERXY, "%s", szD);
+				}
+			}
 		}
 	}
 
