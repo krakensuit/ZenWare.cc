@@ -41,6 +41,23 @@ void CFeatures_Visuals::UpdateThirdPerson()
 	}
 }
 
+void CFeatures_Visuals::UpdateFullbright()
+{
+	// Как 3-е лицо: только через ICvar, консоль не трогаем. При выключении
+	// возвращаем 0, иначе фулбрайт залипает до перезапуска карты.
+	static bool s_bWasOn = false;
+	if (!I::Cvar)
+		return;
+
+	const bool bWant = Vars::Visuals::bFullbright && I::EngineClient && I::EngineClient->IsInGame();
+	if (bWant == s_bWasOn)
+		return;
+
+	if (ConVar* pBright = I::Cvar->FindVar("mat_fullbright"))
+		pBright->SetValue(bWant ? 1 : 0);
+	s_bWasOn = bWant;
+}
+
 void CFeatures_Visuals::DrawGrenade()
 {
 	if (!Vars::Grenade::bEnabled || !I::EngineClient || !I::EngineClient->IsInGame() || !I::ClientEntityList)
@@ -169,7 +186,7 @@ void CFeatures_Visuals::DrawGrenade()
 
 void CFeatures_Visuals::DrawCrosshair()
 {
-	if (!Vars::Visuals::bCrosshair || !G::Draw.m_nScreenW)
+	if (!Vars::Visuals::bCrosshair || !G::Draw.m_nScreenW || !I::EngineClient || !I::ClientEntityList)
 		return;
 
 	const int nCX = G::Draw.m_nScreenW / 2;
@@ -182,10 +199,10 @@ void CFeatures_Visuals::DrawCrosshair()
  C_TerrorPlayer* pLocal = nullptr;
  {
   const int nLocalIdx = I::EngineClient->GetLocalPlayer();
-  if (nLocalIdx >= 0)
+  if (nLocalIdx > 0 && I::ClientEntityList)
   {
    IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
-   if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+   if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
   }
  }
 
@@ -218,16 +235,16 @@ void CFeatures_Visuals::DrawCrosshair()
 
 void CFeatures_Visuals::DrawOverlay()
 {
-	if (!I::EngineClient->IsInGame() || !I::GlobalVars)
+	if (!I::EngineClient || !I::EngineClient->IsInGame() || !I::GlobalVars || !I::ClientEntityList)
 		return;
 
  C_TerrorPlayer* pLocal = nullptr;
  {
   const int nLocalIdx = I::EngineClient->GetLocalPlayer();
-  if (nLocalIdx >= 0)
+  if (nLocalIdx > 0 && I::ClientEntityList)
   {
    IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
-   if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+   if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
   }
  }
 

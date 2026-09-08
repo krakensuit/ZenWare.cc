@@ -37,7 +37,7 @@ namespace Lang
 			{"Null movement","Нулл-мувмент"}, {"Fast stop","Быстрый стоп"}, {"Speed HUD","Скорость HUD"},
 			{"Jump stats","Стата прыжка"}, {"Prestrafe","Престрейф"}, {"Long jump helper","Лонгджамп"},
 			{"Auto duck","Авто-присед"},
-			{"FOV x100 (view+model)","FOV x100 (мир+модель)"}, {"No fog","Без тумана"},
+			{"FOV world x100","FOV мира x100"}, {"FOV viewmodel x100","FOV рук x100"}, {"No fog","Без тумана"}, {"Full bright","Фулбрайт"},
 			{"Third person","3-е лицо"}, {"3rd person distance","Дистанция камеры"},
 			{"Crosshair","Прицел"}, {"Crosshair color","Цвет прицела"}, {"Crosshair size","Размер прицела"}, {"FPS / pos overlay","FPS / поз. оверлей"},
 			{"Grenade path","Траектория гранат"}, {"Landing marker","Маркер падения"},

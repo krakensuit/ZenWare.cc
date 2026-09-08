@@ -121,8 +121,11 @@ namespace Vars
 	namespace Visuals
 	{
 		inline bool bNoFog = false;
-		inline float flViewFOV = 1.0f;
+		inline bool bFullbright = false; //mat_fullbright через ICvar (как у space)
+		inline float flViewFOV = 1.0f; //мир (камера), старый visuals.viewfov
 		inline int nViewFOVSlider = 100; //x100 proxy
+		inline float flVmFOV = 1.0f; //руки/viewmodel отдельно
+		inline int nVmFOVSlider = 100; //x100 proxy
 		inline bool bCrosshair = false;
 		inline int nCrosshairSize = 6;
 		inline Color clrCrosshair = { 0, 255, 171, 255 };

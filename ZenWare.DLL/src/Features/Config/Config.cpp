@@ -134,7 +134,9 @@ namespace
 
 		//Visuals
 		{ "visuals.nofog", &Vars::Visuals::bNoFog },
+		{ "visuals.fullbright", &Vars::Visuals::bFullbright },
 		{ "visuals.viewfov", &Vars::Visuals::flViewFOV },
+		{ "visuals.vmfov", &Vars::Visuals::flVmFOV },
 		{ "visuals.crosshair", &Vars::Visuals::bCrosshair },
 		{ "visuals.chsize", &Vars::Visuals::nCrosshairSize },
 		{ "visuals.overlay", &Vars::Visuals::bOverlay },
@@ -303,6 +305,7 @@ void CFeatures_Config::Load()
 	Vars::Aimbot::nFOVSlider = U::Math.Clamp((int)(Vars::Aimbot::flFOV * 10.0f + 0.5f), 5, 300);
 	Vars::Aimbot::nSmoothSlider = U::Math.Clamp((int)(Vars::Aimbot::flSmoothing + 0.5f), 0, 60);
 	Vars::Visuals::nViewFOVSlider = U::Math.Clamp((int)(Vars::Visuals::flViewFOV * 100.0f + 0.5f), 50, 300);
+	Vars::Visuals::nVmFOVSlider = U::Math.Clamp((int)(Vars::Visuals::flVmFOV * 100.0f + 0.5f), 50, 300);
 	Vars::AimbotWpn::nRifleFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flRifleFov * 10.0f + 0.5f), 5, 300);
 	Vars::AimbotWpn::nSmgFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flSmgFov * 10.0f + 0.5f), 5, 300);
 	Vars::AimbotWpn::nShotgunFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flShotgunFov * 10.0f + 0.5f), 5, 300);

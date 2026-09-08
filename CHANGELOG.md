@@ -7,6 +7,21 @@ All notable changes to ZenWare.cc are documented here.
 
 ### Fixed / Исправлено
 
+- Menu mouse: the OS cursor was hidden every frame while the menu was open,
+  so there was no cursor without ESC/console (and clicks landed in the game
+  menu afterwards). The cursor is now force-shown while open, camera stays
+  still, no clicks reach the game (incl. side buttons).
+  Мышь в меню: курсор прятался каждый кадр — теперь показывается всегда,
+  камера стоит, клики в игру не уходят. ESC/консоль больше не нужны.
+- Mid-game hardening: null guards on `EngineClient/ClientEntityList` in
+  viewmodel-FOV, fog, crosshair, overlay; `CalcPlayerView` applies world FOV
+  only to the class-checked local survivor.
+  Защита от крашей в игре: проверки интерфейсов и класса локального игрока.
+- Split FOV: world camera and weapon viewmodel have separate `x100` sliders
+  now (old `visuals.viewfov` still loads into world). Full bright toggle via
+  `mat_fullbright` without console (restored on toggle off, local server).
+  FOV по отдельности: мир и руки — разные слайдеры. Фулбрайт без консоли.
+
 - Crash on inject: weapon code called `GetWeaponID()` virtual on unchecked
   entities from `m_hActiveWeapon` (viewmodel/hands/stale slots have a
   different vtable). New `G::Util.IsPlayerEntity/IsWeaponEntity` ClassID gates

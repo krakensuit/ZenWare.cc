@@ -98,10 +98,12 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Auto duck","Auto duck","Holds duck through the whole airtime for longer jumps and duck-landings.","Авто-присед","Держит присед весь полёт: прыжки дальше, посадки в приседе."},
 		{"Prestrafe","Prestrafe","Forces full forward speed on ground jumps.","Престрейф","Форсирует полную скорость вперёд на прыжках с земли."},
 		{"Long jump helper","Long jump helper","Auto-ducks on jump for extra longjump distance.","Лонгджамп","Авто-присед в прыжке для extra-дистанции лонга."},
-		{"FOV x100 (view+model)","FOV","Field of view multiplier: world camera and viewmodel.","FOV","Множитель обзора: камера мира и модель оружия."},
+		{"FOV world x100","FOV","World camera multiplier (90 x 1.0 = default).","FOV","Множитель камеры мира (90 x 1.0 = дефолт)."},
+		{"FOV viewmodel x100","FOV","Weapon viewmodel multiplier, tuned separately.","FOV","Множитель модели оружия, настраивается отдельно."},
 		{"Third person","Third person","Camera behind the back (local server). Set the distance below.","3-е лицо","Камера за спиной (локальный сервер). Дистанция ниже."},
 		{"3rd person distance","3rd person distance","How far the camera sits behind you.","Дистанция камеры","Как далеко камера висит за спиной."},
 		{"No fog","No fog","Disables world fog.","Без тумана","Отключает туман мира."},
+		{"Full bright","Full bright","mat_fullbright without console (local server). Restored on toggle off.","Фулбрайт","mat_fullbright без консоли (локальный сервер). Возвращается при выключении."},
 		{"Crosshair","Crosshair","Custom center crosshair.","Прицел","Кастомный прицел по центру."},
 		{"Crosshair size","Crosshair size","Crosshair arm length in pixels.","Размер прицела","Длина рисок прицела в пикселях."},
 		{"FPS / pos overlay","FPS overlay","FPS and position readout in the bottom-left corner.","FPS / поз. оверлей","FPS и координаты в левом нижнем углу."},
@@ -244,15 +246,18 @@ void CFeatures_Menu::Render(){
    POINT lt{rcC.left,rcC.top}, rb{rcC.right,rcC.bottom};
    ClientToScreen(Hooks::WndProc::hwGame,&lt); ClientToScreen(Hooks::WndProc::hwGame,&rb);
    RECT rcClip{lt.x,lt.y,rb.x,rb.y}; ClipCursor(&rcClip);
-  } else ClipCursor(nullptr);
-  while(ShowCursor(FALSE) >= 0);
+   } else ClipCursor(nullptr);
+   // Курсор ОС насильно показываем каждый кадр, пока меню открыто: движок
+   // прячет его сам, без этого курсора нет и приходится жать ESC/консоль
+   // (а там клики уже уходят в игровое меню — можно случайно нажать не то).
+   while(ShowCursor(TRUE) < 0);
  const MouseState_t mouse=GetMouse();
  constexpr int HEADER_H=46, FOOTER_H=22;
  if(!m_bPosInit){ m_nPosX=(G::Draw.m_nScreenW-PANEL_W)/2; m_nPosY=(G::Draw.m_nScreenH-PANEL_H)/3; m_bPosInit=true; }
  if(mouse.bDown && !m_bDragging && Hovered(mouse.pt,m_nPosX,m_nPosY,PANEL_W,HEADER_H)){ m_bDragging=true; m_nDragOffX=mouse.pt.x-m_nPosX; m_nDragOffY=mouse.pt.y-m_nPosY; }
  if(!mouse.bDown) m_bDragging=false;
  if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY; }
- Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f;
+ Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f; Vars::Visuals::flVmFOV=Vars::Visuals::nVmFOVSlider/100.0f;
  m_rc.nX=m_nPosX; m_rc.nY=m_nPosY;
  //красивое открытие/закрытие: fade + scale от центра панели + лёгкий подъем при открытии
  {
@@ -321,8 +326,10 @@ void CFeatures_Menu::Render(){
     break;
    }
    case 2:{
-    SliderInt(mouse,"FOV x100 (view+model)",&Vars::Visuals::nViewFOVSlider,50,300);
+    SliderInt(mouse,"FOV world x100",&Vars::Visuals::nViewFOVSlider,50,300);
+    SliderInt(mouse,"FOV viewmodel x100",&Vars::Visuals::nVmFOVSlider,50,300);
     Checkbox(mouse,"No fog",&Vars::Visuals::bNoFog);
+    Checkbox(mouse,"Full bright",&Vars::Visuals::bFullbright);
     Checkbox(mouse,"Third person",&Vars::Visuals::bThirdPerson);
     if(Vars::Visuals::bThirdPerson) SliderInt(mouse,"3rd person distance",&Vars::Visuals::nThirdPersonDist,30,200);
      Checkbox(mouse,"Crosshair",&Vars::Visuals::bCrosshair);
@@ -475,7 +482,7 @@ bool CFeatures_Menu::ShouldBlockInput(unsigned int uMsg){
  // Пока меню открыто игра не получает мышь вообще: ни кнопки, ни движение,
  // ни колесо, ни сырой ввод (иначе крутится камера и клики уходят в игру).
  // Наше меню опрашивает GetCursorPos/GetAsyncKeyState напрямую — ему сообщения не нужны.
- switch(uMsg){case WM_LBUTTONDOWN:case WM_LBUTTONUP:case WM_RBUTTONDOWN:case WM_RBUTTONUP:case WM_MBUTTONDOWN:case WM_MBUTTONUP:case WM_MOUSEMOVE:case WM_MOUSEWHEEL:return true; default:return false;}
+ switch(uMsg){case WM_LBUTTONDOWN:case WM_LBUTTONUP:case WM_RBUTTONDOWN:case WM_RBUTTONUP:case WM_MBUTTONDOWN:case WM_MBUTTONUP:case WM_XBUTTONDOWN:case WM_XBUTTONUP:case WM_XBUTTONDBLCLK:case WM_MOUSEMOVE:case WM_MOUSEWHEEL:return true; default:return false;}
 }
 bool CFeatures_Menu::HelpMark(const MouseState_t& mouse,const char* const szId,const char* const szTitle,const char* const szText,int nX,int nY){
  constexpr int D=13;

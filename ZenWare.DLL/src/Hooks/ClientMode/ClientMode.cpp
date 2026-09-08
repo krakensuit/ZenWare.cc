@@ -25,7 +25,7 @@ bool __fastcall ClientMode::ShouldDrawFog::Detour(void* ecx, void* edx)
 {
 	PASSIVE_IF_SHUTDOWN(Table.Original<FN>(Index)(ecx, edx));
 
-	if (Vars::Visuals::bNoFog && I::EngineClient->IsInGame())
+	if (Vars::Visuals::bNoFog && I::EngineClient && I::EngineClient->IsInGame())
 		return false;
 
 	return Table.Original<FN>(Index)(ecx, edx);
@@ -113,10 +113,10 @@ float __fastcall ClientMode::GetViewModelFOV::Detour(void* ecx, void* edx)
 {
 	const float flBase = Table.Original<FN>(Index)(ecx, edx);
 
-	if (G::ModuleEntry.IsShuttingDown() || !I::EngineClient->IsInGame())
+	if (G::ModuleEntry.IsShuttingDown() || !I::EngineClient || !I::EngineClient->IsInGame())
 		return flBase;
 
-	return flBase * U::Math.Clamp(Vars::Visuals::flViewFOV, 0.5f, 3.0f);
+	return flBase * U::Math.Clamp(Vars::Visuals::flVmFOV, 0.5f, 3.0f);
 }
 
 void ClientMode::Init()

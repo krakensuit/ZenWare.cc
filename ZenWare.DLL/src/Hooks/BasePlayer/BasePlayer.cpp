@@ -1,5 +1,6 @@
 #include "BasePlayer.h"
 #include "../../Util/Logger/Logger.h"
+#include "../../SDK/GameUtil/GameUtil.h"
 
 #include "../../Features/Vars.h"
 
@@ -21,13 +22,15 @@ void __fastcall BasePlayer::CalcPlayerView::Detour(C_BasePlayer* pThis, void* ed
 		Func.Original<FN>()(pThis, edx, eyeOrigin, eyeAngles, fov);
 	}
 
-	//FOV от лица: множитель из меню (90 * 1.0 = дефолт)
-	if (Vars::Visuals::flViewFOV > 0.01f && pThis && !pThis->deadflag())
+	//FOV мира: множитель из меню (90 * 1.0 = дефолт). Только локальному
+	//выжившему: интерфейсы и класс проверяем, в переходных тиках слоты
+	//бывают полу-созданные — виртуалки по чужой таблице роняли игру.
+	if (Vars::Visuals::flViewFOV > 0.01f && pThis && !pThis->deadflag() && I::EngineClient && I::ClientEntityList)
 	{
 		const int nLocalIdx = I::EngineClient->GetLocalPlayer();
-		IClientEntity* pLocalEnt = (nLocalIdx >= 0) ? I::ClientEntityList->GetClientEntity(nLocalIdx) : nullptr;
+		IClientEntity* pLocalEnt = (nLocalIdx > 0) ? I::ClientEntityList->GetClientEntity(nLocalIdx) : nullptr;
 
-		if (pLocalEnt && pLocalEnt->As<C_TerrorPlayer*>() == pThis)
+		if (G::Util.IsPlayerEntity(pLocalEnt) && pLocalEnt->As<C_TerrorPlayer*>() == pThis)
 			fov = U::Math.Clamp(fov * Vars::Visuals::flViewFOV, 10.0f, 160.0f);
 	}
 }

@@ -80,6 +80,7 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 	I::MatSystemSurface->StartDrawing();
 	{
 		F::Visuals.UpdateThirdPerson();
+		F::Visuals.UpdateFullbright();
 		F::Killfeed.OnTick();
 		F::Hitmarker.OnTick();
 		F::ESP.Render();
