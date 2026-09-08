@@ -37,6 +37,7 @@ private:
 	FILE* m_pFile = nullptr;
 	char m_szPath[MAX_PATH] = { };
 	char m_szCrumb[64] = { "boot" };
+};
 
 namespace U { inline CUtil_Logger Log; }
 
