@@ -53,12 +53,17 @@ void CFeatures_Visuals::DrawGrenade()
 	if (!pLocal || pLocal->deadflag() || pLocal->m_lifeState() != 0)
 		return;
 
-	// Только с throwable в руках: молотов / пайп / желчь.
+	// Только с throwable в руках (молотов/пайп/желчь) или гранатомётом.
 	C_BaseCombatWeapon* pBase = pLocal->GetActiveWeapon();
 	C_TerrorWeapon* pWpn = pBase ? pBase->As<C_TerrorWeapon*>() : nullptr;
 	if (!pWpn)
 		return;
-	if (!U::Math.CompareGroup(pWpn->GetWeaponID(), WEAPON_MOLOTOV, WEAPON_PIPEBOMB, WEAPON_VOMITJAR))
+	float flSpeed = 900.0f, flUp = 150.0f, flElast = 0.45f;
+	if (pWpn->GetWeaponID() == WEAPON_GRENADE_LAUNCHER)
+	{
+		flSpeed = 1200.0f; flUp = 100.0f; flElast = 0.5f;
+	}
+	else if (!U::Math.CompareGroup(pWpn->GetWeaponID(), WEAPON_MOLOTOV, WEAPON_PIPEBOMB, WEAPON_VOMITJAR))
 		return;
 
 	Vector vAng;
@@ -68,7 +73,7 @@ void CFeatures_Visuals::DrawGrenade()
 
 	// Старт из глаз + чуть вперёд, начальная скорость вдоль взгляда + наследие бега.
 	Vector vPos = G::Util.GetEyePosition(pLocal) + vFwd * 16.0f;
-	Vector vVel = vFwd * 900.0f + Vector(0.0f, 0.0f, 150.0f) + pLocal->m_vecVelocity() * 0.5f;
+	Vector vVel = vFwd * flSpeed + Vector(0.0f, 0.0f, flUp) + pLocal->m_vecVelocity() * 0.5f;
 
 	constexpr float flStep = 1.0f / 30.0f;
 	constexpr float flGravity = 800.0f;
@@ -95,7 +100,7 @@ void CFeatures_Visuals::DrawGrenade()
 			vEnd = tr.endpos;
 			// Отражение от плоскости с потерей скорости.
 			const Vector& n = tr.plane.normal;
-			vVel = (vVel - n * (2.0f * vVel.Dot(n))) * 0.45f;
+			vVel = (vVel - n * (2.0f * vVel.Dot(n))) * flElast;
 			if (++nBounces >= 2 || vVel.LenghtSqr() < 900.0f) // <30 u/s — легла
 			{
 				vLand = vEnd;

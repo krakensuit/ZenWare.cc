@@ -5,6 +5,8 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.6] — 2026-09-08
+
 ### Added / Добавлено
 
 - Hitmarker: hitsound + floating damage numbers (best-effort, local server).
@@ -28,6 +30,11 @@ All notable changes to ZenWare.cc are documented here.
   Панель HP команды, список особых, таймеры гранат.
 - `docs/screenshots/` + HOWTO for README shots.
   Папка и гайд для скриншотов в README.
+- Pinned warning, revive alert, tank HP bar, min-damage filter, ESP panic key.
+  Алерт пина, реанима, полоса HP танка, мин. урон, паник-кнопка ESP.
+- Grenade-launcher trajectory, menu wheel scroll.
+  Траектория гранатомёта, скролл меню колесом.
+- `ARCHITECTURE.md`, `.clang-format`.
 
 ### Removed / Удалено
 

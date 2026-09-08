@@ -56,6 +56,16 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 
 	s_bPrevF11 = bF11;
 
+	//ESP panic key: быстрое вкл/выкл всего ESP без меню.
+	static bool s_bPrevPanic = false;
+	const int nPanic = Vars::ESP::nPanicKey;
+	const bool bPanic = (nPanic && (GetAsyncKeyState(nPanic) & 0x8000) != 0);
+
+	if (bPanic && !s_bPrevPanic)
+		Vars::ESP::bEnabled = !Vars::ESP::bEnabled;
+
+	s_bPrevPanic = bPanic;
+
 	//Screen size WITHOUT trusting another vtable slot: the game window we
 	//already hooked knows its client rectangle.
 	RECT rcGame = { };

@@ -157,6 +157,9 @@ void CFeatures_Hitmarker::OnTick()
 		// Скачок вверх = хил/респавн, огромный скачок вниз = телепорт сущности.
 		if (nDmg <= 0 || nDmg > 2000)
 			continue;
+		// Порог: мелкий урон не засчитываем (добивание — всегда).
+		if (nHp > 0 && nDmg < Vars::Hitmarker::nMinDmg)
+			continue;
 		if (!bFiring)
 			continue;
 		if (!IsVisibleTo(pLocal, vEye, vAnchor))

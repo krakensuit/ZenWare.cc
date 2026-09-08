@@ -111,6 +111,7 @@ namespace Vars
 		inline bool bBossBoxes = true;   //witch box
 		inline bool bTeamPanel = false;  //team HP panel (left side)
 		inline bool bThrowTimers = true; //thrown grenade timers (pipe/molotov/bile)
+		inline int nPanicKey = 0;        //quick ESP on/off, 0 = off
 	}
 
 	namespace Visuals
@@ -137,7 +138,10 @@ namespace Vars
 		inline bool bEnabled = true; // баннеры угроз
 		inline bool bTank = true;    // танк + дистанция
 		inline bool bWitch = true;   // ведьма + дистанция
-		inline bool bSIList = true;  // список особых рядом (справа)
+		inline bool bSIList = true;  // список особых рядом (слева)
+		inline bool bPinned = true;  // тебя взяли в пин (хантер/жокей/...)
+		inline bool bRevive = true;  // союзник в инкапе — реанимируй
+		inline bool bTankHp = true;  // полоса HP танка под баннером
 	}
 
 	namespace Menu
@@ -170,6 +174,7 @@ namespace Vars
 		inline bool bDmgFlash = true;  // красная вспышка при уроне по тебе
 		inline int nPitch = 1000;      // Hz, menu 200..2000
 		inline int nDurationMs = 1200; // ms, menu 400..3000
+		inline int nMinDmg = 0;        // скрывать цифры урона меньше N, 0 = все
 	}
 
 	namespace VisualRecoil

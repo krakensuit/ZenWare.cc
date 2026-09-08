@@ -74,12 +74,16 @@ namespace
 		{ "hitmarker.dmgflash", &Vars::Hitmarker::bDmgFlash },
 		{ "hitmarker.pitch", &Vars::Hitmarker::nPitch },
 		{ "hitmarker.duration", &Vars::Hitmarker::nDurationMs },
+		{ "hitmarker.mindmg", &Vars::Hitmarker::nMinDmg },
 			{ "radar.enabled", &Vars::Radar::bEnabled },
 			{ "radar.spectators", &Vars::Radar::bSpectators },
 		{ "alerts.enabled", &Vars::Alerts::bEnabled },
 		{ "alerts.tank", &Vars::Alerts::bTank },
 		{ "alerts.witch", &Vars::Alerts::bWitch },
 		{ "alerts.silist", &Vars::Alerts::bSIList },
+		{ "alerts.pinned", &Vars::Alerts::bPinned },
+		{ "alerts.revive", &Vars::Alerts::bRevive },
+		{ "alerts.tankhp", &Vars::Alerts::bTankHp },
 
 			//Movement
 			{ "bhop.enabled", &Vars::BunnyHop::bEnabled },
@@ -121,6 +125,7 @@ namespace
 		{ "esp.bossboxes", &Vars::ESP::bBossBoxes },
 		{ "esp.teampanel", &Vars::ESP::bTeamPanel },
 		{ "esp.throwtimers", &Vars::ESP::bThrowTimers },
+		{ "esp.panickey", &Vars::ESP::nPanicKey },
 
 		//Visuals
 		{ "visuals.nofog", &Vars::Visuals::bNoFog },

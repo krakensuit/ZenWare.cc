@@ -276,6 +276,7 @@ void CFeatures_Menu::Render(){
     Checkbox(mouse,"Weapon text",&Vars::ESP::bWeaponText);
     Checkbox(mouse,"Team HP panel",&Vars::ESP::bTeamPanel);
     Checkbox(mouse,"Throwable timers",&Vars::ESP::bThrowTimers);
+    BindRow(mouse,"ESP panic key",&Vars::ESP::nPanicKey);
    Checkbox(mouse,"Chams",&Vars::Chams::bEnabled);
    Checkbox(mouse,"Chams through walls",&Vars::Chams::bThroughWalls);
    Button(mouse,"Chams palette >",[](){ Vars::Chams::nPalette=(Vars::Chams::nPalette+1)%5; });
@@ -324,6 +325,7 @@ void CFeatures_Menu::Render(){
       Checkbox(mouse,"Damage flash",&Vars::Hitmarker::bDmgFlash);
       SliderInt(mouse,"Hit pitch",&Vars::Hitmarker::nPitch,200,2000);
       SliderInt(mouse,"Number lifetime",&Vars::Hitmarker::nDurationMs,400,3000);
+      SliderInt(mouse,"Min damage",&Vars::Hitmarker::nMinDmg,0,100);
      }
     Checkbox(mouse,"Radar",&Vars::Radar::bEnabled);
     Checkbox(mouse,"Spectators",&Vars::Radar::bSpectators);
@@ -333,6 +335,9 @@ void CFeatures_Menu::Render(){
       Checkbox(mouse,"Tank alert",&Vars::Alerts::bTank);
       Checkbox(mouse,"Witch alert",&Vars::Alerts::bWitch);
       Checkbox(mouse,"SI list",&Vars::Alerts::bSIList);
+      Checkbox(mouse,"Pinned warning",&Vars::Alerts::bPinned);
+      Checkbox(mouse,"Revive alert",&Vars::Alerts::bRevive);
+      Checkbox(mouse,"Tank HP bar",&Vars::Alerts::bTankHp);
      }
     break;
    }
