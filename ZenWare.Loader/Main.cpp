@@ -31,7 +31,7 @@ constexpr int IDC_LAUNCH = 1008;
 constexpr int IDC_LABEL = 1006;
 
 struct Theme_t {
- COLORREF bg, ctl, text, dim, accent, accent2, red, red2, border;
+ COLORREF bg, ctl, text, dim, accent, accent2, alt, alt2, border;
  bool dark;
 };
 
@@ -42,8 +42,8 @@ bool IsSystemDark(){
 }
 Theme_t MakeTheme(bool d){
  Theme_t t{}; t.dark=d;
- if(d){ t.bg=RGB(12,14,13); t.ctl=RGB(22,29,25); t.text=RGB(232,255,245); t.dim=RGB(118,142,132); t.accent=RGB(0,255,171); t.accent2=RGB(0,170,113); t.red=RGB(255,84,84); t.red2=RGB(178,32,32); t.border=RGB(42,60,50); }
- else { t.bg=RGB(242,249,244); t.ctl=RGB(255,255,255); t.text=RGB(20,35,30); t.dim=RGB(100,115,110); t.accent=RGB(0,200,135); t.accent2=RGB(0,150,100); t.red=RGB(215,48,48); t.red2=RGB(165,25,25); t.border=RGB(178,218,198); }
+ if(d){ t.bg=RGB(12,14,13); t.ctl=RGB(22,29,25); t.text=RGB(232,255,245); t.dim=RGB(118,142,132); t.accent=RGB(0,255,171); t.accent2=RGB(0,170,113); t.alt=RGB(90,160,255); t.alt2=RGB(40,100,220); t.border=RGB(42,60,50); }
+ else { t.bg=RGB(242,249,244); t.ctl=RGB(255,255,255); t.text=RGB(20,35,30); t.dim=RGB(100,115,110); t.accent=RGB(0,200,135); t.accent2=RGB(0,150,100); t.alt=RGB(40,110,230); t.alt2=RGB(25,80,190); t.border=RGB(178,218,198); }
  return t;
 }
 // HSV (h 0..360, s/v 0..1) -> RGB, для радужного логотипа
@@ -55,9 +55,9 @@ static COLORREF Hsv(float h, float s, float v){
  return RGB((BYTE)((r+m)*255),(BYTE)((g+m)*255),(BYTE)((b+m)*255));
 }
 Theme_t g_theme = MakeTheme(true);
-static float g_flModeT=0.0f, g_flModeTarget=0.0f; // 0=external мятный, 1=internal красный
+static float g_flModeT=0.0f, g_flModeTarget=0.0f; // 0=internal мятный, 1=external синий
 HWND g_hMain=nullptr, g_hInject=nullptr, g_hStatus=nullptr, g_hLaunch=nullptr;
-static bool g_bExternal=true, g_bModeHov=false;
+static bool g_bExternal=false, g_bModeHov=false;
 static RECT g_rcMode={0,0,0,0};
 static bool g_bLangHov=false;
 static RECT g_rcLang={0,0,0,0};
@@ -184,8 +184,8 @@ void RefreshInjectText(){
  SetWindowTextW(g_hInject,LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"));
 }
 void ToggleMode(){
- g_bExternal=!g_bExternal;
- g_flModeTarget=g_bExternal?0.0f:1.0f;
+  g_bExternal=!g_bExternal;
+  g_flModeTarget=g_bExternal?1.0f:0.0f;
  RefreshInjectText();
  LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)"));
  RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(g_hMain,&hdr,FALSE);
@@ -285,8 +285,8 @@ static COLORREF LerpC2(COLORREF a,COLORREF b,float t){
  return RGB((int)(GetRValue(a)+(GetRValue(b)-GetRValue(a))*t),(int)(GetGValue(a)+(GetGValue(b)-GetGValue(a))*t),(int)(GetBValue(a)+(GetBValue(b)-GetBValue(a))*t));
 }
 static bool g_bParty=false;
-static COLORREF Acc(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.85f,1.0f); } Theme_t& th=g_theme; return LerpC2(th.accent,th.red,g_flModeT); }
-static COLORREF Acc2(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.9f,0.6f); } Theme_t& th=g_theme; return LerpC2(th.accent2,th.red2,g_flModeT); }
+static COLORREF Acc(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.85f,1.0f); } Theme_t& th=g_theme; return LerpC2(th.accent,th.alt,g_flModeT); }
+static COLORREF Acc2(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.9f,0.6f); } Theme_t& th=g_theme; return LerpC2(th.accent2,th.alt2,g_flModeT); }
 static void ClassifyStatus(const wchar_t* t){
  if(!t) return;
  auto has=[](const wchar_t* h,const wchar_t* n){ return wcsstr(h,n)!=nullptr; };
