@@ -1,26 +1,20 @@
 #include "Entry.h"
 
+#include <csignal>
+#include <exception>
+
 #include "../Util/Logger/Logger.h"
 #include "../Features/Config/Config.h"
 
 namespace
 {
-	//Last-resort crash recorder: before the process dies, write the exception
-	//code, faulting EIP and the owning module into ZenWare.log. Informational
-	//exceptions (< 0x80000000, e.g. OutputDebugString's) are ignored, otherwise
-	//logging them would recurse through Logger::Write -> this handler.
-	LONG WINAPI CrashRecorder(PEXCEPTION_POINTERS pInfo)
+	//Одна запись на процесс: вложенные хендлеры/потоки не дублируют след.
+	static volatile LONG s_bRecorded = 0;
+
+	static void RecordCrash(const char* szVia, DWORD dwCode, DWORD dwAddr)
 	{
-		const DWORD dwCode = pInfo->ExceptionRecord->ExceptionCode;
-
-		static thread_local bool s_bInside = false;
-
-		if (dwCode < 0x80000000u || s_bInside)
-			return EXCEPTION_CONTINUE_SEARCH;
-
-		s_bInside = true;
-
-		const DWORD dwAddr = reinterpret_cast<DWORD>(pInfo->ExceptionRecord->ExceptionAddress);
+		if (InterlockedExchange(&s_bRecorded, 1))
+			return;
 
 		HMODULE hModule = nullptr;
 		char szWhere[128] = { };
@@ -43,11 +37,63 @@ namespace
 			sprintf_s(szWhere, sizeof(szWhere), "%s", "manual-mapped region");
 		}
 
-		U::Log.Write("[!!!] EXCEPTION 0x%08X at 0x%08X (%s)", dwCode, dwAddr, szWhere);
-		U::Log.Write("[!!!] last breadcrumb: %s", U::Log.LastCrumb());
-		U::Log.Write("[!!!] Process is dying. Send the last lines of this file to the developer.");
+		U::Log.WriteNoLock("[!!!] EXCEPTION 0x%08X at 0x%08X (%s) via %s", dwCode, dwAddr, szWhere, szVia);
+		U::Log.WriteNoLock("[!!!] last breadcrumb: %s", U::Log.LastCrumb());
+		U::Log.WriteNoLock("[!!!] Process is dying. Send the last lines of this file to the developer.");
+	}
+
+	//Last-resort crash recorder: before the process dies, write the exception
+	//code, faulting EIP and the owning module into ZenWare.log. Informational
+	//exceptions (< 0x80000000, e.g. OutputDebugString's) are ignored, otherwise
+	//logging them would recurse through Logger::Write -> this handler.
+	LONG WINAPI CrashRecorder(PEXCEPTION_POINTERS pInfo)
+	{
+		const DWORD dwCode = pInfo->ExceptionRecord->ExceptionCode;
+
+		static thread_local bool s_bInside = false;
+
+		if (dwCode < 0x80000000u || s_bInside)
+			return EXCEPTION_CONTINUE_SEARCH;
+
+		s_bInside = true;
+
+		RecordCrash("VEH", dwCode, reinterpret_cast<DWORD>(pInfo->ExceptionRecord->ExceptionAddress));
 
 		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	//Вторая сеть: VEH не видит terminate/purecall/abort/invalid-parameter
+	//(это не SEH-исключения, а тихий выход CRT). Все ведут в тот же след.
+	LONG WINAPI CrashUEF(PEXCEPTION_POINTERS pInfo)
+	{
+		if (pInfo && pInfo->ExceptionRecord && pInfo->ExceptionRecord->ExceptionCode >= 0x80000000u)
+			CrashRecorder(pInfo);
+
+		return EXCEPTION_EXECUTE_HANDLER;
+	}
+
+	void CrashTerminate()
+	{
+		U::Log.WriteNoLock("[!!!] terminate() called (unhandled C++ exception?) crumb: %s", U::Log.LastCrumb());
+		abort();
+	}
+
+	void CrashAbort(int)
+	{
+		U::Log.WriteNoLock("[!!!] SIGABRT crumb: %s", U::Log.LastCrumb());
+		_exit(3);
+	}
+
+	void __cdecl CrashPurecall()
+	{
+		U::Log.WriteNoLock("[!!!] pure virtual call crumb: %s", U::Log.LastCrumb());
+		_exit(3);
+	}
+
+	void __cdecl CrashInvParam(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t)
+	{
+		U::Log.WriteNoLock("[!!!] CRT invalid parameter crumb: %s", U::Log.LastCrumb());
+		_exit(3);
 	}
 
 	DWORD WINAPI UnloadThread(LPVOID)
@@ -76,6 +122,11 @@ void CGlobal_ModuleEntry::Load()
 	//First thing ever: file logging so early failures are diagnosable.
 	U::Log.Init();
 	AddVectoredExceptionHandler(1, &CrashRecorder);
+	SetUnhandledExceptionFilter(&CrashUEF);
+	set_terminate(&CrashTerminate);
+	signal(SIGABRT, &CrashAbort);
+	_set_purecall_handler(&CrashPurecall);
+	_set_invalid_parameter_handler(&CrashInvParam);
 
 	U::Log.Write("[*] Waiting for serverbrowser.dll ...");
 

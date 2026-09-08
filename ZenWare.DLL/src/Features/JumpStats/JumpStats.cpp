@@ -98,8 +98,9 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			m_last.landTick = tick;
 			m_last.edge = (m_nTakeTick - m_nLastGroundTick) <= 2;
 			m_last.eb = ((cmd->buttons & IN_DUCK) != 0) && m_fMaxFall < -500.0f && dist > 200.0f;
-			m_last.valid = true;
-			m_nShowUntil = tick + 264; //~4 seconds at 66 ticks
+		m_last.valid = true;
+		m_nShowUntil = tick + 264; //~4 seconds at 66 ticks
+		U::Log.Write("JumpStats: landed %.0fu pre %.0f max %.0f sync %d%%", dist, m_fTakeSpeed, m_fMaxSpeed, m_last.syncPct);
 		}
 		else
 		{
@@ -136,12 +137,12 @@ void CFeatures_JumpStats::Draw()
 	char szMain[64] = { };
 	sprintf_s(szMain, sizeof(szMain), "%.0fu  pre %.0f  max %.0f",
 		m_last.dist, m_last.pre, m_last.max);
-	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy, Color(235, 245, 240, 255), TXT_CENTERXY, szMain);
+	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy, Color(235, 245, 240, 255), TXT_CENTERXY, "%s", szMain);
 
 	char szSub[64] = { };
 	sprintf_s(szSub, sizeof(szSub), "%d %s  %d%% %s%s%s",
 		m_last.strafes, Lang::T("strafes"), m_last.syncPct, Lang::T("sync"),
 		m_last.edge ? "  [edge]" : "",
 		m_last.eb ? "  [eb]" : "");
-	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy + 16, clrVerdict, TXT_CENTERXY, szSub);
+	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy + 16, clrVerdict, TXT_CENTERXY, "%s", szSub);
 }

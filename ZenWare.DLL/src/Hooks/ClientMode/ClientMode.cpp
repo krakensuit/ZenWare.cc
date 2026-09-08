@@ -36,10 +36,14 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 	U::Log.Crumb("CreateMove");
 	PASSIVE_IF_SHUTDOWN(Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd));
 
-	if (!cmd || !cmd->command_number)
-		return Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd);
+	//Оригинал вызывается ровно один раз: двойной прогон за тик дублировал
+	//движение/выбор оружия движком и ломал учёт предикта.
+	const bool bEngineHandled = Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd);
 
-	if (Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd))
+	if (!cmd || !cmd->command_number)
+		return bEngineHandled;
+
+	if (bEngineHandled)
 		I::Prediction->SetLocalViewAngles(cmd->viewangles);
 
  C_TerrorPlayer* pLocal = nullptr;

@@ -7,6 +7,22 @@ All notable changes to ZenWare.cc are documented here.
 
 ### Fixed / Исправлено
 
+- Silent-death hunt (landing crashes with zero telemetry): removed the
+  XBUTTON1 ×5 `CL_Move` loop (engine movement simulated 6x per frame while the
+  bhop key is held) and the double original `CreateMove` call; JumpStats now
+  logs every landing to `ZenWare.log`.
+  Охота на тихие вылеты при приземлении: убран цикл XBUTTON1 ×5 в `CL_Move`
+  (6 симуляций движения за кадр) и двойной вызов оригинального `CreateMove`;
+  каждое приземление пишется в лог.
+- Crash diagnostics second net: `SetUnhandledExceptionFilter`, `set_terminate`,
+  `SIGABRT`, purecall and CRT-invalid-parameter handlers, plus a lock-free
+  `WriteNoLock` crash path (debugger first, then file).
+  Вторая сеть диагностики: UEF/terminate/abort/purecall/invalid-parameter и
+  запись без лока (сначала в отладчик, потом в файл).
+- JumpStats draw: buffers passed as `"%s"` args (stray `%` from sync text could
+  hit the formatter); `EnginePrediction` weapon-switch null check.
+  Формат-строки JumpStats и null-check смены оружия в предикте.
+
 - ESP item crash: pills/medkits/bile no longer touch `CWeaponSpawn` virtuals.
   Вылет ESP на таблетках/аптечках: чужие классы больше не дёргают виртуалки.
 - NoSpread guarded against missing patterns; interface/trace/material null guards.

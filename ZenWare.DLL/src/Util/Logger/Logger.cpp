@@ -170,3 +170,37 @@ void CUtil_Logger::Write(const char* const szFormat, ...)
 
 	OutputDebugStringA(szLine);
 }
+
+void CUtil_Logger::WriteNoLock(const char* const szFormat, ...)
+{
+	if (!m_pFile)
+		return;
+
+	char szBody[900] = { };
+
+	va_list args = nullptr;
+	va_start(args, szFormat);
+	_vsnprintf_s(szBody, sizeof(szBody), _TRUNCATE, szFormat, args);
+	va_end(args);
+
+	char szLine[1024] = { };
+	SYSTEMTIME st = { };
+	GetLocalTime(&st);
+	sprintf_s(szLine, sizeof(szLine), "[%02u:%02u:%02u.%03u] ",
+		st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+
+	strcat_s(szLine, szBody);
+
+	//Отладчик первым: переживёт даже смерть прямо на файловом IO ниже.
+	OutputDebugStringA(szLine);
+
+	__try
+	{
+		fwrite(szLine, 1, strlen(szLine), m_pFile);
+		fwrite("\n", 1, 1, m_pFile);
+		fflush(m_pFile);
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+	}
+}
