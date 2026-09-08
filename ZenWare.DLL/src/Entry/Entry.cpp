@@ -160,7 +160,13 @@ void CGlobal_ModuleEntry::Load()
 		I::MatSystemSurface = U::Interface.Get<IMatSystemSurface*>("vguimatsurface.dll", "VGUI_Surface031");
 
 		I::MaterialSystem   = U::Interface.Get<IMaterialSystem*>("materialsystem.dll", "VMaterialSystem080");
-		I::Cvar             = U::Interface.Get<ICvar*>("engine.dll", "VEngineCvar007");
+		// Фабрика VEngineCvar007 зарегистрирована в vstdlib (там живёт cvar-система);
+		// engine пробуем запасным. Молча: без кваров просто не работает третье
+		// лицо (UpdateThirdPerson fail-closed), остальное грузится как обычно.
+		I::Cvar = U::Interface.TryGet<ICvar*>("vstdlib.dll", "VEngineCvar007");
+		if (!I::Cvar)
+			I::Cvar = U::Interface.TryGet<ICvar*>("engine.dll", "VEngineCvar007");
+		U::Log.Write("[*] iface %-32s : %s", "VEngineCvar007", I::Cvar ? "(ok)" : "(MISSING - thirdperson off)");
 
 		U::Log.Write("[+] Interfaces fetched (see XASSERT popups for any failures).");
 
@@ -184,7 +190,6 @@ void CGlobal_ModuleEntry::Load()
 			{ "VGUI_Surface031", I::VGuiSurface },
 			{ "vguimatsurface/VGUI_Surface031", I::MatSystemSurface },
 			{ "VMaterialSystem080", I::MaterialSystem },
-			{ "VEngineCvar007", I::Cvar },
 		};
 		char szMissing[512] = { };
 		for (size_t i = 0; i < sizeof(aNeed) / sizeof(aNeed[0]); i++)

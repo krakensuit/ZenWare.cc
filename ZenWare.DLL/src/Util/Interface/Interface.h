@@ -26,6 +26,19 @@ public:
 		}
 	}
 
+	// Тихий граб без попапа: для перебора нескольких модулей (cvar живёт
+	// то в engine, то в vstdlib в зависимости от билда игры).
+	template<typename T>
+	inline T TryGet(const char* const szModule, const char* const szObject)
+	{
+		const HMODULE hMod = GetModuleHandleA(szModule);
+
+		if (!hMod)
+			return NULL;
+
+		return static_cast<T>(GetInterface(hMod, szObject));
+	}
+
 private:
 	void* GetInterface(const HMODULE hModule, const char* const szObject);
 };
