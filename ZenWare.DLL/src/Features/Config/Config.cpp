@@ -86,6 +86,7 @@ namespace
 		{ "alerts.pinned", &Vars::Alerts::bPinned },
 		{ "alerts.revive", &Vars::Alerts::bRevive },
 		{ "alerts.tankhp", &Vars::Alerts::bTankHp },
+		{ "alerts.spit", &Vars::Alerts::bSpitAlert },
 
 			//Movement
 			{ "bhop.enabled", &Vars::BunnyHop::bEnabled },
@@ -145,6 +146,10 @@ namespace
 		{ "visuals.3rdpersondist", &Vars::Visuals::nThirdPersonDist },
 		{ "visuals.noscreenfx", &Vars::Visuals::bNoScreenFx },
 		{ "visuals.commoncount", &Vars::Visuals::bCommonCount },
+		{ "visuals.weaponhud", &Vars::Visuals::bWeaponHud },
+		{ "visuals.reload", &Vars::Visuals::bReloadAlert },
+		{ "visuals.espmaxdist", &Vars::Visuals::flEspMaxDist },
+		{ "visuals.hidehands", &Vars::Visuals::bHideHands },
 		{ "grenade.path", &Vars::Grenade::bEnabled },
 		{ "grenade.landing", &Vars::Grenade::bLanding },
 
@@ -324,6 +329,7 @@ void CFeatures_Config::Load()
 	Vars::Visuals::nCrosshairSize = U::Math.Clamp(Vars::Visuals::nCrosshairSize, 2, 40);
 	Vars::Visuals::nThirdPersonDist = U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200);
 	Vars::BunnyHop::nJumpDelayTicks = U::Math.Clamp(Vars::BunnyHop::nJumpDelayTicks, 0, 20);
+	Vars::Visuals::nEspMaxDistS = U::Math.Clamp((int)(Vars::Visuals::flEspMaxDist + 0.5f), 0, 200);
 
 	fclose(pFile);
 }

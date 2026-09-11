@@ -81,6 +81,7 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 	{
 		F::Visuals.UpdateThirdPerson();
 		F::Visuals.UpdateFullbright();
+		F::Visuals.UpdateHideHands();
 		F::Killfeed.OnTick();
 		F::Hitmarker.OnTick();
 		F::ESP.Render();

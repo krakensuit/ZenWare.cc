@@ -166,7 +166,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 
 void CFeatures_JumpStats::Draw()
 {
-	if (!Vars::BunnyHop::bJumpStats || !m_last.valid || !I::GlobalVars)
+	if (!Vars::BunnyHop::bJumpStats || !I::GlobalVars)
 		return;
 
 	// Без игры — stale-панель с прошлой карты и ложные баннеры showtick.
@@ -175,6 +175,22 @@ void CFeatures_JumpStats::Draw()
 		m_last.valid = false;
 		return;
 	}
+
+	// Live-sync текущего полёта: не ждём лендинга, рисуем пока летим.
+	// m_last-панель ниже всё равно требует valid, порядок не важен.
+	{
+		const int nLive = LiveSyncPct();
+		if (nLive >= 0)
+		{
+			const int cx = G::Draw.m_nScreenW / 2;
+			const int cy = G::Draw.m_nScreenH / 2 - 60;
+			const Color clr = (nLive >= 90) ? Color(0, 255, 171, 255) : Color(235, 245, 240, 255);
+			G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy, clr, TXT_CENTERXY, "sync %d%%", nLive);
+		}
+	}
+
+	if (!m_last.valid)
+		return;
 
 	if (I::GlobalVars->tickcount > m_nShowUntil)
 		return;

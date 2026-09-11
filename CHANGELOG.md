@@ -5,6 +5,25 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+### Added / Добавлено
+
+- Weapon HUD under the crosshair: active weapon name, clip and reserve
+  (`m_iAmmo`) + RELOADING text and red LOW AMMO at 5 rounds or less.
+  HUD оружия под прицелом: имя, магазин, запас + RELOADING и красный
+  магазин при ≤5 патронах.
+- ESP max distance slider (0 = unlimited): cuts players/SI/items past
+  the cutoff, cleaner screen and less per-frame work.
+  Дистанция ESP (0 = без лимита) для всего ESP.
+- Hide hands via `r_drawviewmodel` through ICvar (no console), restored
+  on toggle off. Offsets skipped: float ConVar setter index unverified.
+  Скрытие рук без консоли. Офсет рук не делаем: float-сеттер не проверен.
+- Live sync while airborne: current strafe sync above the crosshair,
+  no need to wait for landing.
+  Live-синхрон прямо в полёте над прицелом.
+- Inferno age in throwable timers (FIRE 12s) + red SPIT! MOVE alert when
+  standing in spitter goo (~4.5m).
+  Возраст огня молотова + алерт блевотины под ногами.
+
 ### Fixed / Исправлено
 
 - Crash in Radar spectators (log: `EXCEPTION ... ZenWare.dll+0x12DF9`,

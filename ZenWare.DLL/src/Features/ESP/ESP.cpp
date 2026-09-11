@@ -41,6 +41,11 @@ void CFeatures_ESP::Render()
 
 	C_TerrorPlayer* pLocal = pLocalEnt->As<C_TerrorPlayer*>();
 
+	//Лимит дистанции: 0 = без лимита. Режет всё (игроки/СИ/предметы) —
+	//и чистый экран, и меньше работы в кадр на больших картах.
+	const Vector vLocal = pLocal->m_vecOrigin();
+	const float flMaxM = U::Math.Clamp(Vars::Visuals::flEspMaxDist, 0.0f, 500.0f);
+
 	for (int n = 1; n < (I::ClientEntityList->GetMaxEntities() + 1); n++)
 	{
 		if (n == nLocalIndex)
@@ -55,6 +60,14 @@ void CFeatures_ESP::Render()
 
 		if (!pCC)
 			continue;
+
+		//Ап-каст до базы безопасен для любой сущности; дальность — по origin.
+		if (flMaxM > 0.5f)
+		{
+			C_BaseEntity* pBaseD = pEntity->As<C_BaseEntity*>();
+			if (!pBaseD || (pBaseD->m_vecOrigin() - vLocal).Lenght() / 52.5f > flMaxM)
+				continue;
+		}
 
 		switch (pCC->m_ClassID)
 		{
@@ -669,11 +682,13 @@ void CFeatures_ESP::DrawThrowables()
 
 		const char* szLabel = nullptr;
 		float flFuse = 0.0f; // 0 = без таймера (ломается о землю)
+		bool bBurnAge = false; // показывать возраст пожара вместо обратного отсчёта
 		switch (pCC->m_ClassID)
 		{
 			case CPipeBombProjectile: szLabel = "PIPE"; flFuse = 6.0f; break;
 			case CMolotovProjectile: szLabel = "MOLOTOV"; break;
 			case CVomitJarProjectile: szLabel = "BILE"; break;
+			case CInferno: szLabel = "FIRE"; bBurnAge = true; break;
 			default: continue;
 		}
 
@@ -704,6 +719,8 @@ void CFeatures_ESP::DrawThrowables()
 			const float flLeft = flFuse - flAge;
 			sprintf_s(sz, "%s %.1f", szLabel, flLeft > 0.0f ? flLeft : 0.0f);
 		}
+		else if (bBurnAge)
+			sprintf_s(sz, "%s %.0fs", szLabel, flAge);
 		else
 			sprintf_s(sz, "%s", szLabel);
 		G::Draw.String(EFonts::ESP_NAME, (int)vS.x, (int)vS.y, Color(255, 220, 0, 255), TXT_CENTERXY, "%s", sz);

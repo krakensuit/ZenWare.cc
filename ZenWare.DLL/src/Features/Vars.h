@@ -134,6 +134,11 @@ namespace Vars
 		inline int nThirdPersonDist = 100; //cam_idealdist
 		inline bool bNoScreenFx = true; //skip DoPostScreenSpaceEffects (bile/blur/stun)
 		inline bool bCommonCount = false; //alive commons counter in overlay corner
+		inline bool bWeaponHud = true; //name + clip + reserve under crosshair
+		inline bool bReloadAlert = true; //RELOADING / LOW AMMO text under crosshair
+		inline float flEspMaxDist = 0.0f; //ESP cutoff, meters, 0 = unlimited
+		inline int nEspMaxDistS = 0; //meter slider proxy
+		inline bool bHideHands = false; //r_drawviewmodel 0 via ICvar (restored off)
 	}
 
 	namespace Radar
@@ -151,6 +156,7 @@ namespace Vars
 		inline bool bPinned = true;  // тебя взяли в пин (хантер/жокей/...)
 		inline bool bRevive = true;  // союзник в инкапе — реанимируй
 		inline bool bTankHp = true;  // полоса HP танка под баннером
+		inline bool bSpitAlert = true; // стоишь в блевотине — MOVE!
 	}
 
 	namespace Menu

@@ -109,6 +109,11 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"FPS / pos overlay","FPS overlay","FPS and position readout in the bottom-left corner.","FPS / поз. оверлей","FPS и координаты в левом нижнем углу."},
 		{"No screen effects","No screen effects","Skips post-screen effects: bile overlay, blur, stun fade. Off restores the original picture.","Без эффектов экрана","Пропускает пост-эффекты: рвоту на экране, блюр, ослепление. Выкл возвращает обычную картинку."},
 		{"Common counter","Common counter","Alive common infected within ~40m, bottom-left above the speed readout.","Счётчик обычных","Живые обычные в радиусе ~40м, слева внизу над скоростью."},
+		{"Weapon HUD","Weapon HUD","Active weapon name, clip and reserve ammo under the crosshair.","HUD оружия","Активное оружие, магазин и запас под прицелом."},
+		{"Reload alerts","Reload alerts","RELOADING text and red clip when 5 or fewer rounds left.","Алерты перезарядки","Текст RELOADING и красный магазин при 5 и меньше патронах."},
+		{"ESP max distance","ESP distance","Cutoff in meters for all ESP, 0 = unlimited. Cleans the screen and saves frames.","Дистанция ESP","Отсечка ESP в метрах, 0 = без лимита. Чище экран и больше FPS."},
+		{"Hide hands","Hide hands","r_drawviewmodel 0 without console, restored on toggle off.","Скрыть руки","r_drawviewmodel 0 без консоли, возвращается при выключении."},
+		{"Spit alert","Spit alert","Red warning when standing inside spitter goo (~4.5m).","Алерт блевотины","Красное предупреждение, если стоишь в блевотине (~4.5м)."},
 		{"Damage arrow","Damage arrow","Arrow toward the last attacker for 3 seconds (best-effort guess, no engine events).","Стрелка урона","Стрелка на последнего атакующего на 3 секунды (эвристика, ивентов в движке нет)."},
 		{"Aimbot","Aimbot","Silent aim at head or center within FOV. Hold the aim key.","Аимбот","Сайлент-наведение в голову или центр в пределах FOV. Держи клавишу аима."},
 		{"Auto shoot","Auto shoot","Fires automatically while a target is locked.","Авто-огонь","Автоматический огонь при захвате цели."},
@@ -257,7 +262,7 @@ void CFeatures_Menu::Render(){
  if(mouse.bDown && !m_bDragging && Hovered(mouse.pt,m_nPosX,m_nPosY,PANEL_W,HEADER_H)){ m_bDragging=true; m_nDragOffX=mouse.pt.x-m_nPosX; m_nDragOffY=mouse.pt.y-m_nPosY; }
  if(!mouse.bDown) m_bDragging=false;
  if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY; }
- Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f; Vars::Visuals::flVmFOV=Vars::Visuals::nVmFOVSlider/100.0f;
+ Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f; Vars::Visuals::flVmFOV=Vars::Visuals::nVmFOVSlider/100.0f; Vars::Visuals::flEspMaxDist=(float)Vars::Visuals::nEspMaxDistS;
  m_rc.nX=m_nPosX; m_rc.nY=m_nPosY;
  //красивое открытие/закрытие: fade + scale от центра панели + лёгкий подъем при открытии
  {
@@ -331,7 +336,8 @@ void CFeatures_Menu::Render(){
     SliderInt(mouse,"FOV world x100",&Vars::Visuals::nViewFOVSlider,50,300);
     SliderInt(mouse,"FOV viewmodel x100",&Vars::Visuals::nVmFOVSlider,50,300);
     Checkbox(mouse,"No fog",&Vars::Visuals::bNoFog);
-    Checkbox(mouse,"Full bright",&Vars::Visuals::bFullbright);
+     Checkbox(mouse,"Full bright",&Vars::Visuals::bFullbright);
+     Checkbox(mouse,"Hide hands",&Vars::Visuals::bHideHands);
     Checkbox(mouse,"Third person",&Vars::Visuals::bThirdPerson);
     if(Vars::Visuals::bThirdPerson) SliderInt(mouse,"3rd person distance",&Vars::Visuals::nThirdPersonDist,30,200);
      Checkbox(mouse,"Crosshair",&Vars::Visuals::bCrosshair);
@@ -342,6 +348,10 @@ void CFeatures_Menu::Render(){
      Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
      Checkbox(mouse,"No screen effects",&Vars::Visuals::bNoScreenFx);
      Checkbox(mouse,"Common counter",&Vars::Visuals::bCommonCount);
+     Checkbox(mouse,"Weapon HUD",&Vars::Visuals::bWeaponHud);
+     if (Vars::Visuals::bWeaponHud)
+      Checkbox(mouse,"Reload alerts",&Vars::Visuals::bReloadAlert);
+     SliderInt(mouse,"ESP max distance",&Vars::Visuals::nEspMaxDistS,0,200);
      Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
      Checkbox(mouse,"Hitmarker",&Vars::Hitmarker::bEnabled);
      if (Vars::Hitmarker::bEnabled)
@@ -367,6 +377,7 @@ void CFeatures_Menu::Render(){
       Checkbox(mouse,"Pinned warning",&Vars::Alerts::bPinned);
       Checkbox(mouse,"Revive alert",&Vars::Alerts::bRevive);
       Checkbox(mouse,"Tank HP bar",&Vars::Alerts::bTankHp);
+      Checkbox(mouse,"Spit alert",&Vars::Alerts::bSpitAlert);
      }
     break;
    }

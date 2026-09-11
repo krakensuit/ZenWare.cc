@@ -4,6 +4,9 @@
 #include "../Hitmarker/Hitmarker.h"
 #include "../../SDK/L4D2/Interfaces/Cvar.h"
 
+#include <cwchar>
+#include <cstring>
+
 static const Color CLR_TEXT_HINT(140, 160, 152, 255);
 
 void CFeatures_Visuals::UpdateThirdPerson()
@@ -55,6 +58,23 @@ void CFeatures_Visuals::UpdateFullbright()
 
 	if (ConVar* pBright = I::Cvar->FindVar("mat_fullbright"))
 		pBright->SetValue(bWant ? 1 : 0);
+	s_bWasOn = bWant;
+}
+
+void CFeatures_Visuals::UpdateHideHands()
+{
+	// Как фулбрайт: только через ICvar, консоль не трогаем. При выключении
+	// возвращаем 1, иначе руки пропадают до перезапуска карты.
+	static bool s_bWasOn = false;
+	if (!I::Cvar)
+		return;
+
+	const bool bWant = Vars::Visuals::bHideHands && I::EngineClient && I::EngineClient->IsInGame();
+	if (bWant == s_bWasOn)
+		return;
+
+	if (ConVar* pHands = I::Cvar->FindVar("r_drawviewmodel"))
+		pHands->SetValue(bWant ? 0 : 1);
 	s_bWasOn = bWant;
 }
 
@@ -219,6 +239,72 @@ void CFeatures_Visuals::DrawCrosshair()
 	G::Draw.Rect(nCX - (nThick / 2), nCY - nGap - nS, nThick, nS, clr);
 	G::Draw.Rect(nCX - (nThick / 2), nCY + nGap, nThick, nS, clr);
 	G::Draw.Rect(nCX - 1, nCY - 1, 2, 2, clr);
+
+	//HUD оружия: имя + магазин + запас под прицелом. Хендл активного оружия
+	//в тике смены может указывать на viewmodel/руки: каст только за гейтом
+	//IsWeaponEntity, иначе GetWeaponID идёт по чужой таблице (краш при инжекте).
+	if (Vars::Visuals::bWeaponHud && pLocal && I::ClientEntityList)
+	{
+		EHANDLE hActive = pLocal->m_hActiveWeapon();
+		C_BaseCombatWeapon* pActive = nullptr;
+		if (hActive.IsValid())
+		{
+			IClientEntity* pViaHandle = I::ClientEntityList->GetClientEntityFromHandle(hActive);
+			if (G::Util.IsWeaponEntity(pViaHandle)) pActive = pViaHandle->As<C_BaseCombatWeapon*>();
+		}
+		if (pActive)
+		{
+			const wchar_t* wszName = nullptr;
+			wchar_t wszFallback[48] = { };
+			C_TerrorWeapon* pTW = pActive->As<C_TerrorWeapon*>();
+			const int nID = pTW ? pTW->GetWeaponID() : 0;
+			if (nID > 0 && nID < 38 && wcscmp(g_aSpawnInfo[nID].m_szName, L"unknown") != 0)
+				wszName = g_aSpawnInfo[nID].m_szName;
+			else
+			{
+				ClientClass* pWCC = pActive->GetClientClass();
+				if (pWCC && pWCC->m_pNetworkName && pWCC->m_pNetworkName[0])
+				{
+					swprintf_s(wszFallback, L"%hs", pWCC->m_pNetworkName[0] == 'C' ? pWCC->m_pNetworkName + 1 : pWCC->m_pNetworkName);
+					wszName = wszFallback;
+				}
+			}
+			if (wszName && wszName[0])
+			{
+				G::Draw.String(EFonts::ESP, nCX, nCY + 24, Color(220, 220, 220, 255), TXT_CENTERXY, "%ls", wszName);
+
+				//Запас: m_iAmmo — массив int[32] на игроке, индекс = ammo type ствола.
+				int nReserve = -1;
+				const int nType = pActive->m_iPrimaryAmmoType();
+				if (nType >= 0 && nType < 32)
+				{
+					const int* pAmmo = (const int*)pLocal->m_iAmmo();
+					if (pAmmo && pAmmo[nType] >= 0 && pAmmo[nType] <= 9999)
+						nReserve = pAmmo[nType];
+				}
+				const int nClip = pActive->m_iClip1();
+				const bool bReloading = pActive->m_bInReload();
+				wchar_t wszAmmo[32] = { };
+				Color clrAmmo(235, 245, 240, 255);
+				if (Vars::Visuals::bReloadAlert && bReloading)
+				{
+					wcscpy_s(wszAmmo, L"RELOADING");
+					clrAmmo = Color(255, 220, 0, 255);
+				}
+				else if (nClip >= 0 && nClip <= 999)
+				{
+					if (nReserve >= 0)
+						swprintf_s(wszAmmo, L"%d | %d", nClip, nReserve);
+					else
+						swprintf_s(wszAmmo, L"%d", nClip);
+					if (Vars::Visuals::bReloadAlert && nClip <= 5)
+						clrAmmo = Color(255, 70, 70, 255); //LOW AMMO
+				}
+				if (wszAmmo[0])
+					G::Draw.String(EFonts::ESP, nCX, nCY + 38, clrAmmo, TXT_CENTERXY, "%ls", wszAmmo);
+			}
+		}
+	}
 
 	// Крест попадания: 0.25 c после зачтённого урона.
 	if (Vars::Hitmarker::bEnabled && Vars::Hitmarker::bXMark)

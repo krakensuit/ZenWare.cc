@@ -27,7 +27,8 @@ void CFeatures_Alerts::Render()
 	//bPinned/bRevive равноправные: без них в условии только они включённые
 	//давали ранний return и никогда не рисовались.
 	if (!Vars::Alerts::bEnabled || (!Vars::Alerts::bTank && !Vars::Alerts::bWitch
-		&& !Vars::Alerts::bSIList && !Vars::Alerts::bPinned && !Vars::Alerts::bRevive))
+		&& !Vars::Alerts::bSIList && !Vars::Alerts::bPinned && !Vars::Alerts::bRevive
+		&& !Vars::Alerts::bSpitAlert))
 		return;
 	if (!I::EngineClient || !I::EngineClient->IsInGame())
 		return;
@@ -125,6 +126,41 @@ void CFeatures_Alerts::Render()
 	{
 		G::Draw.String(EFonts::MENU_TAB, nCX, nY, Color(200, 0, 255, 255), TXT_CENTERXY, "%s %.0fm", Lang::T("WITCH"), flWitchD);
 		nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
+	}
+
+	// Блевотина под ногами: плевок плевальщицы бьёт по площади, радиус ~4м.
+	// Стоишь внутри — красным капсом поверх остального (после пина).
+	if (Vars::Alerts::bSpitAlert && !pLocal->deadflag() && pLocal->m_lifeState() == 0)
+	{
+		const Vector vFeet = pLocal->m_vecOrigin();
+		bool bInSpit = false;
+		for (int n = 1; n <= nMax && !bInSpit; n++)
+		{
+			if (n == nLocalIdx)
+				continue;
+			IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
+			if (!pEntity || pEntity->IsDormant())
+				continue;
+			ClientClass* pCC = pEntity->GetClientClass();
+			if (!pCC)
+				continue;
+			if (pCC->m_ClassID != CSpitterProjectile && !NameHas(pCC->m_pNetworkName, "spitter"))
+				continue;
+			C_BaseEntity* pBase = pEntity->As<C_BaseEntity*>();
+			if (!pBase)
+				continue;
+			Vector vD = pBase->m_vecOrigin() - vFeet;
+			vD.z = 0.0f;
+			if (vD.Lenght() / 52.5f < 4.5f)
+				bInSpit = true;
+		}
+		if (bInSpit)
+		{
+			const float flPulse = 0.6f + 0.4f * sinf((float)(GetTickCount64() % 6283) / 1000.0f * 6.0f);
+			Color clr(255, (int)(60 + 40 * (1.0f - flPulse)), (int)(60 + 40 * (1.0f - flPulse)), 255);
+			G::Draw.String(EFonts::MENU_TAB, nCX, nY, clr, TXT_CENTERXY, "%s", Lang::T("SPIT! MOVE"));
+			nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
+		}
 	}
 
 	// Союзник в инкапе — зовём реанимировать (ближайший).
