@@ -32,6 +32,11 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 	if (Vars::TriggerBot::nKey && !(GetAsyncKeyState(Vars::TriggerBot::nKey) & 0x8000))
 		return;
 
+	//Как в Aimbot::ShouldRun: не файрим в инкапе/висе/госте/мёртвым.
+	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost()
+		|| pLocal->m_isIncapacitated() || !G::Util.IsValidTeam(pLocal->GetTeamNumber()))
+		return;
+
 	if (!pWeapon->CanPrimaryAttack())
 		return;
 
@@ -40,7 +45,8 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 	if (!pHit)
 		return;
 
-	C_TerrorPlayer* pTarget = pHit->As<C_TerrorPlayer*>();
+	//tr.m_pEnt — любой объект (проп/оружие/стена): As<> до гейта = чужая таблица.
+	C_TerrorPlayer* pTarget = G::Util.IsPlayerEntity(pHit) ? pHit->As<C_TerrorPlayer*>() : nullptr;
 
 	if (G::Util.IsValidTarget(pLocal, pTarget, Vars::TriggerBot::bVisibleOnly))
 	{

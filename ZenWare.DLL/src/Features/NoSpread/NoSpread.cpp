@@ -39,7 +39,11 @@ void CFeatures_NoSpread::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CU
 
 bool CFeatures_NoSpread::ShouldRun(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUserCmd* cmd)
 {
-	if (!Vars::NoSpread::bEnabled || !pLocal || !pWeapon || !cmd)
+	if (!Vars::NoSpread::bEnabled || !pLocal || !pWeapon || !cmd || !cmd->command_number)
+		return false;
+
+	//Компенсация только реального выстрела: на кд/релоде уводило прицел.
+	if (!pWeapon->CanPrimaryAttack())
 		return false;
 
 	// Паттерны могли не найтись (обнова игры): зов виртуалок по нулю = вылет.

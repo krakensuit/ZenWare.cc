@@ -1,9 +1,19 @@
 #include "EnginePrediction.h"
 
+#include "../../SDK/GameUtil/GameUtil.h"
+
 //Very minimal prediction, misses a lot of stuff and the rest of the stuff like button offsets are hardcoded.
 
 void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 {
+	//Fail-closed: дохлый паттерн/интерфейс = пропуск предикта, а не зов по нулю.
+	if (!pLocal || !cmd)
+		return;
+	if (!I::GlobalVars || !I::MoveHelper || !I::GameMovement || !I::Prediction || !I::ClientEntityList)
+		return;
+	if (!U::Offsets.m_dwSetPredictionRandomSeed)
+		return;
+
 	memset(&m_MoveData, 0, sizeof(CMoveData));
 
 	m_flOldCurTime = I::GlobalVars->curtime;
@@ -34,9 +44,13 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 	if (cmd->weaponselect != 0)
 	{
+		//Stale-индекс мог указывать на игрока/проп: виртуалка по чужой таблице.
 		C_BaseCombatWeapon* pWeapon = nullptr;
 		if (IClientEntity* pWepEnt = I::ClientEntityList->GetClientEntity(cmd->weaponselect))
-			pWeapon = pWepEnt->As<C_BaseCombatWeapon*>();
+		{
+			if (G::Util.IsWeaponEntity(pWepEnt))
+				pWeapon = pWepEnt->As<C_BaseCombatWeapon*>();
+		}
 
 		if (pWeapon)
 			pLocal->SelectItem(pWeapon->GetName(), cmd->weaponsubtype);
@@ -60,17 +74,26 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 void CFeatures_EnginePrediction::Finish(C_BasePlayer* pLocal, CUserCmd* cmd)
 {
-	I::GameMovement->FinishTrackPredictionErrors(pLocal);
+	if (!pLocal)
+		return;
+
+	if (I::GameMovement)
+		I::GameMovement->FinishTrackPredictionErrors(pLocal);
 
 	//FinishCommand
 	{
-		I::MoveHelper->SetHost(nullptr);
-		reinterpret_cast<void(*)(CUserCmd*)>(U::Offsets.m_dwSetPredictionRandomSeed)(nullptr);
+		if (I::MoveHelper)
+			I::MoveHelper->SetHost(nullptr);
+		if (U::Offsets.m_dwSetPredictionRandomSeed)
+			reinterpret_cast<void(*)(CUserCmd*)>(U::Offsets.m_dwSetPredictionRandomSeed)(nullptr);
 	}
 
-	I::GlobalVars->curtime = m_flOldCurTime;
-	I::GlobalVars->frametime = m_flOldFrameTime;
-	I::GlobalVars->tickcount = m_nOldTickCount;
+	if (I::GlobalVars)
+	{
+		I::GlobalVars->curtime = m_flOldCurTime;
+		I::GlobalVars->frametime = m_flOldFrameTime;
+		I::GlobalVars->tickcount = m_nOldTickCount;
+	}
 }
 
 int CFeatures_EnginePrediction::GetPredictedFlags() const
@@ -79,19 +102,21 @@ int CFeatures_EnginePrediction::GetPredictedFlags() const
 }
 
 //CasualHacker I believe posted this.
+//Ключ по command_number, а не по указателю на переиспользуемый буфер CInput:
+//после рестарта/смены карты счётчик ресинкается, а не улетает в hugely-будущее.
 int CFeatures_EnginePrediction::GetTickBase(const int nCurrent, CUserCmd* cmd)
 {
 	static int s_nTick = 0;
-	static CUserCmd* s_pLastCommand = nullptr;
+	static int s_nLastCmd = 0;
 
 	if (cmd)
 	{
-		if (!s_pLastCommand || s_pLastCommand->hasbeenpredicted)
+		if (s_nLastCmd == 0 || nCurrent < s_nTick || cmd->command_number != s_nLastCmd + 1)
 			s_nTick = nCurrent;
 		else
 			s_nTick++;
 
-		s_pLastCommand = cmd;
+		s_nLastCmd = cmd->command_number;
 	}
 
 	return s_nTick;

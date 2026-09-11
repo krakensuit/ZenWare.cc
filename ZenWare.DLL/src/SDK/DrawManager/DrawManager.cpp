@@ -30,6 +30,9 @@ void CGlobal_DrawManager::Init()
 
 void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& clr, const short align, const char* const str, ...)
 {
+	//Lang::T отдаёт nullptr на nullptr-входе: vsprintf_s(0) роняет детур.
+	if (!str)
+		return;
 	va_list va_alist;
 	char cbuffer[1024] = { '\0' };
 	wchar_t wstr[1024] = { '\0' };
@@ -69,6 +72,8 @@ void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& 
 
 void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& clr, const short align, const wchar_t* const str, ...)
 {
+	if (!str)
+		return;
 	va_list va_alist;
 	wchar_t wstr[1024] = { '\0' };
 
@@ -137,6 +142,9 @@ void CGlobal_DrawManager::OutlinedCircle(const int x, const int y, const int r, 
 
 void CGlobal_DrawManager::Circle(const int x, const int y, const int r, const int s, const Color clr)
 {
+	//s==0: деление на ноль в flStep, DrawTexturedPolygon(0, ...).
+	if (s <= 0)
+		return;
 	static int s_nTexture = I::MatSystemSurface->CreateNewTextureID(true);
 
 	std::vector<Vertex_t> vecVertices = { };
@@ -156,7 +164,9 @@ void CGlobal_DrawManager::Circle(const int x, const int y, const int r, const in
 
 int CGlobal_DrawManager::GetFontHeight(const EFonts& font) const
 {
-	return m_Fonts.at(font).m_nTall;
+	//at() бросает std::out_of_range через границу детура — fail-closed.
+	const auto it = m_Fonts.find(font);
+	return (it == m_Fonts.end()) ? 0 : it->second.m_nTall;
 }
 
 int CGlobal_DrawManager::GetTextWidth(const EFonts& font, const char* const str)

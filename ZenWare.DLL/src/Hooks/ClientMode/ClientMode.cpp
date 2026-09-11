@@ -44,28 +44,22 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 	if (!cmd || !cmd->command_number)
 		return bEngineHandled;
 
-	if (bEngineHandled)
+	if (bEngineHandled && I::Prediction)
 		I::Prediction->SetLocalViewAngles(cmd->viewangles);
 
- C_TerrorPlayer* pLocal = nullptr;
- {
-  const int nLocalIdx = I::EngineClient->GetLocalPlayer();
-  if (nLocalIdx >= 0)
+  C_TerrorPlayer* pLocal = nullptr;
+  if (I::EngineClient && I::ClientEntityList)
   {
-   IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
+   const int nLocalIdx = I::EngineClient->GetLocalPlayer();
+   if (nLocalIdx > 0)
+   {
+    IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
     if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
+   }
   }
- }
 
 	if (pLocal && !pLocal->deadflag())
 	{
-		// Фронт IN_ATTACK для точности сессии (хитмаркер считает попадания).
-		static bool s_bPrevAtk = false;
-		const bool bAtk = (cmd->buttons & IN_ATTACK) != 0;
-		if (bAtk && !s_bPrevAtk)
-			F::Hitmarker.OnShot();
-		s_bPrevAtk = bAtk;
-
 		F::EnginePrediction.Start(pLocal, cmd);
 		{
 			// Movement features work without active weapon (infected claws etc.)
@@ -78,10 +72,10 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 			F::JumpStats.OnTick(pLocal, cmd, flRawSide, nRawMouseX);
 			F::AutoShove.Run(pLocal, cmd);
 
-			//Активное оружие без проверки класса: когти/медпредметы/руки в тик
-			//смены имеют другую таблицу, виртуалки аима/спреда падали бы по чужому слоту.
+			//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
+			//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
 			C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
-			C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsWeaponEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
+			C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
 
 			if (pWeapon)
 			{
@@ -92,6 +86,14 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 			}
 		}
 		F::EnginePrediction.Finish(pLocal, cmd);
+
+		// Фронт IN_ATTACK для точности сессии: сэмпл ПОСЛЕ фич, иначе
+		// выстрелы аима/триггера (форс кнопок) не считались хитмаркером.
+		static bool s_bPrevAtk = false;
+		const bool bAtk = (cmd->buttons & IN_ATTACK) != 0;
+		if (bAtk && !s_bPrevAtk)
+			F::Hitmarker.OnShot();
+		s_bPrevAtk = bAtk;
 	}
 
 	return false;

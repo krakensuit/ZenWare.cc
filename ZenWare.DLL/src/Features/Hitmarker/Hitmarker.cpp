@@ -116,7 +116,7 @@ void CFeatures_Hitmarker::OnTick()
 		if (nLocalIdx > 0)
 		{
 			IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
-			if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+			if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
 		}
 	}
 	if (!pLocal || pLocal->deadflag() || pLocal->m_lifeState() != 0)
@@ -285,7 +285,7 @@ void CFeatures_Hitmarker::Draw()
 		{
 			const int nLocalIdx = I::EngineClient->GetLocalPlayer();
 			IClientEntity* pEnt = (nLocalIdx > 0) ? I::ClientEntityList->GetClientEntity(nLocalIdx) : nullptr;
-			C_TerrorPlayer* pLocal = pEnt ? pEnt->As<C_TerrorPlayer*>() : nullptr;
+			C_TerrorPlayer* pLocal = G::Util.IsPlayerEntity(pEnt) ? pEnt->As<C_TerrorPlayer*>() : nullptr;
 			if (pLocal && !pLocal->deadflag() && pLocal->m_lifeState() == 0)
 			{
 				const Vector vTo = m_vAttacker - G::Util.GetEyePosition(pLocal);

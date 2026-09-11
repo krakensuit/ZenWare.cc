@@ -131,7 +131,12 @@ Vector CGlobal_GameUtil::GetEyePosition(C_TerrorPlayer* pEntity)
 
 bool CGlobal_GameUtil::IsValidTarget(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, bool bCheckVisible)
 {
-	if (!pPlayer || !pPlayer->As<C_TerrorPlayer*>())
+	//As<> на non-null никогда не null: мёртвая проверка маскировала гейт.
+	if (!pPlayer)
+		return false;
+
+	//Непроверенный локал ронял «безопасный» фильтр изнутри (Hitmarker-кейс).
+	if (pLocal && !IsPlayerEntity(pLocal))
 		return false;
 
 	if (pPlayer == pLocal)
@@ -201,6 +206,21 @@ bool CGlobal_GameUtil::IsWeaponEntity(IClientEntity* pEntity)
 		CShotgun_Chrome, CShotgun_SPAS, CSMG_MP5, CSMG_Silenced,
 		CSniper_AWP, CSniper_Military, CSniper_Scout, CSniperRifle, CSubMachinegun,
 		CPistol, CMagnumPistol, CChainsaw, CGrenadeLauncher);
+}
+
+bool CGlobal_GameUtil::IsGunEntity(IClientEntity* pEntity)
+{
+	if (!pEntity)
+		return false;
+	ClientClass* pCC = pEntity->GetClientClass();
+	if (!pCC)
+		return false;
+	return U::Math.CompareGroup(pCC->m_ClassID, CTerrorWeapon, CTerrorGun,
+		CAssaultRifle, CAutoShotgun, CBaseAutoShotgun, CBaseRifle, CBaseShotgun, CBaseSniperRifle,
+		CPumpShotgun, CRifle_AK47, CRifle_Desert, CRifle_M60, CRifle_SG552,
+		CShotgun_Chrome, CShotgun_SPAS, CSMG_MP5, CSMG_Silenced,
+		CSniper_AWP, CSniper_Military, CSniper_Scout, CSniperRifle, CSubMachinegun,
+		CPistol, CMagnumPistol);
 }
 
 bool CGlobal_GameUtil::IsSpecialByName(const char* szNet)

@@ -74,6 +74,12 @@ namespace
 			case 4: s_wpn = { Vars::AimbotWpn::flPistolFov, (float)Vars::AimbotWpn::nPistolSmooth, Vars::AimbotWpn::nPistolHitbox, s_wpn.nPrio }; break;
 			default: break;
 		}
+		//Битый конфиг (NaN/мусор) иначе дает лок на 360 градусов: сравнение
+		//flFov > NaN всегда false и FOV-фильтр молча отключается.
+		if (!isfinite(s_wpn.flFOV) || s_wpn.flFOV <= 0.0f || s_wpn.flFOV > 180.0f)
+			s_wpn.flFOV = 5.0f;
+		if (!isfinite(s_wpn.flSmooth) || s_wpn.flSmooth < 0.0f || s_wpn.flSmooth > 64.0f)
+			s_wpn.flSmooth = 0.0f;
 	}
 
 	bool FindCommonTarget(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vViewAngles, Vector& vOut)
@@ -402,5 +408,7 @@ bool CFeatures_Aimbot::ShouldRun(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon
 	if (!G::Util.IsValidTeam(pLocal->GetTeamNumber()))
 		return false;
 
-	return pWeapon->CanPrimaryAttack() || pWeapon->CanSecondaryAttack();
+	//Только primary: автострельба жмёт IN_ATTACK, а снап углов на тике
+	//готового шова (secondary) стрелять всё равно не даст.
+	return pWeapon->CanPrimaryAttack();
 }

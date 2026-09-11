@@ -17,6 +17,18 @@ All notable changes to ZenWare.cc are documented here.
   Краш в спектаторах радара: чтение нетваров игрока с любых сущностей без
   проверки класса (падение при загрузке карты и в игре). Гейт
   `IsPlayerEntity` + свой breadcrumb у радара.
+- Audit sweep (crashes + logic, whole project): bhop statics reset on
+  death/spec/ladder/map-change; strafe and jump-stats ignore ladder/water/
+  ghost/noclip; edge/EB/JB/showtick banners need real fires (no spawn
+  false-positives); Killfeed no longer casts Witch/SI to C_TerrorPlayer and
+  resolves bot names by class; IsPlayerEntity gates on every local-player
+  lookup (Hitmarker/Alerts/Chams/Radar); Alerts pins/revive toggles work;
+  crosshair hidden in menu; DrawManager null/exception guards; menu child
+  checkboxes nested, no format-string-as-argument; WndProc F7 repeat filter;
+  loader: atomic inject flag, -insecure launch, thread-handle/once fixes.
+  Зачистка по аудиту: ресеты статиков бхопа, гарды лестниц/воды/гостов,
+  честные баннеры багов, гейты IsPlayerEntity везде, рабочий киллфид по СИ,
+  мелочи меню/лоадера (-insecure, атомарный флаг инжекта).
 - Menu mouse: the OS cursor was hidden every frame while the menu was open,
   so there was no cursor without ESC/console (and clicks landed in the game
   menu afterwards). The cursor is now force-shown while open, camera stays

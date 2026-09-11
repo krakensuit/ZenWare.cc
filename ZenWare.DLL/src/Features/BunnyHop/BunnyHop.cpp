@@ -15,18 +15,28 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	if (!Vars::BunnyHop::bEnabled || !pLocal || !cmd || !cmd->command_number)
 		return;
 
-	//Статик EdgeJump живёт здесь (до ранних return): иначе смерть/лестница
-	//оставляют s_bWasOnGround=true и дарят ложный EdgeJump после респауна.
+	//Статики живут здесь (до ранних return): иначе смерть/лестница/спектатор
+	//оставляют stale-значения: ложный EdgeJump после респауна, снятый чужой
+	//IN_DUCK после смерти в JB-окне, заблокированный первый бхоп новой карты.
 	static bool s_bWasOnGround = true;
+	static bool s_bJbDuck = false;
+	static int s_nLastJumpTick = 0;
 
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
 	{
 		s_bWasOnGround = true;
+		s_bJbDuck = false;
+		s_nLastJumpTick = 0;
 		return;
 	}
 
 	if (!G::Util.IsValidTeam(pLocal->GetTeamNumber()))
+	{
+		s_bWasOnGround = true;
+		s_bJbDuck = false;
+		s_nLastJumpTick = 0;
 		return;
+	}
 
 	//Never touch movement on ladders / noclip / observer cam.
 	const unsigned char nMoveType = pLocal->m_MoveType();
@@ -34,8 +44,14 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	if (nMoveType == MOVETYPE_LADDER || nMoveType == MOVETYPE_NOCLIP || nMoveType == MOVETYPE_OBSERVER)
 	{
 		s_bWasOnGround = true;
+		s_bJbDuck = false;
+		s_nLastJumpTick = 0;
 		return;
 	}
+
+	//Смена карты: tick_count начался заново, старый тик прыжка — в будущем.
+	if (s_nLastJumpTick != 0 && cmd->tick_count < s_nLastJumpTick)
+		s_nLastJumpTick = 0;
 
 	const bool bOnGround = (pLocal->m_fFlags() & FL_ONGROUND) != 0;
 	const bool bDucking = (pLocal->m_fFlags() & FL_DUCKING) != 0;
@@ -52,7 +68,6 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	//JumpBug: duck-tap right before a hard landing to negate it,
 	//release the duck the moment we touch ground again.
-	static bool s_bJbDuck = false;
 	if (Vars::BunnyHop::bJumpBug)
 	{
 		if (!bOnGround)
@@ -131,8 +146,6 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	{
 		if (bOnGround)
 		{
-			static int s_nLastJumpTick = 0;
-
 			// Задержка: пропускаем только сам прыжок, EdgeBug/FastStop ниже всё равно работают.
 			const bool bDelayed = (Vars::BunnyHop::nJumpDelayTicks > 0 && s_nLastJumpTick != 0 &&
 				(cmd->tick_count - s_nLastJumpTick) < Vars::BunnyHop::nJumpDelayTicks);

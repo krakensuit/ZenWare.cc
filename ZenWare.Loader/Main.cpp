@@ -72,7 +72,7 @@ static ULONGLONG g_ullLastTick=0;
 static float Approach(float cur,float target,float dt,float speed){ return cur+(target-cur)*(1.0f-expf(-dt*speed)); }
 HBRUSH g_brBg=nullptr,g_brCtl=nullptr,g_brBorder=nullptr;
 HFONT g_fUI=nullptr,g_fTitle=nullptr,g_fSmall=nullptr;
-bool g_busy=false;
+volatile LONG g_busy=0;
 bool g_gameSeen=false;
 COLORREF g_dotColor=RGB(120,130,124);
 void DestroyGdi(){ for(auto h:{&g_brBg,&g_brCtl,&g_brBorder}){ if(*h)DeleteObject(*h);*h=nullptr;} }
@@ -153,12 +153,12 @@ void DrawRgbLogo(HDC dc, int x, int y){
 struct Ctx{ DWORD pid; std::wstring path; bool manual; };
 DWORD WINAPI InjectThread(LPVOID p){
  auto c=(Ctx*)p;
- g_busy=true; EnableWindow(g_hInject,FALSE);
+ EnableWindow(g_hInject,FALSE);
  CManualMapper m; CManualMapper::Params_t pr{};
  pr.hwndLog=g_hMain; pr.dwTargetPid=c->pid; pr.wszDllPath=c->path; pr.pfnLog=&LoaderUtil::Log; pr.pfnStatus=&LoaderUtil::Status;
  bool ok = c->manual ? m.Map(pr) : CManualMapper::InjectStandard(pr);
  if(!ok){ LoaderUtil::Log(g_hMain,"[!] Injection FAILED"); LoaderUtil::Status(g_hMain, LoaderUtil::S("Ошибка","Error")); }
- EnableWindow(g_hInject,TRUE); g_busy=false; delete c; return 0;
+ EnableWindow(g_hInject,TRUE); InterlockedExchange(&g_busy,0); delete c; return 0;
 }
 static bool FindDll(wchar_t* out){
  const wchar_t* cands[] = { L"/ZenWare.dll", L"/../../../ZenWare.DLL/bin/Release/ZenWare.dll", L"C:/Users/ilya/Desktop/ZenWare.cc/ZenWare.DLL/bin/Release/ZenWare.dll" };
@@ -247,12 +247,15 @@ void LaunchExternal(){
 void StartInject(){
  wchar_t p[MAX_PATH]={};
  if(!FindDll(p)){ MessageBoxW(g_hMain, LoaderUtil::SW(L"DLL не найдена рядом с лоадером",L"DLL not found next to loader"), L"ZenWare", MB_ICONWARNING); return;}
- if(g_busy) return;
- LoaderUtil::Status(g_hMain, LoaderUtil::S("Поиск процесса","Finding process"));
+ // Атомарный захват: два быстрых клика не дадут двойной инжект.
+ if(InterlockedExchange(&g_busy,1)) return;
+ LoaderUtil::Status(g_hMain,LoaderUtil::S("Поиск процесса","Finding process"));
  DWORD pid=LoaderUtil::FindProcessId(L"left4dead2.exe");
- if(!pid){ LoaderUtil::Status(g_hMain, LoaderUtil::S("Игра не найдена","Game not found")); return;}
+ if(!pid){ LoaderUtil::Status(g_hMain,LoaderUtil::S("Игра не найдена","Game not found")); InterlockedExchange(&g_busy,0); return;}
  auto c=new Ctx{pid,p,false};
- CreateThread(nullptr,0,InjectThread,c,0,nullptr);
+ HANDLE hThread=CreateThread(nullptr,0,InjectThread,c,0,nullptr);
+ if(hThread) CloseHandle(hThread);
+ else { InterlockedExchange(&g_busy,0); delete c; }
 }
 void LaunchGame(){
  wchar_t steam[MAX_PATH]={}; DWORD sz=sizeof(steam);
@@ -268,8 +271,9 @@ void LaunchGame(){
   LoaderUtil::Status(g_hMain, LoaderUtil::S("Steam не найден","Steam not found"));
   return;
  }
- // -applaunch 550 = Left 4 Dead 2, дальше аргументы уходят игре
- ShellExecuteW(nullptr,L"open",steam,L"-applaunch 550 -novid -console",nullptr,SW_SHOWNORMAL);
+ // -applaunch 550 = Left 4 Dead 2, дальше аргументы уходят игре.
+ // -insecure обязателен: чит только для локального сервера без VAC.
+ ShellExecuteW(nullptr,L"open",steam,L"-applaunch 550 -novid -console -insecure",nullptr,SW_SHOWNORMAL);
  LoaderUtil::Status(g_hMain, LoaderUtil::S("Запуск игры через Steam...","Launching via Steam..."));
  g_gameSeen=false;
 }

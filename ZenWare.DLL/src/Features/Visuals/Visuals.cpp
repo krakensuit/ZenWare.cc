@@ -186,7 +186,9 @@ void CFeatures_Visuals::DrawGrenade()
 
 void CFeatures_Visuals::DrawCrosshair()
 {
-	if (!Vars::Visuals::bCrosshair || !G::Draw.m_nScreenW || !I::EngineClient || !I::ClientEntityList)
+	//IsInGame как у соседей (DrawGrenade/DrawOverlay): иначе прицел в меню/табе.
+	if (!Vars::Visuals::bCrosshair || !G::Draw.m_nScreenW || !G::Draw.m_nScreenH
+		|| !I::EngineClient || !I::EngineClient->IsInGame() || !I::ClientEntityList)
 		return;
 
 	const int nCX = G::Draw.m_nScreenW / 2;
@@ -249,6 +251,10 @@ void CFeatures_Visuals::DrawOverlay()
  }
 
  if (!pLocal)
+  return;
+
+ //В спектаторе/трупе — мертвецкие pos/hp (DrawGrenade так гейтит).
+ if (pLocal->deadflag() || pLocal->m_lifeState() != 0)
   return;
 
 	static float s_flFpsAvg = 0.0f;

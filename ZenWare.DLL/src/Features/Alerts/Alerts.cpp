@@ -24,7 +24,10 @@ namespace
 
 void CFeatures_Alerts::Render()
 {
-	if (!Vars::Alerts::bEnabled || ((!Vars::Alerts::bTank && !Vars::Alerts::bWitch) && !Vars::Alerts::bSIList))
+	//bPinned/bRevive равноправные: без них в условии только они включённые
+	//давали ранний return и никогда не рисовались.
+	if (!Vars::Alerts::bEnabled || (!Vars::Alerts::bTank && !Vars::Alerts::bWitch
+		&& !Vars::Alerts::bSIList && !Vars::Alerts::bPinned && !Vars::Alerts::bRevive))
 		return;
 	if (!I::EngineClient || !I::EngineClient->IsInGame())
 		return;
@@ -34,7 +37,7 @@ void CFeatures_Alerts::Render()
 	if (nLocalIdx >= 0)
 	{
 		IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIdx);
-		if (pEnt) pLocal = pEnt->As<C_TerrorPlayer*>();
+		if (G::Util.IsPlayerEntity(pEnt)) pLocal = pEnt->As<C_TerrorPlayer*>();
 	}
 	if (!pLocal)
 		return;
@@ -104,7 +107,8 @@ void CFeatures_Alerts::Render()
 		nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
 		if (Vars::Alerts::bTankHp && pTankEnt)
 		{
-			const int nHp = pTankEnt->GetHealth();
+			//pTankEnt может быть name-совпадением (камень танка): клампим оба.
+			const int nHp = U::Math.Clamp(pTankEnt->GetHealth(), 0, 20000);
 			const int nMaxHp = U::Math.Clamp(pTankEnt->As<C_TerrorPlayer*>()->m_iMaxHealth(), 1, 20000);
 			const int nPct = U::Math.Clamp(nHp * 100 / nMaxHp, 0, 100);
 			const int nBW = 320, nBX = nCX - nBW / 2;
@@ -154,6 +158,7 @@ void CFeatures_Alerts::Render()
 			player_info_t pi = {};
 			if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 				continue;
+			pi.name[31] = '\0';
 			const float flD = (pT->m_vecOrigin() - vEye).Lenght() / 52.5f;
 			if (flD < flBestD)
 			{
@@ -207,11 +212,11 @@ void CFeatures_Alerts::Render()
 				continue;
 
 			C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
-			if (!pPl || pPl->m_lifeState() != 0)
-				continue;
-			C_BaseEntity* pBase = pEntity->As<C_BaseEntity*>();
-			if (!pBase || pBase->m_iTeamNum() == nLocalTeam)
-				continue;
+		if (!pPl || pPl->m_lifeState() != 0)
+			continue;
+		C_BaseEntity* pBase = pEntity->As<C_BaseEntity*>();
+		if (!pBase || !G::Util.IsValidTeam(pBase->m_iTeamNum()) || pBase->m_iTeamNum() == nLocalTeam)
+			continue;
 
 			const float flD = (pBase->m_vecOrigin() - vEye).Lenght() / 52.5f;
 			// Вставка по возрастанию дистанции.

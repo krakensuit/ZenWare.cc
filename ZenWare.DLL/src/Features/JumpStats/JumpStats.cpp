@@ -20,6 +20,21 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 		return;
 	}
 
+	//Лестница/гость/вода — не полёт: иначе езда по лестнице считается
+	//прыжком (мусор в airticks/dist/sync + ложный [eb]).
+	{
+		const unsigned char nMoveType = pLocal->m_MoveType();
+
+		if (pLocal->m_isGhost() || nMoveType == MOVETYPE_LADDER
+			|| nMoveType == MOVETYPE_NOCLIP || nMoveType == MOVETYPE_OBSERVER
+			|| pLocal->m_nWaterLevel() > 1)
+		{
+			m_bAir = false;
+			m_last.valid = false;
+			return;
+		}
+	}
+
 	const bool bOnGround = (pLocal->m_fFlags() & FL_ONGROUND) != 0;
 	const Vector vel = pLocal->m_vecVelocity();
 	const float speed2d = vel.Lenght2D();
@@ -111,13 +126,18 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 		//[edge] — только реальный EdgeJump: файр showtick на тике схода.
 		//Старое (TakeTick-LastGroundTick) врало в обе стороны: перфект-бхоп
 		//без касаний давал false, простой сход с бордюра — true.
-		m_last.edge = (m_nTakeTick - Vars::BunnyHop::nEjShowTick) <= 2;
+		m_last.edge = Vars::BunnyHop::bEdgeJump && Vars::BunnyHop::nEjShowTick != 0
+			&& m_nTakeTick >= Vars::BunnyHop::nEjShowTick
+			&& (m_nTakeTick - Vars::BunnyHop::nEjShowTick) <= 2;
 		const bool bDucked = m_bDuckAtLand || ((cmd->buttons & IN_DUCK) != 0);
 		//Считаем только фактические срабатывания: свежий showtick (<=6 тиков) +
 		//включённая фича + посадка в приседе. Ручной дак — только без AutoDuck
 		//(иначе каждый прыжок с зажатым приседом был бы "+1 JB/EB").
-		const bool bEbFired = Vars::BunnyHop::bEdgeBug && (tick - Vars::BunnyHop::nEbShowTick) <= 6;
-		const bool bJbFired = Vars::BunnyHop::bJumpBug && (tick - Vars::BunnyHop::nJbShowTick) <= 6;
+		//ShowTick 0 = фича ни разу не файрила (первые тики карты врали бы true).
+		const bool bEbFired = Vars::BunnyHop::bEdgeBug && Vars::BunnyHop::nEbShowTick != 0
+			&& tick >= Vars::BunnyHop::nEbShowTick && (tick - Vars::BunnyHop::nEbShowTick) <= 6;
+		const bool bJbFired = Vars::BunnyHop::bJumpBug && Vars::BunnyHop::nJbShowTick != 0
+			&& tick >= Vars::BunnyHop::nJbShowTick && (tick - Vars::BunnyHop::nJbShowTick) <= 6;
 		const bool bManualEb = !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -500.0f && dist > 150.0f;
 		const bool bManualJb = !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -350.0f;
 		m_last.eb = bDucked && (bEbFired || bManualEb);
@@ -149,17 +169,25 @@ void CFeatures_JumpStats::Draw()
 	if (!Vars::BunnyHop::bJumpStats || !m_last.valid || !I::GlobalVars)
 		return;
 
+	// Без игры — stale-панель с прошлой карты и ложные баннеры showtick.
+	if (!I::EngineClient || !I::EngineClient->IsInGame())
+	{
+		m_last.valid = false;
+		return;
+	}
+
 	if (I::GlobalVars->tickcount > m_nShowUntil)
 		return;
 
 	const int cx = G::Draw.m_nScreenW / 2;
 	const int cy = G::Draw.m_nScreenH / 2 + 76;
 
-	if (I::GlobalVars->tickcount < Vars::BunnyHop::nJbShowTick + 66)
+	//ShowTick 0 = ни разу не файрило: без проверки баннер горит на спавне.
+	if (Vars::BunnyHop::nJbShowTick != 0 && I::GlobalVars->tickcount < Vars::BunnyHop::nJbShowTick + 66)
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 18, Color(0, 255, 171, 255), TXT_CENTERXY, "JUMPBUG");
-	if (I::GlobalVars->tickcount < Vars::BunnyHop::nEbShowTick + 66)
+	if (Vars::BunnyHop::nEbShowTick != 0 && I::GlobalVars->tickcount < Vars::BunnyHop::nEbShowTick + 66)
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 34, Color(255, 220, 0, 255), TXT_CENTERXY, "EDGEBUG");
-	if (I::GlobalVars->tickcount < Vars::BunnyHop::nEjShowTick + 66)
+	if (Vars::BunnyHop::nEjShowTick != 0 && I::GlobalVars->tickcount < Vars::BunnyHop::nEjShowTick + 66)
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 50, Color(0, 200, 255, 255), TXT_CENTERXY, "EDGEJUMP");
 
 	const Color clrGood(0, 255, 171, 255);

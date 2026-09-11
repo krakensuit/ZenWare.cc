@@ -14,9 +14,9 @@ LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 		F::Menu.PollMenuKey();
 
 	//F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
-	//Здесь, а не в Render: работает и при закрытом меню, повторных срабатываний
-	//нет — кейдаун приходит один раз на нажатие.
-	if ((uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) && wParam == VK_F7)
+	//Здесь, а не в Render: работает и при закрытом меню. bit30 режет
+	//автоповтор удержания, иначе язык стробит ~30 Гц.
+	if ((uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) && wParam == VK_F7 && !(lParam & (1 << 30)))
 		Vars::Menu::bRussian = !Vars::Menu::bRussian;
 
 	// Колесо крутит вкладки меню, в игру не уходит.

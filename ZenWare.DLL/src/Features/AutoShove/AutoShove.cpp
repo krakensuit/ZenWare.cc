@@ -43,9 +43,13 @@ void CFeatures_AutoShove::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		//Aim at the attacker and shove.
 		C_BaseEntity* pAttBase = bTongued ? pMate->m_tongueOwner().Get() : pMate->m_pounceAttacker().Get();
 
-		C_TerrorPlayer* pAttacker = pAttBase ? pAttBase->As<C_TerrorPlayer*>() : nullptr;
+		//Хендл атакующего мог протухнуть: без гейта As<> + виртуалка по чужой таблице.
+		if (!pAttBase || !G::Util.IsPlayerEntity(pAttBase))
+			continue;
 
-		if (!pAttacker || pAttacker->deadflag())
+		C_TerrorPlayer* pAttacker = pAttBase->As<C_TerrorPlayer*>();
+
+		if (pAttacker->deadflag() || pAttacker->m_lifeState() != 0 || pAttacker->GetHealth() <= 0)
 			continue;
 
 		const Vector vFrom = G::Util.GetEyePosition(pLocal);

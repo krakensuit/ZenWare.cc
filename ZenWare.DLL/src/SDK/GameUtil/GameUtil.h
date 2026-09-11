@@ -25,6 +25,9 @@ public:
 	//виртуалка C_TerrorWeapon на viewmodel/руках = краш.
 	bool IsPlayerEntity(IClientEntity* pEntity);
 	bool IsWeaponEntity(IClientEntity* pEntity);
+	//Только стволы с раскладкой C_TerrorWeapon: меле/пила/гренник — сиблинги
+	//C_BaseCombatWeapon, static_cast на них + виртуалка = чужой слот vtable.
+	bool IsGunEntity(IClientEntity* pEntity);
 	//Бумер и сдвинутые ID чужих билдов: опознаём СИ по имени класса.
 	bool IsSpecialByName(const char* szNet);
 };

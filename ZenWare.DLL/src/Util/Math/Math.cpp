@@ -161,6 +161,9 @@ float CUtil_Math::NormalizeAngle(const float ang)
 Vector CUtil_Math::GetAngleToPosition(const Vector vFrom, const Vector vTo)
 {
 	const Vector vDelta = (vFrom - vTo);
+	//Вырожденный случай (цель в нас): 0/0 = NaN-углы в cmd.
+	if (vDelta.LenghtSqr() < 1.0f)
+		return Vector(0.0f, 0.0f, 0.0f);
 	const float flHyp = ::sqrtf((vDelta.x * vDelta.x) + (vDelta.y * vDelta.y));
 
 	return { (::atanf(vDelta.z / flHyp) * M_RADPI), (::atanf(vDelta.y / vDelta.x) * M_RADPI) + (180.0f * (vDelta.x >= 0.0f)), 0.0f };

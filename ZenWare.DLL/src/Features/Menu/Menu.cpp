@@ -292,9 +292,11 @@ void CFeatures_Menu::Render(){
      Checkbox(mouse,"ESP witch",&Vars::ESP::bBossBoxes);
      Checkbox(mouse,"Snaplines",&Vars::ESP::bSnaplines);
      Checkbox(mouse,"Filled boxes",&Vars::ESP::bFilled);
-    Checkbox(mouse,"HP text near bar",&Vars::ESP::bHealthText);
-    Checkbox(mouse,"Weapon text",&Vars::ESP::bWeaponText);
-    Checkbox(mouse,"Ammo count",&Vars::ESP::bAmmo);
+     if (Vars::ESP::bHealthBar)
+      Checkbox(mouse,"HP text near bar",&Vars::ESP::bHealthText);
+     Checkbox(mouse,"Weapon text",&Vars::ESP::bWeaponText);
+     if (Vars::ESP::bWeaponText)
+      Checkbox(mouse,"Ammo count",&Vars::ESP::bAmmo);
     Checkbox(mouse,"Show teammates",&Vars::ESP::bShowTeam);
     Checkbox(mouse,"Team HP panel",&Vars::ESP::bTeamPanel);
     Checkbox(mouse,"Throwable timers",&Vars::ESP::bThrowTimers);
@@ -460,7 +462,9 @@ void CFeatures_Menu::Render(){
   const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
- G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(1.0f/m_flDt));
+ char szFoot[160]={};
+ sprintf_s(szFoot,sizeof(szFoot),Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(1.0f/m_flDt));
+ G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"%s",szFoot);
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
  {
   const float ehue=fmodf((float)GetTickCount64()/38.0f,360.0f);
@@ -550,7 +554,7 @@ void CFeatures_Menu::DrawHelpPopup(const MouseState_t& mouse){
   G::Draw.String(EFonts::MENU_TAHOMA,nX+14,nY+nTitleH+i*nLineH,CLR_TEXT_ON,TXT_DEFAULT,"%s",aLines[i]);
 }
 void CFeatures_Menu::SectionLabel(const char* const szLabel){
- G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,Lang::T(szLabel));
+ G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,"%s",Lang::T(szLabel));
  m_nItemY+=20;
 }
 void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const szLabel,Color* pValue){
@@ -562,7 +566,7 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
   G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
   G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
  }
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,Lang::T(szLabel));
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_OFF,TXT_DEFAULT,"%s",Lang::T(szLabel));
  int cr,cg,cb,ca; pValue->GetColor(cr,cg,cb,ca);
  int nX=nRowX+nRowW-10-10*20;
  for(int i=0;i<10;i++){
@@ -617,7 +621,7 @@ void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
   bool bActive=(m_nTab==n); bool bHover=Hovered(mouse.pt,nX,nY,nTabW-6,nH);
   Color clrText=bActive?Color(240,255,248,255):(bHover?CLR_TEXT_ON:CLR_TEXT_OFF);
   if(!bActive&&bHover){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ROW_HOVER); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
-  G::Draw.String(EFonts::MENU_TAHOMA,nX+((nTabW-6)/2),nY+4,clrText,TXT_CENTERXY,Lang::T(szTabs[n]));
+  G::Draw.String(EFonts::MENU_TAHOMA,nX+((nTabW-6)/2),nY+4,clrText,TXT_CENTERXY,"%s",Lang::T(szTabs[n]));
   if(bHover&&mouse.bClicked) m_nTab=n;
  } nTab=m_nTab;
 }
@@ -668,7 +672,7 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
  if(flTog>0.3f) G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR+3,14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(35*flTog)));
  G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR,16,Color(245,255,250,255));
  const char* szShow=Lang::T(szLabel);
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6+(int)(1*flPress),*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,szShow);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6+(int)(1*flPress),*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,"%s",szShow);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
   const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szShow)+7;
@@ -694,7 +698,7 @@ void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*
  if(flPress>0.01f) bg=LerpC(bg,CLR_ACCENT,0.5f*flPress);
  G::Draw.Rect(nRowX+8,m_nItemY+3+(int)(1*flPress),96,nRowH-7-(int)(1*flPress),bg);
  G::Draw.OutlinedRect(nRowX+8,m_nItemY+3+(int)(1*flPress),96,nRowH-7-(int)(1*flPress),(bHover||flPress>0.01f)?CLR_ACCENT:CLR_OUTLINE);
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+8+48,m_nItemY+7+(int)(1*flPress),bHover?CLR_ACCENT:CLR_TEXT_ON,TXT_CENTERXY,Lang::T(szLabel));
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+8+48,m_nItemY+7+(int)(1*flPress),bHover?CLR_ACCENT:CLR_TEXT_ON,TXT_CENTERXY,"%s",Lang::T(szLabel));
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel))
   bHelp=HelpIcon(mouse,he->label,HelpTitle(he),HelpText(he),nRowX,nRowW,m_nItemY,nRowH);
@@ -711,16 +715,16 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
   G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
   G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
  }
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,Lang::T(szLabel));
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+12+(int)(2*flHov),m_nItemY+6,CLR_TEXT_ON,TXT_DEFAULT,"%s",Lang::T(szLabel));
  char szVal[32]={};
  if(s_pCapturing==pValue){
   strcpy_s(szVal,Lang::T("[press key]"));
-  for(int vk=0x08;vk<0xFE;vk++){ if(vk==VK_LBUTTON||vk==VK_RBUTTON||vk==VK_MBUTTON) continue; if(GetAsyncKeyState(vk)&0x8000){ if(vk==VK_ESCAPE) *pValue=0; else *pValue=vk; s_pCapturing=nullptr; break; } }
+  for(int vk=0x08;vk<0xFE;vk++){ if(vk==VK_LBUTTON||vk==VK_RBUTTON||vk==VK_MBUTTON) continue; if(vk==VK_F7||vk==VK_F11) continue; if(GetAsyncKeyState(vk)&0x8000){ if(vk==VK_ESCAPE) *pValue=0; else *pValue=vk; s_pCapturing=nullptr; break; } }
  } else if(!*pValue){ sprintf_s(szVal,"[%s]",Lang::T("off")); }
  else { strcpy_s(szVal,"["); strcat_s(szVal,KeyName(*pValue)); strcat_s(szVal,"]"); }
  Color clrVal=(s_pCapturing==pValue)?CLR_ACCENT:CLR_TEXT_ON;
  if(s_pCapturing==pValue){ int pp=150+(int)(105*sinf((GetTickCount64()%6283)/1000.0f)); clrVal=Color(0,255,171,pp); }
- G::Draw.String(EFonts::MENU_TAHOMA,nRowX+nRowW-90,m_nItemY+6,clrVal,TXT_DEFAULT,szVal);
+ G::Draw.String(EFonts::MENU_TAHOMA,nRowX+nRowW-90,m_nItemY+6,clrVal,TXT_DEFAULT,"%s",szVal);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
   const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,Lang::T(szLabel))+7;
@@ -732,7 +736,7 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
 void CFeatures_Menu::LabelInt(const char* szLabel,const int nValue,int nRightPad){
  G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY,CLR_TEXT_ON,TXT_DEFAULT,"%s",Lang::T(szLabel));
  char szVal[16]={}; sprintf_s(szVal,"%i",nValue);
- G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+m_rc.nW-44-nRightPad,m_nItemY,CLR_ACCENT,TXT_DEFAULT,szVal);
+ G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+m_rc.nW-44-nRightPad,m_nItemY,CLR_ACCENT,TXT_DEFAULT,"%s",szVal);
  m_nItemY+=G::Draw.GetFontHeight(EFonts::MENU_TAHOMA)+5;
 }
 void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int* pValue,const int nMin,const int nMax){

@@ -14,6 +14,17 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	if (!Vars::BunnyHop::bAutoStrafe || !pLocal || !cmd || !cmd->command_number)
 		return;
 
+	//Как в BunnyHop: мёртвый/гость/чужая команда/вода не стрейфятся,
+	//иначе портятся s_nLastSide/s_nCircleSide и стата синка.
+	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
+		return;
+
+	if (!G::Util.IsValidTeam(pLocal->GetTeamNumber()))
+		return;
+
+	if (pLocal->m_nWaterLevel() > 1)
+		return;
+
 	const unsigned char nMoveType = pLocal->m_MoveType();
 
 	if (nMoveType == MOVETYPE_LADDER || nMoveType == MOVETYPE_NOCLIP || nMoveType == MOVETYPE_OBSERVER)

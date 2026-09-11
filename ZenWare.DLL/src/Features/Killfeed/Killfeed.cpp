@@ -29,7 +29,9 @@ void CFeatures_Killfeed::Draw() {
     for (int i = (int)m_aEntries.size() - 1; i >= 0; --i) {
         auto &e = m_aEntries[i];
         float age = now - e.t;
-        if (age > 3.0f) { m_aEntries.erase(m_aEntries.begin() + i); continue; }
+        //Отрицательный возраст (отмотка curtime при смене карты) иначе даёт
+        //alpha 0 навсегда и вечно занимает слот из 6.
+        if (age > 3.0f || age < -0.5f) { m_aEntries.erase(m_aEntries.begin() + i); continue; }
         float appear = Anim::EaseOutCubic(std::clamp(age / 0.25f, 0.0f, 1.0f));
         float vanish = age > 2.5f ? 1.0f - std::clamp((age - 2.5f) / 0.5f, 0.0f, 1.0f) : 1.0f;
         float alpha = appear * vanish;
@@ -68,10 +70,13 @@ bool CFeatures_Killfeed::PinKillerName(C_TerrorPlayer* pVictim, char* szOut, siz
     {
         if (!h.IsValid()) continue;
         IClientEntity* pEnt = I::ClientEntityList->GetClientEntityFromHandle(h);
-        if (!pEnt) continue;
+        //Хендл из нетвара при nOff=0 читает vtable и может стать «валидным»
+        //мусором на оружие/проп — без ClassID-гейта дальше виртуалки по чужому типу.
+        if (!pEnt || !G::Util.IsPlayerEntity(pEnt)) continue;
         player_info_t pi = {};
         if (I::EngineClient->GetPlayerInfo(h.GetEntryIndex(), &pi) && pi.name[0])
         {
+            pi.name[31] = '\0';
             strcpy_s(szOut, nOut, pi.name);
             return true;
         }
@@ -105,9 +110,22 @@ void CFeatures_Killfeed::OnTick()
             && nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter
             && nID != Charger && nID != Witch && !G::Util.IsSpecialByName(pCC->m_pNetworkName))
             continue;
-        C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
-        if (!pPlayer) continue;
-        const bool bAlive = !pPlayer->deadflag() && pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0;
+        //Ведьма — C_Infected, а не игрок: deadflag/lifeState из DT_BasePlayer
+        //на ней читают чужие поля. Живость — через IsInfectedAlive как в ESP.
+        C_TerrorPlayer* pPlayer = nullptr;
+        bool bAlive = false;
+        if (nID == Witch)
+        {
+            C_Infected* pWitch = pEntity->As<C_Infected*>();
+            if (!pWitch) continue;
+            bAlive = G::Util.IsInfectedAlive(pWitch->m_usSolidFlags(), pWitch->m_nSequence());
+        }
+        else
+        {
+            pPlayer = pEntity->As<C_TerrorPlayer*>();
+            if (!pPlayer) continue;
+            bAlive = !pPlayer->deadflag() && pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0;
+        }
         if (bAlive)
         {
             aliveNow.insert(n);
@@ -115,11 +133,24 @@ void CFeatures_Killfeed::OnTick()
         }
         if (m_alive.count(n))
         {
+            //GetPlayerInfo ждёт клиент-слот: ботовые СИ живут на индексах
+            //выше maxclients. Имя — только для игроков, остальным имя класса.
+            char szVictim[64] = { };
+            const int nMaxClients = I::EngineClient->GetMaxClients();
             player_info_t pi = {};
-            if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0]) continue;
+            if (n >= 1 && n <= nMaxClients && I::EngineClient->GetPlayerInfo(n, &pi) && pi.name[0])
+            {
+                pi.name[31] = '\0';
+                strcpy_s(szVictim, pi.name);
+            }
+            else if (pCC->m_pNetworkName)
+            {
+                strncpy_s(szVictim, pCC->m_pNetworkName, _TRUNCATE);
+            }
+            else continue;
             char szKiller[32] = { };
             PinKillerName(pPlayer, szKiller, sizeof(szKiller));
-            Push(szKiller, pi.name, "");
+            Push(szKiller, szVictim, "");
         }
     }
     m_alive.swap(aliveNow);

@@ -1,5 +1,6 @@
 #include "BaseClient.h"
 #include "../../Util/Logger/Logger.h"
+#include "../../Entry/Entry.h"
 
 #include "../../Features/VisualRecoil/VisualRecoil.h"
 
@@ -23,9 +24,16 @@ void __fastcall BaseClient::LevelShutdown::Detour(void* ecx, void* edx)
 void __fastcall BaseClient::FrameStageNotify::Detour(void* ecx, void* edx, ClientFrameStage_t curStage)
 {
 	ZTRACE_FIRST("BaseClient::FrameStageNotify");
-	F::VisualRecoil.FrameStageNotify(curStage);
+
+	if (G::ModuleEntry.IsShuttingDown())
+	{
+		Table.Original<FN>(Index)(ecx, edx, curStage);
+		return;
+	}
 
 	Table.Original<FN>(Index)(ecx, edx, curStage);
+
+	F::VisualRecoil.FrameStageNotify(curStage);
 }
 
 void BaseClient::Init()

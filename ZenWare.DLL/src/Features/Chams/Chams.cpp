@@ -76,7 +76,7 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 	if (nLocalIndex >= 0)
 	{
 		IClientEntity* pLocalEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
-		if (pLocalEnt) pLocal = pLocalEnt->As<C_TerrorPlayer*>();
+		if (G::Util.IsPlayerEntity(pLocalEnt)) pLocal = pLocalEnt->As<C_TerrorPlayer*>();
 	}
 	if (!pLocal)
 		return false;

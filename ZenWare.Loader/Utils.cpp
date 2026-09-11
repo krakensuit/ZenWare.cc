@@ -3,6 +3,7 @@
 
 #include <tlhelp32.h>
 #include <cstdarg>
+#include <mutex>
 
 namespace LoaderUtil
 {
@@ -13,9 +14,9 @@ namespace
 {
 	HANDLE s_hFile = INVALID_HANDLE_VALUE;
 	CRITICAL_SECTION s_csFile = { };
-	bool s_bCsInit = false;
+	std::once_flag s_csOnce;
 
-	void FileLock() { if (!s_bCsInit) { InitializeCriticalSection(&s_csFile); s_bCsInit = true; } EnterCriticalSection(&s_csFile); }
+	void FileLock() { std::call_once(s_csOnce, [] { InitializeCriticalSection(&s_csFile); }); EnterCriticalSection(&s_csFile); }
 	void FileUnlock() { LeaveCriticalSection(&s_csFile); }
 
 	void WriteFileLine(const char* const szLine)

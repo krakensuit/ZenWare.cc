@@ -621,12 +621,16 @@ void CFeatures_ESP::DrawTeam(C_TerrorPlayer* pLocal)
 		C_TerrorPlayer* pT = pEntity->As<C_TerrorPlayer*>();
 		if (!pT || pT->GetTeamNumber() != nLocalTeam)
 			continue;
-		const int nHp = pT->GetHealth();
-		if (pT->deadflag() || pT->m_lifeState() != 0 || nHp <= 0)
+		//Сначала дешёвые нетвары, виртуалка GetHealth — после гейта.
+		if (pT->deadflag() || pT->m_lifeState() != 0)
+			continue;
+		const int nHp = U::Math.Clamp(pT->GetHealth(), 0, 200);
+		if (nHp <= 0)
 			continue;
 		player_info_t pi = { };
 		if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 			continue;
+		pi.name[31] = '\0';
 
 		const int nMaxHp = U::Math.Clamp(pT->m_iMaxHealth(), 1, 200);
 		const int nPct = U::Math.Clamp(nHp * 100 / nMaxHp, 0, 100);

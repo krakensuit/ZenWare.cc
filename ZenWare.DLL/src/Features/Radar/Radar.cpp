@@ -85,19 +85,22 @@ void CFeatures_Radar::Render()
 			Color clr(255, 255, 255, 255);
 			bool bWant = false;
 			const int nID = pCC->m_ClassID;
-			if (nID == CTerrorPlayer || nID == SurvivorBot)
-			{
-				C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
-				if (!pPl || pPl->deadflag() || pPl->m_lifeState() != 0 || pPl->GetHealth() <= 0)
-					continue;
+		if (nID == CTerrorPlayer || nID == SurvivorBot)
+		{
+			C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
+			if (!pPl || pPl->deadflag() || pPl->m_lifeState() != 0 || pPl->GetHealth() <= 0)
+				continue;
+			//Госта чамсы и IsValidTarget режут, а радар рисовал.
+			if (pPl->m_isGhost())
+				continue;
 				const int nTeam = pPl->GetTeamNumber();
 				if (!G::Util.IsValidTeam(nTeam))
 					continue;
 				clr = (nTeam == nLocalTeam) ? Vars::Chams::clrAlly : Vars::Chams::clrEnemy;
 				bWant = true;
 			}
-			else if (nID == Hunter || nID == Smoker || nID == Jockey || nID == Spitter || nID == Charger || nID == Tank || nID == Witch)
-			{
+		else if (nID == Hunter || nID == Smoker || nID == Jockey || nID == Spitter || nID == Charger || nID == Tank)
+		{
 				C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
 				if (!pPl || pPl->m_lifeState() != 0)
 					continue;
@@ -106,8 +109,10 @@ void CFeatures_Radar::Render()
 				clr = (nTeam == nLocalTeam) ? Vars::Chams::clrAlly : Vars::Chams::clrEnemy;
 				bWant = true;
 			}
-			else if (nID == Infected)
-			{
+		//Ведьма везде (ESP.DrawBoss, Hitmarker) — C_Infected через
+		//IsInfectedAlive, а не C_BasePlayer с чужими оффсетами.
+		else if (nID == Infected || nID == Witch)
+		{
 				C_Infected* pInf = pEntity->As<C_Infected*>();
 				if (!pInf || !G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
 					continue;
@@ -168,11 +173,13 @@ void CFeatures_Radar::Render()
 		player_info_t pi = {};
 		if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 			continue;
+		pi.name[31] = '\0';
 		strcpy_s(aNames[nCount], pi.name);
 		nCount++;
 		}
 		const int nY0 = Vars::Radar::bEnabled ? (kY + kSize + 6) : 16;
-		G::Draw.String(EFonts::ESP, 16, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, Lang::T("Spectators (%d)"), nCount);
+		//Формат — литерал: перевод с потерянным %d иначе читает стек.
+		G::Draw.String(EFonts::ESP, 16, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, "%s (%d)", Lang::T("Spectators"), nCount);
 		for (int i = 0; i < nCount; i++)
 			G::Draw.String(EFonts::ESP, 16, nY0 + 14 + i * 13, Color(235, 245, 240, 255), TXT_DEFAULT, "%s", aNames[i]);
 	}
