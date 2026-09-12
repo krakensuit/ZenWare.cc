@@ -235,6 +235,18 @@ void CGlobal_ModuleEntry::Load()
 
 		F::Config.Load();
 		U::Log.Write("[*] Config loaded from \"%s\".", F::Config.FilePath());
+
+		//Диагностика нетваров: нулевой оффсет = имя таблицы/поля не найдено,
+		//все чтения по нему бьют в vtable (баги типа "бхоп не работает").
+		//Пришли хвост лога — сразу видно виновника.
+		U::Log.Write("[*] netvar CBaseEntity.m_vecOrigin=0x%X m_iTeamNum=0x%X m_vecMaxs=0x%X",
+			U::NetVar.Get("CBaseEntity", "m_vecOrigin"), U::NetVar.Get("CBaseEntity", "m_iTeamNum"), U::NetVar.Get("CBaseEntity", "m_vecMaxs"));
+		U::Log.Write("[*] netvar CBasePlayer.deadflag=0x%X m_lifeState=0x%X m_fFlags=0x%X m_nWaterLevel=0x%X",
+			U::NetVar.Get("CBasePlayer", "deadflag"), U::NetVar.Get("CBasePlayer", "m_lifeState"),
+			U::NetVar.Get("CBasePlayer", "m_fFlags"), U::NetVar.Get("CBasePlayer", "m_nWaterLevel"));
+		U::Log.Write("[*] netvar CTerrorPlayer.m_isIncapacitated=0x%X m_isGhost=0x%X CBaseCombatWeapon.m_iClip1=0x%X",
+			U::NetVar.Get("CTerrorPlayer", "m_isIncapacitated"), U::NetVar.Get("CTerrorPlayer", "m_isGhost"),
+			U::NetVar.Get("CBaseCombatWeapon", "m_iClip1"));
 	}
 
 	U::Log.Write("[*] Initializing draw manager (fonts) ...");

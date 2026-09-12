@@ -53,27 +53,27 @@ namespace
 			const int nTeam = pEnt->m_iTeamNum();
 			if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == pLocal->GetTeamNumber())
 				return false;
-		nHpOut = pEnt->GetHealth();
-		vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
-		return nHpOut >= 0;
-	}
+			nHpOut = pEnt->GetHealth();
+			vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
+			return nHpOut >= 0;
+		}
 
-	// Обычные + ведьма.
+		// Обычные + ведьма.
 		if (nID == Infected || nID == Witch)
 		{
-			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
-			C_Infected* pInf = pEntity->As<C_Infected*>();
-			if (!pEnt || !pInf)
-				return false;
-			if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
-				return false;
-		nHpOut = pEnt->GetHealth();
-		vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
-		return nHpOut >= 0;
-	}
+		C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
+		C_Infected* pInf = pEntity->As<C_Infected*>();
+		if (!pEnt || !pInf)
+			return false;
+		if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
+			return false;
+			nHpOut = pEnt->GetHealth();
+			vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
+			return nHpOut >= 0;
+		}
 
-	return false;
-}
+		return false;
+	}
 
 	bool IsVisibleTo(C_TerrorPlayer* pLocal, const Vector& vEye, const Vector& vPoint)
 	{

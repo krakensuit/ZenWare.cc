@@ -5,6 +5,21 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.3] - 2026-09-12
+
+### Fixed / Исправлено
+
+- Menu widgets that ignored clipping (section labels, color swatches,
+  int labels) no longer draw outside the panel. Виджеты меню, игнорировавшие
+  клиппинг, больше не вылезают за панель.
+- English is the default language in the cheat and the loader (saved
+  choice still wins); language switch lives in Misc + F7.
+  Английский по умолчанию в чите и лоадере (сохранённый выбор важнее);
+  переключение — в Misc + F7.
+- Netvar offset diagnostics at init (see `netvar` lines in ZenWare.log) —
+  send the log tail after a crash. Диагностика оффсетов нетваров при
+  старте — пришли хвост лога после краша.
+
 ## [3.8.2] - 2026-09-12
 
 ### Fixed / Исправлено

@@ -595,12 +595,14 @@ void CFeatures_Menu::DrawHelpPopup(const MouseState_t& mouse){
   G::Draw.String(EFonts::MENU_TAHOMA,nX+14,nY+nTitleH+i*nLineH,CLR_TEXT_ON,TXT_DEFAULT,"%s",aLines[i]);
 }
 void CFeatures_Menu::SectionLabel(const char* const szLabel){
- G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,"%s",Lang::T(szLabel));
+	if (RowClipped(m_nItemY, 20)) { m_nItemY += 20; return; }
+	G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,"%s",Lang::T(szLabel));
  G::Draw.Rect(m_rc.nX+12,m_nItemY+17,26,2,CLR_ACCENT_SOFT);
  m_nItemY+=20;
 }
 void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const szLabel,Color* pValue){
- const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+	const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+	if (RowClipped(m_nItemY, nRowH)) { m_nItemY += nRowH; return; }
  static Color kSw[]={ {0,255,171,255},{255,84,84,255},{255,170,0,255},{255,235,0,255},{120,255,120,255},{0,200,255,255},{90,140,255,255},{190,90,255,255},{255,90,200,255},{235,245,240,255} };
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  float flHov=HoverAnim(szLabel,bHover);
@@ -778,7 +780,9 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
  m_nItemY+=nRowH;
 }
 void CFeatures_Menu::LabelInt(const char* szLabel,const int nValue,int nRightPad){
- G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY,CLR_TEXT_ON,TXT_DEFAULT,"%s",Lang::T(szLabel));
+	const int nLblH=G::Draw.GetFontHeight(EFonts::MENU_TAHOMA)+5;
+	if (RowClipped(m_nItemY, nLblH)) { m_nItemY += nLblH; return; }
+	G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+20,m_nItemY,CLR_TEXT_ON,TXT_DEFAULT,"%s",Lang::T(szLabel));
  char szVal[16]={}; sprintf_s(szVal,"%i",nValue);
  G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+m_rc.nW-44-nRightPad,m_nItemY,CLR_ACCENT,TXT_DEFAULT,"%s",szVal);
  m_nItemY+=G::Draw.GetFontHeight(EFonts::MENU_TAHOMA)+5;

@@ -191,7 +191,7 @@ static void LoadLang(){
  DWORD v=0, s=sizeof(v);
  LONG r=RegGetValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",RRF_RT_REG_DWORD,nullptr,&v,&s);
  if(r==ERROR_SUCCESS&&(v<=7)){ LoaderUtil::g_nLang=(v==1||v==2)?(int)(v-1):(int)v; return; }
- LoaderUtil::g_nLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN)?0:1;
+ LoaderUtil::g_nLang=1; // Английский по умолчанию; выбор пользователя — в реестре выше.
 }
 static void SaveLang(){
  DWORD v=(DWORD)LoaderUtil::g_nLang;
@@ -895,7 +895,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  return 0;
 }
 int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
- LoaderUtil::g_nLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN)?0:1;
+ LoaderUtil::g_nLang=1; // Английский по умолчанию.
  LoadLang(); // выбор из реестра поверх системного, если язык уже переключали
  LoaderUtil::InitFileLog();
  LoaderUtil::CleanupOldTempExtracts(); // подчистить старые распаковки из %TEMP%
