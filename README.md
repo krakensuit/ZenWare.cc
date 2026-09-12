@@ -18,15 +18,14 @@
 
 <br /><br />
 
-**Language / Язык / Sprache / Idioma / Idioma / Język / Langue:**
-<a href="#english">English</a> ·
-<a href="#russian">Русский</a> ·
-<a href="README_DE.md">Deutsch</a> ·
-<a href="README_ES.md">Español</a> ·
-<a href="README_PT.md">Português</a> ·
-<a href="README_PL.md">Polski</a> ·
-<a href="README_FR.md">Français</a> ·
-<a href="#legal">Legal</a>
+**🌐 Language / Язык / Sprache / Idioma / Idioma / Język / Langue / 语言:**
+
+| | | | |
+|---|---|---|---|
+| 🇬🇧 [English](#english) | 🇷🇺 [Русский](#russian) | 🇩🇪 [Deutsch](README_DE.md) | 🇪🇸 [Español](README_ES.md) |
+| 🇵🇹 [Português](README_PT.md) | 🇵🇱 [Polski](README_PL.md) | 🇫🇷 [Français](README_FR.md) | 🇨🇳 [中文](README_ZH.md) |
+
+[⚖️ Legal](#legal)
 
 </div>
 

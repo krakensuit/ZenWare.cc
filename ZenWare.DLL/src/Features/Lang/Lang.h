@@ -1,6 +1,6 @@
 #pragma once
 
-// Языки всего чита: 0 EN, 1 RU, 2 DE, 3 ES, 4 PT, 5 PL, 6 FR. Индекс живёт в Vars::Menu::nLang
+// Языки всего чита: 0 EN, 1 RU, 2 DE, 3 ES, 4 PT, 5 PL, 6 FR, 7 ZH. Индекс живёт в Vars::Menu::nLang
 // (сохраняется в конфиг как menu.lang), T() переводит подписи меню по
 // EN-оригиналу. Внутренние ID везде остаются английскими: помощь, анимации
 // и конфиг от языка не зависят. IsRu() оставлен для хелпов, у них только RU/EN.
@@ -13,7 +13,7 @@
 
 namespace Lang
 {
-	inline constexpr int kCount = 7; // 0 EN, 1 RU, 2 DE, 3 ES, 4 PT, 5 PL, 6 FR
+	inline constexpr int kCount = 8; // 0 EN, 1 RU, 2 DE, 3 ES, 4 PT, 5 PL, 6 FR, 7 ZH
 
 	inline int Cur()
 	{
@@ -33,6 +33,7 @@ namespace Lang
 			case 4: return "Português";
 			case 5: return "Polski";
 			case 6: return "Français";
+			case 7: return "中文";
 			default: return "English";
 		}
 	}
@@ -109,6 +110,7 @@ namespace Lang
 			{"Language: Portuguese >","Язык: Португальский >"},
 			{"Language: Polish >","Язык: Польский >"},
 			{"Language: French >","Язык: Французский >"},
+			{"Language: Chinese >","Язык: Китайский >"},
 			{"F11 = unload cheat","F11 = выгрузить чит"},
 			{"drag header | WASD free | F11 unload | %d fps","тащи за шапку | WASD свободны | F11 выгрузка | %d fps"},
 			{"[press key]","[нажми клавишу]"}, {"off","выкл"},
@@ -180,6 +182,7 @@ namespace Lang
 			{"Language: Portuguese >","Sprache: Portugiesisch >"},
 			{"Language: Polish >","Sprache: Polnisch >"},
 			{"Language: French >","Sprache: Französisch >"},
+			{"Language: Chinese >","Sprache: Chinesisch >"},
 			{"F11 = unload cheat","F11 = Cheat entladen"},
 			{"drag header | WASD free | F11 unload | %d fps","Kopfzeile ziehen | WASD frei | F11 Entladen | %d fps"},
 			{"[press key]","[Taste drücken]"}, {"off","aus"},
@@ -251,6 +254,7 @@ namespace Lang
 			{"Language: Portuguese >","Idioma: Portugués >"},
 			{"Language: Polish >","Idioma: Polaco >"},
 			{"Language: French >","Idioma: Francés >"},
+			{"Language: Chinese >","Idioma: Chino >"},
 			{"F11 = unload cheat","F11 = descargar cheat"},
 			{"drag header | WASD free | F11 unload | %d fps","arrastra cabecera | WASD libres | F11 descargar | %d fps"},
 			{"[press key]","[pulsa tecla]"}, {"off","apagado"},
@@ -322,6 +326,7 @@ namespace Lang
 			{"Language: Portuguese >","Idioma: Português >"},
 			{"Language: Polish >","Idioma: Polaco >"},
 			{"Language: French >","Idioma: Francês >"},
+			{"Language: Chinese >","Idioma: Chinês >"},
 			{"F11 = unload cheat","F11 = descarregar cheat"},
 			{"drag header | WASD free | F11 unload | %d fps","arrasta topo | WASD livres | F11 descarregar | %d fps"},
 			{"[press key]","[prime tecla]"}, {"off","desligado"},
@@ -392,6 +397,7 @@ namespace Lang
 			{"Language: German >","Język: Niemiecki >"}, {"Language: Spanish >","Język: Hiszpański >"},
 			{"Language: Portuguese >","Język: Portugalski >"}, {"Language: Polish >","Język: Polski >"},
 			{"Language: French >","Język: Francuski >"},
+			{"Language: Chinese >","Język: Chiński >"},
 			{"F11 = unload cheat","F11 = wyładuj cheata"},
 			{"drag header | WASD free | F11 unload | %d fps","ciągnij za pasek | WASD wolne | F11 wyładuj | %d fps"},
 			{"[press key]","[naciśnij klawisz]"}, {"off","wył."},
@@ -462,12 +468,83 @@ namespace Lang
 			{"Language: German >","Langue: Allemand >"}, {"Language: Spanish >","Langue: Espagnol >"},
 			{"Language: Portuguese >","Langue: Portugais >"}, {"Language: Polish >","Langue: Polonais >"},
 			{"Language: French >","Langue: Français >"},
+			{"Language: Chinese >","Langue: Chinois >"},
 			{"F11 = unload cheat","F11 = décharger le cheat"},
 			{"drag header | WASD free | F11 unload | %d fps","tire le bandeau | WASD libres | F11 décharger | %d fps"},
 			{"[press key]","[touche]"}, {"off","off"},
 			{"killed","a tué"}, {"died","est mort"}, {"strafes","strafes"}, {"sync","sync"},
 		};
-		const auto& tbl = (Cur() == 2) ? tblDe : (Cur() == 3) ? tblEs : (Cur() == 4) ? tblPt : (Cur() == 5) ? tblPl : (Cur() == 6) ? tblFr : tblRu;
+		static const std::map<std::string, std::string> tblZh = {
+			{"Visuals","视觉"}, {"Move","移动"}, {"View","视角"}, {"Combat","战斗"}, {"Misc","杂项"},
+			{"ESP box","ESP框"}, {"ESP health bar","ESP血条"}, {"ESP name","ESP名字"},
+			{"ESP distance","ESP距离"}, {"ESP items","ESP物品"}, {"ESP commons","ESP小怪"},
+			{"ESP special infected","ESP特感"}, {"ESP witch","ESP女巫"},
+			{"Snaplines","连线"}, {"Filled boxes","填充框"},
+			{"HP text near bar","血量数字"}, {"Weapon text","武器名"},
+			{"Ammo count","弹药"}, {"Show teammates","显示队友"},
+			{"Team HP panel","队伍血量"}, {"Throwable timers","投掷物计时"},
+			{"Chams","透视上色"}, {"Chams through walls","穿墙上色"}, {"Chams palette >","上色方案 >"},
+			{"No visual recoil","无后座视觉"},
+			{"Bunny hop","连跳"}, {"Bhop: Perfect >","连跳:完美 >"}, {"Bhop: Legit >","连跳:拟人 >"},
+			{"Auto strafe","自动摆动"},
+			{"Strafe: Legit >","摆动:拟人 >"}, {"Strafe: Rage >","摆动:Rage >"},
+			{"Strafe: W-Only >","摆动:W-Only >"}, {"Strafe: Directional >","摆动:方向 >"},
+			{"Bhop delay","连跳延迟"}, {"Edge jump","边缘跳"}, {"Edge bug","边缘bug"}, {"Jump bug","跳跃bug"},
+			{"Null movement","空移动"}, {"Fast stop","急停"}, {"Speed HUD","速度显示"},
+			{"Jump stats","跳跃统计"}, {"Prestrafe","预加速"}, {"Long jump helper","远跳辅助"},
+			{"Auto duck","自动下蹲"},
+			{"FOV world x100","世界FOV x100"}, {"FOV viewmodel x100","武器FOV x100"}, {"No fog","无雾"}, {"Full bright","高亮"},
+			{"Third person","第三人称"}, {"3rd person distance","相机距离"},
+			{"Crosshair","准星"}, {"Crosshair color","准星颜色"}, {"Crosshair size","准星大小"}, {"FPS / pos overlay","FPS显示"},
+			{"Grenade path","投掷物轨迹"}, {"Landing marker","落点标记"},
+			{"Aimbot","自瞄"}, {"Auto shoot","自动开火"}, {"Silent aim","静默自瞄"},
+			{"Hitbox: Head >","部位:头 >"}, {"Hitbox: Center >","部位:身体 >"},
+			{"Priority: FOV >","优先:FOV >"}, {"Priority: Distance >","优先:距离 >"},
+			{"Visible only","仅可见"}, {"Skip incapped","跳过倒地"},
+			{"Target commons","目标:小怪"}, {"Target specials","目标:特感"},
+			{"Aim FOV x10","自瞄FOV x10"}, {"Smoothing","平滑"},
+			{"Per-weapon aim","按武器自瞄"},
+			{"Weapon group: Rifles >","分组:步枪 >"}, {"Weapon group: SMG >","分组:冲锋枪 >"},
+			{"Weapon group: Shotguns >","分组:霰弹枪 >"}, {"Weapon group: Snipers >","分组:狙击枪 >"},
+			{"Weapon group: Pistols >","分组:手枪 >"},
+			{"Wpn FOV x10","武器FOV x10"}, {"Wpn smoothing","武器平滑"},
+			{"Wpn hitbox: Head >","武器部位:头 >"}, {"Wpn hitbox: Center >","武器部位:身体 >"},
+			{"Aimbot key","自瞄按键"}, {"Trigger bot","扳机"},
+			{"Trigger visible only","仅可见(扳机)"}, {"Trigger key","扳机按键"},
+			{"Auto pistol","自动手枪"}, {"Auto shove","自动推"},
+			{"No spread","无散布"}, {"Killfeed","击杀播报"},
+			{"Hitmarker","命中标记"}, {"Hit sound","命中音效"},
+			{"Damage numbers","伤害数字"}, {"Hit pitch","音调"},
+			{"Number lifetime","数字时长"}, {"Cross hitmark","命中十字"},
+			{"Session stats","本局统计"}, {"Damage flash","受伤闪屏"},
+			{"Damage arrow","伤害方向"}, {"No screen effects","无屏幕特效"},
+			{"Common counter","小怪计数"},
+			{"Weapon HUD","武器HUD"}, {"Reload alerts","换弹提醒"},
+			{"ESP max distance","ESP距离"}, {"Hide hands","隐藏手臂"},
+			{"Spit alert","口水提醒"}, {"SPIT! MOVE","口水!快跑"},
+			{"Min damage","最小伤害"}, {"ESP panic key","ESP隐藏键"},
+			{"Radar","雷达"}, {"Spectators","旁观者"},
+			{"Spectators (%d)","旁观者(%d)"},
+			{"Alerts","警报"}, {"Tank alert","Tank警报"}, {"Witch alert","女巫警报"},
+			{"SI list","特感列表"}, {"Pinned warning","被控警报"}, {"Revive alert","救人警报"},
+			{"Tank HP bar","Tank血条"}, {"PINNED","被控"}, {"REVIVE","快救人"},
+			{"wriggle WASD+mouse","挣扎WASD+鼠标"},
+			{"TANK","TANK"}, {"WITCH","女巫"},
+			{"Save config","保存配置"}, {"Load config","读取配置"},
+			{"Config slot: 1 >","配置槽:1 >"}, {"Config slot: 2 >","配置槽:2 >"},
+			{"Config slot: 3 >","配置槽:3 >"},
+			{"Menu key","菜单按键"}, {"STYLE","样式"},
+			{"Menu accent","菜单颜色"}, {"ESP enemy","ESP敌人"}, {"ESP ally","ESP队友"}, {"Chams tank","Chams:Tank"},
+			{"Language: English >","语言:英语 >"}, {"Language: Russian >","语言:俄语 >"},
+			{"Language: German >","语言:德语 >"}, {"Language: Spanish >","语言:西班牙语 >"},
+			{"Language: Portuguese >","语言:葡萄牙语 >"}, {"Language: Polish >","语言:波兰语 >"},
+			{"Language: French >","语言:法语 >"}, {"Language: Chinese >","语言:中文 >"},
+			{"F11 = unload cheat","F11 = 卸载"},
+			{"drag header | WASD free | F11 unload | %d fps","拖动标题 | WASD自由 | F11卸载 | %d fps"},
+			{"[press key]","[按键]"}, {"off","关"},
+			{"killed","击杀"}, {"died","死亡"}, {"strafes","摆动"}, {"sync","同步"},
+		};
+		const auto& tbl = (Cur() == 2) ? tblDe : (Cur() == 3) ? tblEs : (Cur() == 4) ? tblPt : (Cur() == 5) ? tblPl : (Cur() == 6) ? tblFr : (Cur() == 7) ? tblZh : tblRu;
 		auto it = tbl.find(szEn);
 		return it != tbl.end() ? it->second.c_str() : szEn;
 	}
