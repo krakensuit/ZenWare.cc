@@ -5,6 +5,13 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+### Changed / Изменено
+
+- All 8 READMEs rewritten with the expanded template (about, how it works,
+  detailed features, config/logs, structure, screenshots), badges bumped to
+  v3.8. Все 8 README переписаны по расширенному шаблону, бейджи подняты
+  до v3.8.
+
 ## [3.8] - 2026-09-12
 
 ### Changed / Изменено

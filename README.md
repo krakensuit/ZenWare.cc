@@ -6,7 +6,7 @@
 
 **Internal + External training software for Left 4 Dead 2**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.7`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.8`
 
 <br />
 
@@ -61,12 +61,12 @@ and grew into three independent tools in one solution (`ZenWare.sln`, `Release |
 
 | Part | Mode | What it does | Output |
 |---|---|---|---|
-| `ZenWare.DLL` | Internal (injected) | Full cheat: ESP, Chams, Aimbot, Movement, in-game menu | `bin/Release/ZenWare.dll` (x86, /MT) |
+| `ZenWare.DLL` | Internal (injected) | Full cheat: corner ESP, Chams, Aimbot, Movement, in-game menu | `bin/Release/ZenWare.dll` (x86, /MT) |
 | `ZenWare.Loader` | GUI launcher, local build only | Manual-map / LoadLibrary injection, themes, 8 languages | local `dist/ZenWare.exe`, never published |
 | `ZenWare.External` | External (no injection) | RPM reads + GDI overlay + `SendInput` bhop/strafe | `bin/Release/ZenWare.External.exe` |
 
 New to this kind of software? Start with the **External** overlay — it never
-touches game memory for writing and is the safest way to study the pipeline.
+writes to game memory and is the safest way to study the pipeline.
 Details: [SECURITY.md](SECURITY.md) · Third-party: [NOTICE.md](NOTICE.md) ·
 License: [LICENSE](LICENSE) · Runtime wiring: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -111,20 +111,25 @@ only. Signature + anchor + validation resolver re-finds addresses every run.
 <details open>
 <summary><b>Visuals</b> — ESP · Chams · Overlays</summary>
 
-- **ESP** — boxes, health bar + optional HP text, names, distance, weapons
-  with clip ammo, ground items, commons, all Special Infected including
-  Boomer (class-name fallback for foreign builds), distance limit
+- **ESP** — corner brackets (team-colored), bordered health bar + optional
+  HP text, shadowed names, distance, weapons with clip ammo, ground items,
+  commons, all Special Infected incl. Boomer (class-name fallback for
+  foreign builds), optional ESP max-distance limit, dimmed snaplines
 - **Chams** — 5 palettes, separate colors for enemies / allies / Tank,
   through-walls toggle, ghost and dormant filtering
-- **World** — NoFog, separate world + viewmodel FOV sliders, thirdperson
-  with distance slider, viewmodel hide, custom crosshair, FPS/pos/HP overlay
+- **World** — NoFog, Fullbright toggle, separate world + viewmodel FOV
+  sliders, thirdperson with distance slider, viewmodel hide, custom
+  crosshair, FPS / position / HP overlay, alive-commons counter
 - **Intel** — 2D yaw-rotated radar, spectator list (observer targets),
-  Tank / Witch distance alerts, polled killfeed with slide-in cards,
-  hitmarker with hitsound, damage numbers and session stats
-- **Team play** — pinned-by-Smoker/Hunter warning, revive alert, Tank HP bar,
-  team HP panel, nearby-SI list, spit (goo) alert, thrown-grenade timers
-- **Feedback** — cross hitmark, hits/shots/accuracy stats, red damage flash,
-  damage-direction arrow to the last attacker, min-damage filter
+  Tank / Witch distance alerts, polled killfeed with animated slide-in
+  cards, hitmarker with hitsound, damage numbers, cross hitmark and
+  session stats (hits / shots / accuracy)
+- **Team play** — pinned-by-Smoker/Hunter warning, revive alert, Tank HP
+  bar, team HP panel, nearby-SI list with its own panel, spit (goo) alert,
+  thrown-grenade timers (pipe / molotov fire)
+- **Feedback** — red damage flash, damage-direction arrow pointing at the
+  last attacker, min-damage filter, weapon HUD with clip + reserve ammo,
+  yellow `RELOADING` and red low-ammo warnings
 - **Throwables** — grenade trajectory preview (molotov / pipe / bile /
   grenade launcher) with bounce simulation and landing marker
 
@@ -138,7 +143,8 @@ only. Signature + anchor + validation resolver re-finds addresses every run.
 - **Per-weapon tuning** — own FOV / smoothing / hitbox per group (rifles,
   SMGs, shotguns, snipers, pistols)
 - **Helpers** — TriggerBot (fires on the post-aim ray, no 1-tick lag),
-  AutoShove (frees pinned mates), AutoPistol, NoSpread (11-gun whitelist)
+  AutoShove (frees pinned mates), AutoPistol, NoSpread (11-gun whitelist,
+  on by default)
 
 </details>
 
@@ -149,23 +155,26 @@ only. Signature + anchor + validation resolver re-finds addresses every run.
   LongJump helper, FastStop, Prestrafe, AutoDuck, configurable jump delay
 - **Strafe** — legit / rage / W-only / directional AutoStrafe
 - **JumpStats** — KZ-style panel: distance, prestrafe, max speed, fall,
-  height, airtime, live sync %, strafe count, JB / EB counters
+  jump height, airtime, live sync % while airborne, strafe count,
+  JB / EB session counters
 
 </details>
 
 <details>
 <summary><b>Menu / System</b></summary>
 
-- In-game menu (`INSERT`): 5 tabs, per-tab scroll, animated RGB logo,
-  `?` help popups (EN + RU), color swatches, key binding rows, sliders
+- In-game menu (`INSERT`): 5 tabs (Visuals / Move / View / Combat / Misc),
+  per-tab scroll, animated RGB logo, `?` help popups (EN + RU), color
+  swatches, key binding rows, sliders, panic key to hide ESP instantly
 - 8 interface languages with live switching (button or `F7`):
   EN / RU / DE / ES / PT / PL / FR / ZH
 - Config — 3 slots (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`),
   `bool / int / float / Color`, float sliders use int proxies with resync
 - Logger — `%TEMP%/ZenWare.log` relocated to `<gamedir>/ZenWare.log`
   (per-PID fallback), crash records with `module+offset` breadcrumbs
-- Offsets cache — `<gamedir>/ZenWare.offsets` (auto, delete to force rescan);
-  `Tools/SigScan` verifies all 15 patterns offline against your game files
+- Offsets cache — `<gamedir>/ZenWare.offsets` (auto, delete to force
+  rescan); `Tools/SigScan` verifies all 15 patterns offline against your
+  game files
 
 </details>
 
@@ -219,13 +228,15 @@ External-only (no injection): run your local
 | `MOUSE4` (hold) | Aimbot (default) |
 
 Rebind: `Misc → Menu key / Aimbot key` — click → `[press key]` → press a key, `ESC` = off.
+ESP panic key hides all boxes instantly (bind in `Visuals → ESP`).
 
 <a id="config--logs"></a>
 ### Config & logs
 
 - Config slots live next to the game DLL path resolution: `ZenWare.cfg`,
-  `ZenWare2.cfg`, `ZenWare3.cfg` — plain `key=value`, one value per line.
-  Session-only values (JB/EB counters, notify timestamps) are never saved.
+  `ZenWare2.cfg`, `ZenWare3.cfg` — plain `key=value`, one value per line
+  (117 keys). Session-only values (JB/EB counters, notify timestamps) are
+  never saved.
 - Runtime log: `<gamedir>/left4dead2/ZenWare.log`. Crash reports look like
   `[!!!] EXCEPTION code=... at module+0x...` followed by the last breadcrumb
   — that pair is everything needed to locate a crash, no dumps required.
