@@ -82,6 +82,22 @@ void CFeatures_Alerts::Render()
 	const int nCX = G::Draw.m_nScreenW / 2;
 	int nY = 96;
 
+	// Центрированная «пилюля»: тень + градиент + рамка + акцент сверху.
+	// Возвращает высоту, caller двигает nY сам.
+	auto Pill = [&](EFonts eFont, const char* szText, Color clrText, Color clrAccent, int nCX_, int nY_) -> int
+	{
+		if (!szText || !szText[0]) return 0;
+		const int nW = G::Draw.GetTextWidth(eFont, szText) + 30;
+		const int nH = G::Draw.GetFontHeight(eFont) + 12;
+		const int nX = nCX_ - nW / 2;
+		G::Draw.Rect(nX + 2, nY_ + 2, nW, nH, Color(0, 0, 0, 110));
+		G::Draw.GradientRect(nX, nY_, nX + nW, nY_ + nH, Color(20, 22, 21, 215), Color(10, 11, 10, 215), false);
+		G::Draw.OutlinedRect(nX, nY_, nW, nH, Color(0, 0, 0, 200));
+		G::Draw.Rect(nX, nY_, nW, 2, clrAccent);
+		G::Draw.String(eFont, nCX_, nY_ + 6, clrText, TXT_CENTERX, "%s", szText);
+		return nH;
+	};
+
 	// Пин на нас — самое срочное, поверх всего.
 	if (Vars::Alerts::bPinned && !pLocal->deadflag() && pLocal->m_lifeState() == 0)
 	{
@@ -92,20 +108,21 @@ void CFeatures_Alerts::Render()
 		else if (pLocal->m_carryAttacker().IsValid() || pLocal->m_pummelAttacker().IsValid()) szPin = "CHARGER";
 		if (szPin)
 		{
+			char szPinTitle[64] = { };
+			sprintf_s(szPinTitle, "%s: %s", Lang::T("PINNED"), szPin);
 			const float flPulse = 0.6f + 0.4f * sinf((float)(GetTickCount64() % 6283) / 1000.0f * 6.0f);
 			Color clr(255, (int)(60 + 40 * (1.0f - flPulse)), (int)(60 + 40 * (1.0f - flPulse)), 255);
-			G::Draw.String(EFonts::MENU_TAB, nCX, nY, clr, TXT_CENTERXY, "%s: %s", Lang::T("PINNED"), szPin);
-			nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
-			G::Draw.String(EFonts::MENU_CONSOLAS, nCX, nY, Color(235, 245, 240, 255), TXT_CENTERXY, "%s", Lang::T("wriggle WASD+mouse"));
-			nY += G::Draw.GetFontHeight(EFonts::MENU_CONSOLAS) + 8;
+			nY += Pill(EFonts::MENU_TAB, szPinTitle, clr, Color(255, 70, 70, 255), nCX, nY) + 4;
+			nY += Pill(EFonts::MENU_CONSOLAS, Lang::T("wriggle WASD+mouse"), Color(235, 245, 240, 255), Color(0, 255, 171, 255), nCX, nY) + 6;
 		}
 	}
 	if (bTank)
 	{
 		const float flPulse = 0.6f + 0.4f * sinf((float)(GetTickCount64() % 6283) / 1000.0f * 3.0f);
 		Color clr(255, (int)(60 + 40 * (1.0f - flPulse)), (int)(60 + 40 * (1.0f - flPulse)), 255);
-		G::Draw.String(EFonts::MENU_TAB, nCX, nY, clr, TXT_CENTERXY, "%s %.0fm", Lang::T("TANK"), flTankD);
-		nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
+		char szTank[64] = { };
+		sprintf_s(szTank, "%s %.0fm", Lang::T("TANK"), (double)flTankD);
+		nY += Pill(EFonts::MENU_TAB, szTank, clr, Color(255, 70, 70, 255), nCX, nY) + 4;
 		if (Vars::Alerts::bTankHp && pTankEnt)
 		{
 			//pTankEnt может быть name-совпадением (камень танка): клампим оба.
@@ -124,8 +141,9 @@ void CFeatures_Alerts::Render()
 	}
 	if (bWitch)
 	{
-		G::Draw.String(EFonts::MENU_TAB, nCX, nY, Color(200, 0, 255, 255), TXT_CENTERXY, "%s %.0fm", Lang::T("WITCH"), flWitchD);
-		nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
+		char szWitch[64] = { };
+		sprintf_s(szWitch, "%s %.0fm", Lang::T("WITCH"), (double)flWitchD);
+		nY += Pill(EFonts::MENU_TAB, szWitch, Color(200, 0, 255, 255), Color(200, 0, 255, 255), nCX, nY) + 4;
 	}
 
 	// Блевотина под ногами: плевок плевальщицы бьёт по площади, радиус ~4м.
@@ -158,8 +176,7 @@ void CFeatures_Alerts::Render()
 		{
 			const float flPulse = 0.6f + 0.4f * sinf((float)(GetTickCount64() % 6283) / 1000.0f * 6.0f);
 			Color clr(255, (int)(60 + 40 * (1.0f - flPulse)), (int)(60 + 40 * (1.0f - flPulse)), 255);
-			G::Draw.String(EFonts::MENU_TAB, nCX, nY, clr, TXT_CENTERXY, "%s", Lang::T("SPIT! MOVE"));
-			nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
+			nY += Pill(EFonts::MENU_TAB, Lang::T("SPIT! MOVE"), clr, Color(255, 70, 70, 255), nCX, nY) + 4;
 		}
 	}
 
@@ -206,8 +223,9 @@ void CFeatures_Alerts::Render()
 		}
 		if (pBest && szBestName)
 		{
-			G::Draw.String(EFonts::MENU_TAB, nCX, nY, Color(0, 255, 171, 255), TXT_CENTERXY, "%s: %s %.0fm", Lang::T("REVIVE"), szBestName, flBestD);
-			nY += G::Draw.GetFontHeight(EFonts::MENU_TAB) + 6;
+			char szRevive[96] = { };
+			sprintf_s(szRevive, "%s: %s %.0fm", Lang::T("REVIVE"), szBestName, (double)flBestD);
+			nY += Pill(EFonts::MENU_TAB, szRevive, Color(0, 255, 171, 255), Color(0, 255, 171, 255), nCX, nY) + 4;
 		}
 	}
 
@@ -265,15 +283,18 @@ void CFeatures_Alerts::Render()
 
 		if (nSI > 0)
 		{
-			// Слева, ниже панели команды: с киллфидом справа не пересекается.
-			const int nX = 16;
-			int nSY = 336;
-			G::Draw.String(EFonts::MENU_CONSOLAS, nX, nSY, Color(140, 160, 152, 255), TXT_DEFAULT, "SI NEARBY");
-			for (int i = 0; i < nSI && i < 8; i++)
-			{
-				nSY += 16;
-				G::Draw.String(EFonts::MENU_CONSOLAS, nX, nSY, Color(255, 120, 80, 255), TXT_DEFAULT, "%s %.0fm", aSI[i].szName, aSI[i].flD);
-			}
+			// Панелька под список: тень + градиент + рамка + акцент слева.
+			const int nRows = nSI < 8 ? nSI : 8;
+			const int nLH = 16;
+			const int nPW = 190, nPH = 26 + nRows * nLH + 6;
+			const int nX = 16, nSY0 = 336;
+			G::Draw.Rect(nX + 2, nSY0 + 2, nPW, nPH, Color(0, 0, 0, 110));
+			G::Draw.GradientRect(nX, nSY0, nX + nPW, nSY0 + nPH, Color(20, 22, 21, 215), Color(10, 11, 10, 215), false);
+			G::Draw.OutlinedRect(nX, nSY0, nPW, nPH, Color(0, 0, 0, 200));
+			G::Draw.Rect(nX + 1, nSY0 + 1, 3, nPH - 2, Color(0, 255, 171, 255));
+			G::Draw.String(EFonts::MENU_CONSOLAS, nX + 12, nSY0 + 6, Color(140, 160, 152, 255), TXT_DEFAULT, "%s", "SI NEARBY");
+			for (int i = 0; i < nRows; i++)
+				G::Draw.String(EFonts::MENU_CONSOLAS, nX + 12, nSY0 + 24 + i * nLH, Color(255, 120, 80, 255), TXT_DEFAULT, "%s %.0fm", aSI[i].szName, (double)aSI[i].flD);
 		}
 	}
 }

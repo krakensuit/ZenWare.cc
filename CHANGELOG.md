@@ -5,6 +5,17 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8] - 2026-09-12
+
+### Changed / Изменено
+
+- Killfeed cards: auto-width, gradient body, shadow, accent bar, dynamic
+  killer → victim layout. Карточки киллфида: ширина по тексту, градиент,
+  тень, акцент, динамическая вёрстка.
+- Alert pills: pinned / tank / witch / spit / revive now render as centered
+  cards; SI-nearby list got its own panel. Алерты — центрированные
+  карточки; у списка SI рядом своя панель.
+
 ### Changed / Изменено
 
 - Main README is English-only and rewritten (about, how it works, features,

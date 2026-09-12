@@ -36,24 +36,41 @@ void CFeatures_Killfeed::Draw() {
         float vanish = age > 2.5f ? 1.0f - std::clamp((age - 2.5f) / 0.5f, 0.0f, 1.0f) : 1.0f;
         float alpha = appear * vanish;
         if (alpha <= 0.01f) continue;
-        float targetX = (float)G::Draw.m_nScreenW - 320.0f;
+        // Карточка под текст: ширина по замерам, прижата к правому краю.
+        const bool bKill = !e.killer.empty();
+        const char* szWord = Lang::T(bKill ? "killed" : "died");
+        const int wKill = bKill ? G::Draw.GetTextWidth(EFonts::ESP_NAME, e.killer.c_str()) : 0;
+        const int wWord = G::Draw.GetTextWidth(EFonts::ESP, szWord);
+        const int wVict = G::Draw.GetTextWidth(EFonts::ESP_NAME, e.victim.c_str());
+        int w = 12 + wKill + (bKill ? 6 : 0) + wWord + 6 + wVict + 12;
+        if (w < 200) w = 200;
+        if (w > 560) w = 560;
+        const int h = 30;
+        const float targetX = (float)G::Draw.m_nScreenW - (float)w - 16.0f;
         e.curX = Anim::Lerp(e.curX, targetX, 1.0f - expf(-10.0f * dt));
         float yOff = (1.0f - appear) * -16.0f;
         int ix = (int)e.curX;
         int iy = (int)(y + yOff);
-        int w = 300, h = 26;
-        Color bg(14, 16, 15, (int)(210 * alpha));
-        Color border(0, 255, 171, (int)(255 * alpha));
-        G::Draw.Rect(ix, iy, w, h, bg);
-        G::Draw.Rect(ix, iy, 3, h, border);
-        // Name rendering via G::Draw
-        G::Draw.String(EFonts::ESP_NAME, ix + 10, iy + 6, Color(0,255,171,(int)(255*alpha)), TXT_DEFAULT, "%s", e.killer.c_str());
-        if (e.killer.empty())
-            G::Draw.String(EFonts::ESP, ix + 110, iy + 7, Color(255,255,255,(int)(230*alpha)), TXT_DEFAULT, "%s", Lang::T("died"));
+        const int nA = (int)(255 * alpha);
+        // Тень + градиентное тело + рамка + акцентная полоса слева.
+        G::Draw.Rect(ix + 2, iy + 2, w, h, Color(0, 0, 0, (int)(110 * alpha)));
+        G::Draw.GradientRect(ix, iy, ix + w, iy + h, Color(22, 24, 23, (int)(215 * alpha)), Color(10, 11, 10, (int)(215 * alpha)), false);
+        G::Draw.OutlinedRect(ix, iy, w, h, Color(0, 0, 0, (int)(200 * alpha)));
+        if (bKill)
+            G::Draw.Rect(ix + 1, iy + 1, 3, h - 2, Color(0, 255, 171, nA));
         else
-            G::Draw.String(EFonts::ESP, ix + 110, iy + 7, Color(255,255,255,(int)(230*alpha)), TXT_DEFAULT, "%s", Lang::T("killed"));
-        G::Draw.String(EFonts::ESP, ix + 160, iy + 7, Color(255,80,80,(int)(255*alpha)), TXT_DEFAULT, "%s", e.victim.c_str());
-        y += 34.0f;
+            G::Draw.Rect(ix + 1, iy + 1, 3, h - 2, Color(120, 120, 120, nA));
+        int tx = ix + 12;
+        const int ty = iy + 8;
+        if (bKill)
+        {
+            G::Draw.String(EFonts::ESP_NAME, tx, ty, Color(0, 255, 171, nA), TXT_DEFAULT, "%s", e.killer.c_str());
+            tx += wKill + 6;
+        }
+        G::Draw.String(EFonts::ESP, tx, ty + 1, Color(200, 205, 200, (int)(230 * alpha)), TXT_DEFAULT, "%s", szWord);
+        tx += wWord + 6;
+        G::Draw.String(EFonts::ESP_NAME, tx, ty, Color(255, 110, 110, nA), TXT_DEFAULT, "%s", e.victim.c_str());
+        y += (float)(h + 8);
     }
 }
 
