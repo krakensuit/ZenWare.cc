@@ -18,13 +18,14 @@
 
 <br /><br />
 
-**Language / Язык / Sprache / Idioma / Idioma / Język:**
+**Language / Язык / Sprache / Idioma / Idioma / Język / Langue:**
 <a href="#english">English</a> ·
 <a href="#russian">Русский</a> ·
 <a href="README_DE.md">Deutsch</a> ·
 <a href="README_ES.md">Español</a> ·
 <a href="README_PT.md">Português</a> ·
 <a href="README_PL.md">Polski</a> ·
+<a href="README_FR.md">Français</a> ·
 <a href="#legal">Legal</a>
 
 </div>
