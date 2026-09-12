@@ -157,7 +157,7 @@ DWORD WINAPI InjectThread(LPVOID p){
  CManualMapper m; CManualMapper::Params_t pr{};
  pr.hwndLog=g_hMain; pr.dwTargetPid=c->pid; pr.wszDllPath=c->path; pr.pfnLog=&LoaderUtil::Log; pr.pfnStatus=&LoaderUtil::Status;
  bool ok = c->manual ? m.Map(pr) : CManualMapper::InjectStandard(pr);
- if(!ok){ LoaderUtil::Log(g_hMain,"[!] Injection FAILED"); LoaderUtil::Status(g_hMain, LoaderUtil::S("Ошибка","Error")); }
+ if(!ok){ LoaderUtil::Log(g_hMain,"[!] Injection FAILED"); LoaderUtil::Status(g_hMain, LoaderUtil::S("Ошибка","Error","Fehler","Error","Erro","Błąd","Erreur","错误")); }
  EnableWindow(g_hInject,TRUE); InterlockedExchange(&g_busy,0); delete c; return 0;
 }
 static bool FindDll(wchar_t* out){
@@ -181,31 +181,32 @@ static bool FindDll(wchar_t* out){
  return false;
 }
 void RefreshInjectText(){
- SetWindowTextW(g_hInject,LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"));
+ SetWindowTextW(g_hInject,LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT",g_bExternal?L"EXTERNAL STARTEN":L"INJECT",g_bExternal?L"INICIAR EXTERNAL":L"INYECTAR",g_bExternal?L"INICIAR EXTERNAL":L"INJETAR",g_bExternal?L"URUCHOM EXTERNAL":L"WSTRZYKIJ",g_bExternal?L"LANCER EXTERNAL":L"INJECTER",g_bExternal?L"启动 EXTERNAL":L"注入")); 
 }
 void ToggleMode(){
   g_bExternal=!g_bExternal;
   g_flModeTarget=g_bExternal?1.0f:0.0f;
  RefreshInjectText();
- LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)"));
+ LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)",g_bExternal?"Modus: External (eigener Prozess)":"Modus: Internal (DLL-Inject)",g_bExternal?"Modo: External (proceso propio)":"Modo: Internal (inyección DLL)",g_bExternal?"Modo: External (processo próprio)":"Modo: Internal (injeção DLL)",g_bExternal?"Tryb: External (osobny proces)":"Tryb: Internal (wstrzyknięcie DLL)",g_bExternal?"Mode : External (processus séparé)":"Mode : Internal (injection DLL)",g_bExternal?"模式：External（独立进程）":"模式：Internal（注入 DLL）"));
  RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(g_hMain,&hdr,FALSE);
 }
-// Язык UI: 0=авто (система), 1=RU, 2=EN. Хранится в реестре, переживает обновления exe.
+// Язык UI: 0=RU, 1=EN, 2=DE, 3=ES, 4=PT, 5=PL, 6=FR, 7=ZH. Хранится в реестре,
+// переживает обновления exe. Старые значения 1/2 = RU/EN, маппятся на 0/1.
 static void LoadLang(){
  DWORD v=0, s=sizeof(v);
  LONG r=RegGetValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",RRF_RT_REG_DWORD,nullptr,&v,&s);
- if(r==ERROR_SUCCESS&&(v==1||v==2)){ LoaderUtil::g_bRuLang=(v==1); return; }
- LoaderUtil::g_bRuLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN);
+ if(r==ERROR_SUCCESS&&(v<=7)){ LoaderUtil::g_nLang=(v==1||v==2)?(int)(v-1):(int)v; return; }
+ LoaderUtil::g_nLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN)?0:1;
 }
 static void SaveLang(){
- DWORD v=LoaderUtil::g_bRuLang?1:2;
+ DWORD v=(DWORD)LoaderUtil::g_nLang;
  RegSetKeyValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",REG_DWORD,&v,sizeof(v));
 }
 void ToggleLang(){
- LoaderUtil::g_bRuLang=!LoaderUtil::g_bRuLang;
+ LoaderUtil::g_nLang=(LoaderUtil::g_nLang+1)%LoaderUtil::kLangCount;
  SaveLang();
  RefreshInjectText();
- LoaderUtil::Status(g_hMain,LoaderUtil::S("Язык: Русский","Language: English"));
+ LoaderUtil::Status(g_hMain,LoaderUtil::S("Язык: Русский","Language: English","Sprache: Deutsch","Idioma: Español","Idioma: Português","Język: Polski","Langue: Français","语言：中文"));
  if(g_hMain){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(g_hMain,&all,FALSE); }
 }
 void LaunchExternal(){
@@ -231,27 +232,27 @@ void LaunchExternal(){
    wchar_t tmp[MAX_PATH]={};
    if(LoaderUtil::WriteTempFile(L"ZenWare.External.exe",vec,tmp)){
     ShellExecuteW(nullptr,L"open",tmp,nullptr,nullptr,SW_SHOWNORMAL);
-    LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched"));
+     LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched","External gestartet","External iniciado","External iniciado","External uruchomiony","External lancé","External 已启动"));
     return;
    }
    LoaderUtil::Log(g_hMain,"[!] Failed to extract embedded External to TEMP.");
   }
-  LoaderUtil::Status(g_hMain,LoaderUtil::S("External не найден — собери проект","External not found — build it"));
+  LoaderUtil::Status(g_hMain,LoaderUtil::S("External не найден — собери проект","External not found — build it","External fehlt — baue das Projekt","External no encontrado — compílalo","External não encontrado — compile o projeto","Nie znaleziono External — zbuduj projekt","External introuvable — compile le projet","未找到 External——请先构建"));
   LoaderUtil::Log(g_hMain,"[!] External exe not found, tried:");
   for(int i=0;i<3;i++){ char nb[MAX_PATH*2]={}; WideCharToMultiByte(CP_ACP,0,tried[i],-1,nb,sizeof(nb),nullptr,nullptr); LoaderUtil::Log(g_hMain,"[?] %s",nb); }
   return;
  }
  ShellExecuteW(nullptr,L"open",goods,nullptr,nullptr,SW_SHOWNORMAL);
- LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched"));
+  LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched","External gestartet","External iniciado","External iniciado","External uruchomiony","External lancé","External 已启动"));
 }
 void StartInject(){
  wchar_t p[MAX_PATH]={};
- if(!FindDll(p)){ MessageBoxW(g_hMain, LoaderUtil::SW(L"DLL не найдена рядом с лоадером",L"DLL not found next to loader"), L"ZenWare", MB_ICONWARNING); return;}
+  if(!FindDll(p)){ MessageBoxW(g_hMain, LoaderUtil::SW(L"DLL не найдена рядом с лоадером",L"DLL not found next to loader",L"DLL fehlt neben dem Loader",L"DLL no encontrada junto al loader",L"DLL não encontrada ao lado do loader",L"Nie znaleziono DLL obok loadera",L"DLL introuvable à côté du loader",L"加载器旁未找到 DLL"), L"ZenWare", MB_ICONWARNING); return;}
  // Атомарный захват: два быстрых клика не дадут двойной инжект.
  if(InterlockedExchange(&g_busy,1)) return;
- LoaderUtil::Status(g_hMain,LoaderUtil::S("Поиск процесса","Finding process"));
+ LoaderUtil::Status(g_hMain,LoaderUtil::S("Поиск процесса","Finding process","Prozess suchen","Buscando proceso","Procurando processo","Szukanie procesu","Recherche processus","正在查找进程"));
  DWORD pid=LoaderUtil::FindProcessId(L"left4dead2.exe");
- if(!pid){ LoaderUtil::Status(g_hMain,LoaderUtil::S("Игра не найдена","Game not found")); InterlockedExchange(&g_busy,0); return;}
+ if(!pid){ LoaderUtil::Status(g_hMain,LoaderUtil::S("Игра не найдена","Game not found","Spiel nicht gefunden","Juego no encontrado","Jogo não encontrado","Nie znaleziono gry","Jeu introuvable","未找到游戏")); InterlockedExchange(&g_busy,0); return;}
  auto c=new Ctx{pid,p,false};
  HANDLE hThread=CreateThread(nullptr,0,InjectThread,c,0,nullptr);
  if(hThread) CloseHandle(hThread);
@@ -268,13 +269,13 @@ void LaunchGame(){
   }
  }
  if(!steam[0] || GetFileAttributesW(steam)==INVALID_FILE_ATTRIBUTES){
-  LoaderUtil::Status(g_hMain, LoaderUtil::S("Steam не найден","Steam not found"));
+  LoaderUtil::Status(g_hMain, LoaderUtil::S("Steam не найден","Steam not found","Steam nicht gefunden","Steam no encontrado","Steam não encontrado","Nie znaleziono Steam","Steam introuvable","未找到 Steam"));
   return;
  }
  // -applaunch 550 = Left 4 Dead 2, дальше аргументы уходят игре.
  // -insecure обязателен: чит только для локального сервера без VAC.
  ShellExecuteW(nullptr,L"open",steam,L"-applaunch 550 -novid -console -insecure",nullptr,SW_SHOWNORMAL);
- LoaderUtil::Status(g_hMain, LoaderUtil::S("Запуск игры через Steam...","Launching via Steam..."));
+ LoaderUtil::Status(g_hMain, LoaderUtil::S("Запуск игры через Steam...","Launching via Steam...","Spielstart über Steam...","Iniciando juego vía Steam...","Iniciando jogo via Steam...","Uruchamianie gry przez Steam...","Lancement via Steam...","正在通过 Steam 启动游戏..."));
  g_gameSeen=false;
 }
 static COLORREF Mix2(COLORREF a, COLORREF b, int t){
@@ -567,7 +568,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     }
    }
    auto os2=SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
-  RECT hr={0,272,SPL_W-16,292}; DrawTextW(dc,LoaderUtil::SW(L"клик — пропустить",L"click to skip"),-1,&hr,DT_RIGHT|DT_SINGLELINE);
+   RECT hr={0,272,SPL_W-16,292}; DrawTextW(dc,LoaderUtil::SW(L"клик — пропустить",L"click to skip",L"Klick — überspringen",L"clic — omitir",L"clique — pular",L"klik — pomiń",L"clic — passer",L"点击——跳过"),-1,&hr,DT_RIGHT|DT_SINGLELINE);
   SelectObject(dc,os2);
   g_splashQ[3]+=GetTickCount64()-q3; ULONGLONG q4=GetTickCount64();
   BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
@@ -658,9 +659,9 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    g_hMain=h; InitFonts(h); RefreshTheme();
    SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // старт почти прозрачным для fade-in
    g_ullLastTick=GetTickCount64();
-   CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ЗАПУСТИТЬ ИГРУ",L"LAUNCH GAME"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,92,580,36,h,(HMENU)IDC_LAUNCH,nullptr,nullptr);
-   g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
-   g_hStatus=CreateWindowExW(0,L"STATIC",LoaderUtil::SW(L"Готов",L"Ready"),WS_CHILD|WS_VISIBLE,44,204,556,20,h,(HMENU)IDC_STATUS,nullptr,nullptr);
+    CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ЗАПУСТИТЬ ИГРУ",L"LAUNCH GAME",L"SPIEL STARTEN",L"INICIAR JUEGO",L"INICIAR JOGO",L"URUCHOM GRĘ",L"LANCER LE JEU",L"启动游戏"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,92,580,36,h,(HMENU)IDC_LAUNCH,nullptr,nullptr);
+    g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT",g_bExternal?L"EXTERNAL STARTEN":L"INJECT",g_bExternal?L"INICIAR EXTERNAL":L"INYECTAR",g_bExternal?L"INICIAR EXTERNAL":L"INJETAR",g_bExternal?L"URUCHOM EXTERNAL":L"WSTRZYKIJ",g_bExternal?L"LANCER EXTERNAL":L"INJECTER",g_bExternal?L"启动 EXTERNAL":L"注入"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
+    g_hStatus=CreateWindowExW(0,L"STATIC",LoaderUtil::SW(L"Готов",L"Ready",L"Bereit",L"Listo",L"Pronto",L"Gotowy",L"Prêt",L"就绪"),WS_CHILD|WS_VISIBLE,44,204,556,20,h,(HMENU)IDC_STATUS,nullptr,nullptr);
     SendMessageW(g_hStatus,WM_SETFONT,(WPARAM)g_fUI,TRUE);
    // Autopoisk DLL moved into FindDll()
 #if 0
@@ -731,7 +732,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    static int tick=0;
    if(++tick%10==0){
     bool has=LoaderUtil::FindProcessId(L"left4dead2.exe")!=0;
-    if(has&&!g_gameSeen){ g_gameSeen=true; LoaderUtil::Status(g_hMain, LoaderUtil::S("Игра запущена","Game running")); }
+     if(has&&!g_gameSeen){ g_gameSeen=true; LoaderUtil::Status(g_hMain, LoaderUtil::S("Игра запущена","Game running","Spiel läuft","Juego en marcha","Jogo em execução","Gra działa","Jeu en cours","游戏运行中")); }
     if(!has) g_gameSeen=false;
    }
   } break;
@@ -770,7 +771,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     if(PtInRect(&lr,cp)){
      DWORD now=GetTickCount();
      if(now-slc<600){ if(++sln>=3){ sln=0;
-      MessageBoxW(h,LoaderUtil::SW(L"ZenWare.cc — internal & external, x86.\nТы нашёл секрет #1. А второй вводится с клавиатуры...",L"ZenWare.cc — internal & external, x86.\nYou found secret #1. The second one is typed on the keyboard..."),L"ZenWare",MB_ICONINFORMATION); } }
+      MessageBoxW(h,LoaderUtil::SW(L"ZenWare.cc — internal & external, x86.\nТы нашёл секрет #1. А второй вводится с клавиатуры...",L"ZenWare.cc — internal & external, x86.\nYou found secret #1. The second one is typed on the keyboard...",L"ZenWare.cc — internal & external, x86.\nGeheimnis #1 gefunden. Das zweite wird auf der Tastatur eingegeben...",L"ZenWare.cc — internal & external, x86.\nSecreto n.º 1 encontrado. El segundo se escribe con el teclado...",L"ZenWare.cc — internal & external, x86.\nSegredo nº 1 encontrado. O segundo é digitado no teclado...",L"ZenWare.cc — internal & external, x86.\nZnalazłeś sekret nr 1. Drugi wpisuje się na klawiaturze...",L"ZenWare.cc — internal & external, x86.\nSecret n° 1 trouvé. Le second se tape au clavier...",L"ZenWare.cc — internal & external, x86.\n你找到了彩蛋 #1，第二个要用键盘输入……"),L"ZenWare",MB_ICONINFORMATION); } }
      else sln=1;
      slc=now;
     }
@@ -870,12 +871,12 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   RECT fr={20,306,600,326};
    {
     RECT frT={20,306,376,326};
-    DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log"),-1,&frT,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+    DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log",L"Nur lokaler Server (-insecure) • Logs: %TEMP%\\ZenWare.Loader.log",L"Solo servidor local (-insecure) • registros: %TEMP%\\ZenWare.Loader.log",L"Somente servidor local (-insecure) • logs: %TEMP%\\ZenWare.Loader.log",L"Tylko serwer lokalny (-insecure) • logi: %TEMP%\\ZenWare.Loader.log",L"Serveur local uniquement (-insecure) • journaux : %TEMP%\\ZenWare.Loader.log",L"仅本地服务器 (-insecure) • 日志: %TEMP%\\ZenWare.Loader.log"),-1,&frT,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
    }
    {
     // Пилюля обновлений: только открывает страницу релизов в браузере.
     // Ничего не качает и не запускает — проект source-only by design.
-    wchar_t szUpd[64]={}; swprintf_s(szUpd,L"v%ls \u00B7 %ls",ZENWARE_VER_WSTR,LoaderUtil::SW(L"обновления",L"updates"));
+    wchar_t szUpd[64]={}; swprintf_s(szUpd,L"v%ls \u00B7 %ls",ZENWARE_VER_WSTR,LoaderUtil::SW(L"обновления",L"updates",L"Updates",L"novedades",L"atualizações",L"aktualizacje",L"mises à jour",L"更新"));
     RECT ur={rc.right-232,304,rc.right-80,326}; g_rcUpdate=ur;
     COLORREF ufill=g_bUpdHov?Mix2(g_theme.ctl,Acc(),60):g_theme.bg;
     HBRUSH ub=CreateSolidBrush(ufill); HPEN up2=CreatePen(PS_SOLID,1,g_bUpdHov?Acc():g_theme.border);
@@ -893,7 +894,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    SelectObject(dc,lo1); SelectObject(dc,lo2); DeleteObject(lb); DeleteObject(lp2);
    SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT);
    SetTextColor(dc,g_bLangHov?Acc():g_theme.dim);
-   DrawTextW(dc,LoaderUtil::g_bRuLang?L"RU":L"EN",-1,&lr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+   DrawTextW(dc,LoaderUtil::LangCode(),-1,&lr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
   }
   BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
   SelectObject(mem,oldBmp); DeleteObject(bmp); DeleteDC(mem);
@@ -925,7 +926,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    static int si=0;
    int k=(int)w;
    if(k==seq[si]){ if(++si>=10){ si=0; g_bParty=!g_bParty;
-    LoaderUtil::Status(h,LoaderUtil::S(g_bParty?"PARTY MODE включен":"PARTY MODE выключен",g_bParty?"PARTY MODE on":"PARTY MODE off")); } }
+    LoaderUtil::Status(h,LoaderUtil::S(g_bParty?"PARTY MODE включен":"PARTY MODE выключен",g_bParty?"PARTY MODE on":"PARTY MODE off",g_bParty?"PARTY MODE an":"PARTY MODE aus",g_bParty?"PARTY MODE activado":"PARTY MODE desactivado",g_bParty?"PARTY MODE ligado":"PARTY MODE desligado",g_bParty?"PARTY MODE włączony":"PARTY MODE wyłączony",g_bParty?"PARTY MODE activé":"PARTY MODE désactivé",g_bParty?"PARTY MODE 已开启":"PARTY MODE 已关闭")); } }
    else si=(k==seq[0])?1:0;
    break;
   }
@@ -935,7 +936,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  return 0;
 }
 int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
- LoaderUtil::g_bRuLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN);
+ LoaderUtil::g_nLang=(PRIMARYLANGID(GetUserDefaultUILanguage())==LANG_RUSSIAN)?0:1;
  LoadLang(); // выбор из реестра поверх системного, если язык уже переключали
  LoaderUtil::InitFileLog();
  LoaderUtil::CleanupOldTempExtracts(); // подчистить старые распаковки из %TEMP%

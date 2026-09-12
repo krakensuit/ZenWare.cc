@@ -22,7 +22,7 @@
 
 | | | | |
 |---|---|---|---|
-| 🇬🇧 [English](#english) | 🇷🇺 [Русский](#russian) | 🇩🇪 [Deutsch](README_DE.md) | 🇪🇸 [Español](README_ES.md) |
+| 🇬🇧 [English](#english) | 🇷🇺 [Русский](README_RU.md) | 🇩🇪 [Deutsch](README_DE.md) | 🇪🇸 [Español](README_ES.md) |
 | 🇵🇹 [Português](README_PT.md) | 🇵🇱 [Polski](README_PL.md) | 🇫🇷 [Français](README_FR.md) | 🇨🇳 [中文](README_ZH.md) |
 
 [⚖️ Legal](#legal)
@@ -108,7 +108,7 @@ Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). 
 <details>
 <summary><b>Menu / System</b></summary>
 
-- `INSERT` menu · `F11` unload · RU/EN toggle (button + `F7`) · animated RGB logo · `?` help icons · tabs · wheel scroll
+- `INSERT` menu · `F11` unload · language EN/RU/DE/ES/PT/PL/FR/ZH (button + `F7`) · animated RGB logo · `?` help icons · tabs · wheel scroll
 - Config — 3 slots (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`, `bool / int / float / Color`)
 - Logger — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid fallback)
 - Offsets cache — `<gamedir>/ZenWare.offsets` (auto, delete to force rescan)
@@ -160,7 +160,7 @@ External-only (no injection): run your local
 |:---:|---|
 | `INSERT` | Open / close menu |
 | `F11` | Unload |
-| `F7` | Language RU / EN |
+| `F7` | Language EN / RU / DE / ES / PT / PL / FR / ZH |
 | `Space` (hold) | BunnyHop (default) |
 | `MOUSE4` (hold) | Aimbot (default) |
 
@@ -193,144 +193,6 @@ ZenWare.cc/
 | Antivirus flag | Folder → exclusions (heuristic on `WriteProcessMemory` / `CreateRemoteThread`) |
 | Squares instead of letters | Press `F7` (font fallback / language) |
 | External: no boxes | Check top overlay lines (resolver diagnostics) and signatures |
-
----
-
-<a id="russian"></a>
-## Русский
-
-### О проекте
-
-База — [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). Три части, один солюшен (`ZenWare.sln`, `Release | Win32`):
-
-| Часть | Выход |
-|---|---|
-| `ZenWare.DLL` — internal-модуль | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` — GUI-лоадер | локальный `dist/ZenWare.exe`, не публикуется |
-| `ZenWare.External` — оверлей без инжекта | `bin/Release/ZenWare.External.exe` |
-
-### Возможности
-
-<details open>
-<summary><b>Visuals</b> — ESP · Chams · Оверлеи</summary>
-
-- **ESP** — боксы, HP, ники, дистанция, оружие/предметы, обычные, все СИ включая бумера (фолбэк по именам)
-- **Chams** — 5 палитр, союзники / враги / все СИ, сквозь стены
-- **Мир** — NoFog, FOV мира + модели, 3-е лицо, прицел, FPS-оверлей
-- **Инфо** — 2D-радар, наблюдатели, алерты танка / ведьмы, киллфид, хитмаркер (звук + цифры урона)
-- **Команда** — алерт пина, алерт реанима, полоса HP танка, панель HP команды, список особых
-- **Фидбэк** — крест попадания, стата сессии (хиты/выстрелы/точность), вспышка урона, мин. урон, таймеры гранат
-- **Гранаты** — предпросмотр траектории (молотов / пайп / желчь / гранатомёт) с маркером падения
-
-</details>
-
-<details>
-<summary><b>Combat</b> — аим</summary>
-
-- **Aimbot** — silent, приоритет FOV / Distance, head / center, сглаживание, только видимые, обычные + все СИ
-- **По оружию** — свои FOV / сглаживание / хитбокс на группу (винтовки, ПП, дробовики, снайперки, пистолеты)
-- **Помощники** — TriggerBot, AutoShove, AutoPistol, NoSpread (отключаемый)
-
-</details>
-
-<details>
-<summary><b>Movement</b> — баннихоп и стрейфы</summary>
-
-- **Bhop-набор** — perfect / legit BunnyHop, EdgeJump, EdgeBug, JumpBug, LongJump, FastStop, Prestrafe, AutoDuck, JumpStats, SpeedHUD
-- **Стрейф** — legit / rage / w-only / directional AutoStrafe
-
-</details>
-
-<details>
-<summary><b>Меню / Система</b></summary>
-
-- Меню `INSERT` · выгрузка `F11` · RU/EN (кнопка + `F7`) · RGB-логотип · иконки `?` · табы · скролл колесом
-- Конфиг — 3 слота (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`, `bool / int / float / Color`)
-- Лог — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid фолбэк)
-- Кэш оффсетов — `<gamedir>/ZenWare.offsets` (авто, удали для перескана)
-
-</details>
-
-<a id="build-ru"></a>
-### Сборка и запуск — только локально
-
-**1. Сборка**
-
-```powershell
-powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1
-```
-
-**2. Игра** — Steam → L4D2 → параметры запуска:
-
-```text
--insecure -windowed -console
-```
-
-**3. Карта** — консоль игры:
-
-```text
-map c1m1_hotel
-```
-
-**4. Инжект** — собранный лоадер **от администратора** → `ИНЖЕКТ`.
-
-Только External (без инжекта): твой локальный
-`ZenWare.External/bin/Release/ZenWare.External.exe` или `START-ZenWare.bat`.
-
-> Собранный `exe` в public Releases не загружай. Политика: [SECURITY.md](SECURITY.md).
-
-### Требования
-
-| Что | Версия |
-|---|---|
-| ОС | Windows 10/11 x64 |
-| Игра | Steam + Left 4 Dead 2 |
-| IDE | Visual Studio 2022 + `Desktop development with C++` |
-| SDK | Windows SDK `10.0.26100.0` |
-| Цель | `Release` · `Win32` (x86) |
-
-<a id="hotkeys-ru"></a>
-### Клавиши
-
-| Клавиша | Действие |
-|:---:|---|
-| `INSERT` | Меню |
-| `F11` | Выгрузка |
-| `F7` | Язык RU / EN |
-| `Space` (держать) | BunnyHop (по умолчанию) |
-| `MOUSE4` (держать) | Aimbot (по умолчанию) |
-
-Смена: `Misc → Menu key / Aimbot key` — клик → `[press key]` → нажми клавишу, `ESC` = выкл.
-
-### Структура
-
-```text
-ZenWare.cc/
-├── ZenWare.sln                  солюшен (DLL + Loader + External)
-├── ZenWare.DLL/                 internal-модуль (+ MinHook, SDK, Features, Hooks)
-├── ZenWare.Loader/              GUI-лоадер — только локально, без автообновлений
-├── ZenWare.External/            внешний оверлей — ESP, Memory, Movement, Overlay
-├── Tools/SigScan/               проверка сигнатур твоего client.dll
-├── .github/workflows/           CI-проверка сборки — без выгрузки exe
-├── dist/                        только локальный выход (игнорируется гитом)
-├── Build-SingleFile.ps1         локальный сборщик (без Publish)
-├── Verify-Signatures.bat        проверка паттернов в один клик
-├── START-ZenWare.bat            локальный запуск External
-├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md · ARCHITECTURE.md
-```
-
-<a id="faq-ru"></a>
-### Частые проблемы
-
-| Симптом | Решение |
-|---|---|
-| `XorString` при старте | Умер паттерн после обновы → дважды кликни `Verify-Signatures.bat`, обнови `Offsets.cpp` |
-| Краш после `Paint` | Открой лог → найди `[!!!] EXCEPTION` → пришли `module+0x...`, без дампов |
-| Антивирус | Папку в исключения (эвристика на `WriteProcessMemory` / `CreateRemoteThread`) |
-| Квадратики вместо букв | Нажми `F7` (шрифт / язык) |
-| External: нет боксов | Смотри верхние строки оверлея (диагностика), проверь сигнатуры |
-
----
 
 <a id="legal"></a>
 ## Legal / Право

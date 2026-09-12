@@ -7,7 +7,7 @@
 
 namespace LoaderUtil
 {
-	bool g_bRuLang = false;
+	int g_nLang = 0;
 }
 
 namespace
@@ -60,14 +60,55 @@ namespace
 	}
 }
 
-const char* LoaderUtil::S(const char* const szRu, const char* const szEn)
+const char* LoaderUtil::S(const char* szRu, const char* szEn, const char* szDe,
+	const char* szEs, const char* szPt, const char* szPl, const char* szFr, const char* szZh)
 {
-	return g_bRuLang ? szRu : szEn;
+	switch (g_nLang)
+	{
+	case 0: return szRu;
+	case 2: return szDe;
+	case 3: return szEs;
+	case 4: return szPt;
+	case 5: return szPl;
+	case 6: return szFr;
+	case 7: return szZh;
+	case 1:
+	default: return szEn;
+	}
 }
 
-const wchar_t* LoaderUtil::SW(const wchar_t* wszRu, const wchar_t* wszEn)
+const wchar_t* LoaderUtil::SW(const wchar_t* wszRu, const wchar_t* wszEn, const wchar_t* wszDe,
+	const wchar_t* wszEs, const wchar_t* wszPt, const wchar_t* wszPl,
+	const wchar_t* wszFr, const wchar_t* wszZh)
 {
-	return g_bRuLang ? wszRu : wszEn;
+	switch (g_nLang)
+	{
+	case 0: return wszRu;
+	case 2: return wszDe;
+	case 3: return wszEs;
+	case 4: return wszPt;
+	case 5: return wszPl;
+	case 6: return wszFr;
+	case 7: return wszZh;
+	case 1:
+	default: return wszEn;
+	}
+}
+
+const wchar_t* LoaderUtil::LangCode()
+{
+	switch (g_nLang)
+	{
+	case 0: return L"RU";
+	case 2: return L"DE";
+	case 3: return L"ES";
+	case 4: return L"PT";
+	case 5: return L"PL";
+	case 6: return L"FR";
+	case 7: return L"ZH";
+	case 1:
+	default: return L"EN";
+	}
 }
 
 void LoaderUtil::InitFileLog()

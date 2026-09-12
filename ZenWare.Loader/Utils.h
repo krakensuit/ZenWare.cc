@@ -19,12 +19,21 @@ namespace LoaderUtil
 
 	constexpr UINT WM_APP_LOADER = WM_APP + 1;
 
-	//UI language follows the system locale (true = Russian).
-	extern bool g_bRuLang;
+	//UI language follows the system locale (0 = Russian, 1 = English, 2 = Deutsch,
+	//3 = Espanol, 4 = Portugues, 5 = Polski, 6 = Francais, 7 = Chinese).
+	extern int g_nLang;
 
-	//Picks a string by the current UI language.
-	const char* S(const char* const szRu, const char* const szEn);
-	const wchar_t* SW(const wchar_t* wszRu, const wchar_t* wszEn);
+	constexpr int kLangCount = 8;
+
+	//Picks a string by the current UI language (RU/EN/DE/ES/PT/PL/FR/ZH).
+	const char* S(const char* szRu, const char* szEn, const char* szDe, const char* szEs,
+		const char* szPt, const char* szPl, const char* szFr, const char* szZh);
+	const wchar_t* SW(const wchar_t* wszRu, const wchar_t* wszEn, const wchar_t* wszDe,
+		const wchar_t* wszEs, const wchar_t* wszPt, const wchar_t* wszPl,
+		const wchar_t* wszFr, const wchar_t* wszZh);
+
+	//Short language code for the footer pill (RU/EN/DE/ES/PT/PL/FR/ZH).
+	const wchar_t* LangCode();
 
 	//Opens %TEMP%\ZenWare.Loader.log; every Log() line lands here too,
 	//so a crashed loader still leaves its trace on disk.

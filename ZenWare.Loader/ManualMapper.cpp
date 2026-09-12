@@ -66,7 +66,7 @@ bool CManualMapper::Map(const Params_t& params) const
 	std::vector<BYTE> vecFile;
 	bool bFromResource = false;
 
-	fnStatus(hwndLog, LoaderUtil::S("Чтение файла", "Reading file"));
+	fnStatus(hwndLog, LoaderUtil::S("Чтение файла", "Reading file", "Datei lesen", "Leyendo archivo", "Lendo arquivo", "Odczyt pliku", "Lecture du fichier", "正在读取文件"));
 	StageTimer_t t;
 	t.Begin();
 
@@ -86,7 +86,7 @@ bool CManualMapper::Map(const Params_t& params) const
 		fnLog(hwndLog, "[+] File read: %u bytes (%lu ms).", static_cast<unsigned>(vecFile.size()), static_cast<unsigned long>(t.ElapsedMs()));
 	}
 
-	fnStatus(hwndLog, LoaderUtil::S("Проверка PE", "Checking PE headers"));
+	fnStatus(hwndLog, LoaderUtil::S("Проверка PE", "Checking PE headers", "PE-Header prüfen", "Verificando PE", "Verificando PE", "Sprawdzanie PE", "Vérification PE", "正在检查 PE"));
 
 	if (!CPEHelper::ValidateImage(vecFile))
 	{
@@ -100,7 +100,7 @@ bool CManualMapper::Map(const Params_t& params) const
 		pNt->OptionalHeader.SizeOfImage, pNt->OptionalHeader.ImageBase,
 		pNt->OptionalHeader.AddressOfEntryPoint, pNt->FileHeader.NumberOfSections);
 
-	fnStatus(hwndLog, LoaderUtil::S("Сборка образа", "Building image"));
+	fnStatus(hwndLog, LoaderUtil::S("Сборка образа", "Building image", "Image bauen", "Construyendo imagen", "Construindo imagem", "Budowanie obrazu", "Construction image", "正在构建镜像"));
 	t.Begin();
 
 	std::vector<BYTE> vecImage;
@@ -113,7 +113,7 @@ bool CManualMapper::Map(const Params_t& params) const
 
 	fnLog(hwndLog, "[+] Local image built in %lu ms.", static_cast<unsigned long>(t.ElapsedMs()));
 
-	fnStatus(hwndLog, LoaderUtil::S("Выделение памяти", "Allocating memory"));
+	fnStatus(hwndLog, LoaderUtil::S("Выделение памяти", "Allocating memory", "Speicher reservieren", "Reservando memoria", "Alocando memória", "Alokacja pamięci", "Allocation mémoire", "正在分配内存"));
 
 	const HANDLE hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, params.dwTargetPid);
 
@@ -156,7 +156,7 @@ bool CManualMapper::Map(const Params_t& params) const
 	{
 		const DWORD dwDelta = dwBase - pNt->OptionalHeader.ImageBase;
 
-		fnStatus(hwndLog, LoaderUtil::S("Релокации", "Applying relocations"));
+		fnStatus(hwndLog, LoaderUtil::S("Релокации", "Applying relocations", "Relocations anwenden", "Aplicando reubicaciones", "Aplicando relocações", "Relokacje", "Application relocalisations", "正在重定位"));
 		t.Begin();
 
 		if (dwDelta != 0)
@@ -174,7 +174,7 @@ bool CManualMapper::Map(const Params_t& params) const
 
 		fnLog(hwndLog, "[*] Relocation stage took %lu ms.", static_cast<unsigned long>(t.ElapsedMs()));
 
-		fnStatus(hwndLog, LoaderUtil::S("Импорты", "Resolving imports"));
+		fnStatus(hwndLog, LoaderUtil::S("Импорты", "Resolving imports", "Importe auflösen", "Resolviendo imports", "Resolvendo imports", "Importy", "Résolution imports", "正在解析导入"));
 		t.Begin();
 
 		if (!ResolveImports(hwndLog, fnLog, vecImage.data()))
@@ -185,7 +185,7 @@ bool CManualMapper::Map(const Params_t& params) const
 
 		fnLog(hwndLog, "[+] Imports resolved in %lu ms.", static_cast<unsigned long>(t.ElapsedMs()));
 
-		fnStatus(hwndLog, LoaderUtil::S("Запись в процесс", "Writing image"));
+		fnStatus(hwndLog, LoaderUtil::S("Запись в процесс", "Writing image", "Image schreiben", "Escribiendo imagen", "Escrevendo imagem", "Zapis obrazu", "Écriture image", "正在写入进程"));
 		t.Begin();
 
 		SIZE_T nWritten = 0;
@@ -234,7 +234,7 @@ bool CManualMapper::Map(const Params_t& params) const
 
 		fnLog(hwndLog, "[*] Write+verify took %lu ms.", static_cast<unsigned long>(t.ElapsedMs()));
 
-		fnStatus(hwndLog, LoaderUtil::S("Права секций", "Protecting sections"));
+		fnStatus(hwndLog, LoaderUtil::S("Права секций", "Protecting sections", "Sektionen schützen", "Protegiendo secciones", "Protegendo seções", "Ochrona sekcji", "Protection sections", "正在保护节区"));
 		t.Begin();
 
 		if (!ProtectSections(hwndLog, fnLog, hProcess, dwBase, pNt))
@@ -245,7 +245,7 @@ bool CManualMapper::Map(const Params_t& params) const
 
 		fnLog(hwndLog, "[*] Protections took %lu ms.", static_cast<unsigned long>(t.ElapsedMs()));
 
-		fnStatus(hwndLog, LoaderUtil::S("Запуск DllMain", "Calling DllMain"));
+		fnStatus(hwndLog, LoaderUtil::S("Запуск DllMain", "Calling DllMain", "DllMain aufrufen", "Llamando DllMain", "Chamando DllMain", "Wywołanie DllMain", "Appel DllMain", "正在调用 DllMain"));
 
 		if (!CallEntryAndWipeHeaders(hwndLog, fnLog, hProcess, dwBase, pNt))
 		{
@@ -253,7 +253,7 @@ bool CManualMapper::Map(const Params_t& params) const
 			break;
 		}
 
-		fnStatus(hwndLog, LoaderUtil::S("Готово", "Done"));
+		fnStatus(hwndLog, LoaderUtil::S("Готово", "Done", "Fertig", "Listo", "Pronto", "Gotowe", "Terminé", "完成"));
 		fnLog(hwndLog, "[===] Injected successfully at 0x%08X (total %lu ms).", dwBase, static_cast<unsigned long>(GetTickCount64() - nTotalStart));
 		bResult = true;
 	} while (false);
@@ -687,7 +687,7 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 
 	do
 	{
-		fnStatus(hwndLog, LoaderUtil::S("Запись пути DLL", "Writing DLL path"));
+		fnStatus(hwndLog, LoaderUtil::S("Запись пути DLL", "Writing DLL path", "DLL-Pfad schreiben", "Escribiendo ruta DLL", "Escrevendo caminho DLL", "Zapis ścieżki DLL", "Écriture chemin DLL", "正在写入 DLL 路径"));
 
 		const SIZE_T nBytes = (params.wszDllPath.size() + 1) * sizeof(wchar_t);
 		pRemotePath = VirtualAllocEx(hProcess, nullptr, nBytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -708,7 +708,7 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 		ReadProcessMemory(hProcess, pRemotePath, wszCheck, nBytes, nullptr);
 		fnLog(hwndLog, "[+] Path written and read back: %ls", wszCheck);
 
-		fnStatus(hwndLog, LoaderUtil::S("Вызов LoadLibraryW", "Calling LoadLibraryW"));
+		fnStatus(hwndLog, LoaderUtil::S("Вызов LoadLibraryW", "Calling LoadLibraryW", "LoadLibraryW aufrufen", "Llamando LoadLibraryW", "Chamando LoadLibraryW", "Wywołanie LoadLibraryW", "Appel LoadLibraryW", "正在调用 LoadLibraryW"));
 
 		const HMODULE hKernel32 = GetModuleHandleW(L"kernel32.dll");
 		const LPTHREAD_START_ROUTINE pLoadLibraryW = reinterpret_cast<LPTHREAD_START_ROUTINE>(GetProcAddress(hKernel32, "LoadLibraryW"));
@@ -745,7 +745,7 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 		}
 
 		fnLog(hwndLog, "[+] Loaded at 0x%08X (total %lu ms).", dwModuleBase, static_cast<unsigned long>(GetTickCount64() - nTotalStart));
-		fnStatus(hwndLog, LoaderUtil::S("Готово", "Done"));
+		fnStatus(hwndLog, LoaderUtil::S("Готово", "Done", "Fertig", "Listo", "Pronto", "Gotowe", "Terminé", "完成"));
 		bResult = true;
 	} while (false);
 

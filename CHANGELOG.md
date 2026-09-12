@@ -28,6 +28,13 @@ All notable changes to ZenWare.cc are documented here.
 - Chinese menu language (EN / RU / DE / ES / PT / PL / FR / ZH cycle) and
   `README_ZH.md` linked from the main README.
   Китайский язык меню и `README_ZH.md` со ссылкой из основного README.
+- Loader in all 8 languages (`g_nLang`, cycle button + footer pill,
+  registry `Lang` 0-7 with old 1/2 mapped to RU/EN) and README split:
+  English stays default in `README.md`, Russian moved to `README_RU.md`,
+  flag-emoji language table on top.
+  Лоадер на всех 8 языках и разделение README: английский по умолчанию
+  в `README.md`, русский переехал в `README_RU.md`, таблица языков
+  с флагами сверху.
 - Weapon HUD under the crosshair: active weapon name, clip and reserve
   (`m_iAmmo`) + RELOADING text and red LOW AMMO at 5 rounds or less.
   HUD оружия под прицелом: имя, магазин, запас + RELOADING и красный
