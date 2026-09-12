@@ -224,11 +224,6 @@ ZenWare.cc/
 └── README_RU/DE/ES/PT/PL/FR/ZH.md   traducciones de este archivo
 ```
 
-### Capturas
-
-Guía: [docs/screenshots/HOWTO.md](docs/screenshots/HOWTO.md).
-`menu.png` (menú INSERT) · `esp.png` (ESP + radar vs horda) · `loader.png` (ventana loader).
-
 ### Problemas
 
 | Síntoma | Solución |

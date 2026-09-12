@@ -225,11 +225,6 @@ ZenWare.cc/
 └── README_RU/DE/ES/PT/PL/FR/ZH.md   переводы этого файла
 ```
 
-### Скриншоты
-
-Гайд: [docs/screenshots/HOWTO.md](docs/screenshots/HOWTO.md).
-`menu.png` (меню на INSERT) · `esp.png` (ESP + радар против орды) · `loader.png` (окно лоадера).
-
 ### Проблемы
 
 | Симптом | Решение |

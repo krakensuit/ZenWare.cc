@@ -204,11 +204,6 @@ ZenWare.cc/
 └── README_RU/DE/ES/PT/PL/FR/ZH.md   本文件的译文
 ```
 
-### 截图
-
-说明：[docs/screenshots/HOWTO.md](docs/screenshots/HOWTO.md)。
-`menu.png`（INSERT 菜单）· `esp.png`（ESP + 雷达打尸潮）· `loader.png`（启动器窗口）。
-
 ### 排错
 
 | 现象 | 办法 |

@@ -233,11 +233,6 @@ ZenWare.cc/
 └── README_RU/DE/ES/PT/PL/FR/ZH.md   Übersetzungen dieser Datei
 ```
 
-### Screenshots
-
-Anleitung: [docs/screenshots/HOWTO.md](docs/screenshots/HOWTO.md).
-`menu.png` (INSERT-Menü) · `esp.png` (ESP + Radar vs Horde) · `loader.png` (Loader-Fenster).
-
 ### Probleme
 
 | Symptom | Lösung |
