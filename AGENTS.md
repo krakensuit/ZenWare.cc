@@ -12,18 +12,19 @@
 powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1  # всё + dist\ZenWare.exe
 .\Verify-Signatures.bat              # 0 = паттерны ок, 2 = чинить Offsets.cpp
 ```
+- MSBuild-платформа в `.sln` называется `x86` (не `Win32`): `/p:Platform=x86`. `dist\ZenWare.exe` занят, пока запущены игра/лоадер, — перед пересборкой их закрыть.
 
 ### Карта (неочевидное)
 
 - `ZenWare.DLL/src/Entry/Entry.cpp` — порядок инициализации: лог → паттерны → интерфейсы → хуки. `DllMain.cpp` — только `CreateThread`, логики нет.
-- `ZenWare.DLL/src/Features/Vars.h` — ВСЕ настройки (inline-глобалы по namespace). `Config/` — `key=value` (`aimbot.fov`), слот конфига сессионный.
-- `ZenWare.DLL/src/Features/Menu/` — своё immediate-меню 320x480, табы Visuals/Move/View/Combat/Misc (`case N:` в `Render()`), скролл/клиппинг есть. Подпись виджета = EN-строка, перевод — в `Lang.h`.
+- `ZenWare.DLL/src/Features/Vars.h` — ВСЕ настройки (inline-глобалы по namespace). `Config/` — `key=value` (`visuals.weaponhud`), слот конфига сессионный; язык меню — int `menu.lang` 0–7.
+- `ZenWare.DLL/src/Features/Menu/` — своё immediate-меню 320x480, табы Visuals/Move/View/Combat/Misc (`case N:` в `Render()`), скролл/клиппинг есть. Подпись виджета = EN-строка, перевод — в `Lang.h` (8 таблиц 0EN–7ZH, `F7`/кнопка = `Lang::Next()`); help-строки `kHelp` — только EN+RU.
 - `ZenWare.DLL/src/Features/*/` — фичи: `Run/OnTick` из CreateMove, `Draw/Render` из Paint.
 - `ZenWare.DLL/src/Util/Offsets|Pattern/` — 15 сигнатур; `ZenWare.DLL.vcxproj` — **единственное** место регистрации новых `.cpp/.h` (иначе LNK только на CI).
 - `ZenWare.DLL/external/` — MinHook (не трогать) + subset FontAwesome (UTF-8).
-- `ZenWare.Loader/resource.h` — `ZENWARE_VER_STR`, единственное место версии. Сетевого кода нет (апдейтер удалён).
+- `ZenWare.Loader/resource.h` — `ZENWARE_VER_MAJOR/MINOR/PATCH` + `STR`, единственное место версии (мелкие правки = патч: 3.8.1, 3.8.2). В конце файла обязан быть перевод строки, иначе RC1004. Сетевого кода нет (апдейтер удалён).
 - `l4d2_base.sln/.vcxproj/.filters` под `src/` — мёртвое наследие v142, не собирать.
-- `XorString _()` — заглушка (`#define _(x) x`). Source-only: билды только в git-ignored `dist/`, никогда в git/релизы/CI.
+- `XorString _()` — заглушка (`#define _(x) x`). Source-only: билды только в git-ignored `dist/`, никогда в git/релизы/CI. Главный `README.md` — только английский; переводы — `README_RU/DE/ES/PT/PL/FR/ZH.md` (секций скриншотов нет нигде).
 
 ## 2. Автоматические правила использования инструментов
 
@@ -42,7 +43,7 @@ powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1  # всё + dist\Z
 - Табы, Allman, `.editorconfig` + `.clang-format`; русский в комментах ок.
 - Стиль: короткие функции, ранний `return`, без глубокой вложенности; магические числа — в именованные константы.
 - Ошибки — fail-closed: отсутствующий паттерн/интерфейс/указатель = ранний `return`/`false`, никаких исключений через границы детуров. Образец — таблица `aNeed` + abort в `Entry.cpp`, `Init(nullptr) → false` в `Hook.h`.
-- Указатели: объекты движка — сырые невладеющие указатели + проверка `nullptr` и `GetClientClass()->m_ClassID` перед виртуалкой/нетваром (падали на таблетках: ветка `CWeaponSpawn`-only обязательна). Своя память — `std::unique_ptr`/RAII, голого `new/delete` избегать.
+- Указатели: объекты движка — сырые невладеющие указатели + проверка `nullptr` и `GetClientClass()->m_ClassID` перед виртуалкой/нетваром (падали на таблетках: ветка `CWeaponSpawn`-only обязательна). Виртуалки `C_TerrorWeapon` (`GetWeaponID()`, `GetCurrentSpread()`) — только за `IsGunEntity()`, меле/пила/гренник — сиблинги с чужой таблицей. Своя память — `std::unique_ptr`/RAII, голого `new/delete` избегать.
 - Только netvars, не виртуалки (`GetEyePosition()` = `m_vecOrigin()+m_vecViewOffset()`).
 - Ивентов движка нет by design (`Killfeed::OnTick` — опрос, не `IGameEventManager`).
 - `float`-слайдеру нужен int-прокси + синхронизация в `Render()` и ресинк в `Load config`.
