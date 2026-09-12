@@ -4,6 +4,7 @@ using namespace Hooks;
 
 #include "../../Features/Menu/Menu.h"
 #include "../../Features/Vars.h"
+#include "../../Features/Lang/Lang.h"
 #include "../../Util/Logger/Logger.h"
 
 LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -13,11 +14,11 @@ LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN)
 		F::Menu.PollMenuKey();
 
-	//F7 вслепую переключает RU/EN (друг с битым шрифтом не прочитает меню).
+	//F7 вслепую крутит языки EN->RU->DE (друг с битым шрифтом не прочитает меню).
 	//Здесь, а не в Render: работает и при закрытом меню. bit30 режет
 	//автоповтор удержания, иначе язык стробит ~30 Гц.
 	if ((uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) && wParam == VK_F7 && !(lParam & (1 << 30)))
-		Vars::Menu::bRussian = !Vars::Menu::bRussian;
+		Lang::Next();
 
 	// Колесо крутит вкладки меню, в игру не уходит.
 	if (uMsg == WM_MOUSEWHEEL && Vars::Menu::bOpen)

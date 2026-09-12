@@ -139,6 +139,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Menu key","Menu key","Opens and closes this menu. Click to rebind.","Клавиша меню","Открывает и закрывает меню. Клик — смена."},
 		{"Language: English >","Language","Switches the whole menu between English and Russian.","Язык","Переключает всё меню между английским и русским."},
 		{"Language: Russian >","Language","Switches the whole menu between English and Russian.","Язык","Переключает всё меню между английским и русским."},
+		{"Language: German >","Language","Cycles the menu language: English, Russian, German.","Язык","Крутит язык меню: английский, русский, немецкий."},
 		{"Menu accent","Menu accent","Main accent color of the whole menu.","Акцент меню","Главный акцентный цвет всего меню."},
 		{"ESP enemy","ESP enemy","Box color for enemies and specials.","ESP враги","Цвет боксов врагов и особых."},
 		{"ESP ally","ESP ally","Box color for teammates.","ESP союзники","Цвет боксов союзников."},
@@ -440,8 +441,8 @@ void CFeatures_Menu::Render(){
      Button(mouse,szSlot,[](){ F::Config.SetSlot(F::Config.GetSlot()%3+1); });
      Button(mouse,"Load config",[](){F::Config.Load();});
     BindRow(mouse,"Menu key",&Vars::Menu::nKey);
-    static char szLang[32]; sprintf_s(szLang,"Language: %s >",Vars::Menu::bRussian?"Russian":"English");
-    Button(mouse,szLang,[](){ Vars::Menu::bRussian=!Vars::Menu::bRussian; });
+     static char szLang[32]; sprintf_s(szLang,"Language: %s >",Lang::Name(Lang::Cur()));
+     Button(mouse,szLang,[](){ Lang::Next(); });
     SectionLabel("STYLE");
     ColorSwatches(mouse,"Menu accent",&Vars::Menu::clrAccent);
     ColorSwatches(mouse,"ESP enemy",&Vars::Chams::clrEnemy);

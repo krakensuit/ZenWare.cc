@@ -1,8 +1,9 @@
 #pragma once
 
-// RU/EN для всего чита. Флаг живёт в Vars::Menu::bRussian (сохраняется в конфиг),
-// T() переводит подписи меню по EN-оригиналу. Внутренние ID везде остаются
-// английскими: помощь, анимации и конфиг от языка не зависят.
+// Языки всего чита: 0 EN, 1 RU, 2 DE. Индекс живёт в Vars::Menu::nLang
+// (сохраняется в конфиг как menu.lang), T() переводит подписи меню по
+// EN-оригиналу. Внутренние ID везде остаются английскими: помощь, анимации
+// и конфиг от языка не зависят. IsRu() оставлен для хелпов, у них только RU/EN.
 // Файл в UTF-8, проект компилируется с /utf-8, DrawManager конвертит из CP_UTF8.
 
 #include "../Vars.h"
@@ -12,13 +13,33 @@
 
 namespace Lang
 {
-	inline bool IsRu() { return Vars::Menu::bRussian; }
+	inline constexpr int kCount = 3; // 0 EN, 1 RU, 2 DE
+
+	inline int Cur()
+	{
+		const int n = Vars::Menu::nLang;
+		return (n >= 0 && n < kCount) ? n : 0;
+	}
+
+	inline bool IsRu() { return Cur() == 1; }
+
+	inline const char* Name(int n)
+	{
+		switch (n)
+		{
+			case 1: return "Русский";
+			case 2: return "Deutsch";
+			default: return "English";
+		}
+	}
+
+	inline void Next() { Vars::Menu::nLang = (Cur() + 1) % kCount; }
 
 	inline const char* T(const char* szEn)
 	{
-		if (!IsRu() || !szEn || !szEn[0])
+		if (!szEn || !szEn[0] || Cur() == 0)
 			return szEn;
-		static const std::map<std::string, std::string> tbl = {
+		static const std::map<std::string, std::string> tblRu = {
 			{"Visuals","Визуал"}, {"Move","Движение"}, {"View","Вид"}, {"Combat","Бой"}, {"Misc","Разное"},
 			{"ESP box","ESP бокс"}, {"ESP health bar","ESP полоса HP"}, {"ESP name","ESP ники"},
 			{"ESP distance","ESP дистанция"}, {"ESP items","ESP предметы"}, {"ESP commons","ESP обычные"},
@@ -80,11 +101,81 @@ namespace Lang
 			{"Menu key","Клавиша меню"}, {"STYLE","СТИЛЬ"},
 			{"Menu accent","Акцент меню"}, {"ESP enemy","ESP враги"}, {"ESP ally","ESP союзники"}, {"Chams tank","Чамсы: танк"},
 			{"Language: English >","Язык: Английский >"}, {"Language: Russian >","Язык: Русский >"},
+			{"Language: German >","Язык: Немецкий >"},
 			{"F11 = unload cheat","F11 = выгрузить чит"},
 			{"drag header | WASD free | F11 unload | %d fps","тащи за шапку | WASD свободны | F11 выгрузка | %d fps"},
 			{"[press key]","[нажми клавишу]"}, {"off","выкл"},
 			{"killed","убил"}, {"died","умер"}, {"strafes","стрейфы"}, {"sync","синхр."},
 		};
+		static const std::map<std::string, std::string> tblDe = {
+			{"Visuals","Visuals"}, {"Move","Movement"}, {"View","Ansicht"}, {"Combat","Kampf"}, {"Misc","Sonstiges"},
+			{"ESP box","ESP-Box"}, {"ESP health bar","ESP-Lebensbalken"}, {"ESP name","ESP-Namen"},
+			{"ESP distance","ESP-Distanz"}, {"ESP items","ESP-Items"}, {"ESP commons","ESP-Commons"},
+			{"ESP special infected","ESP-Specials"}, {"ESP witch","ESP-Hexe"},
+			{"Snaplines","Snaplines"}, {"Filled boxes","Gefüllte Boxen"},
+			{"HP text near bar","HP-Text"}, {"Weapon text","Waffentext"},
+			{"Ammo count","Munition"}, {"Show teammates","Team anzeigen"},
+			{"Team HP panel","Team-HP-Panel"}, {"Throwable timers","Granaten-Timer"},
+			{"Chams","Chams"}, {"Chams through walls","Chams durch Wände"}, {"Chams palette >","Cham-Palette >"},
+			{"No visual recoil","Kein Visual-Recoil"},
+			{"Bunny hop","Bunnyhop"}, {"Bhop: Perfect >","Bhop: Perfekt >"}, {"Bhop: Legit >","Bhop: Legit >"},
+			{"Auto strafe","Auto-Strafe"},
+			{"Strafe: Legit >","Strafe: Legit >"}, {"Strafe: Rage >","Strafe: Rage >"},
+			{"Strafe: W-Only >","Strafe: W-Only >"}, {"Strafe: Directional >","Strafe: Direktional >"},
+			{"Bhop delay","Bhop-Verzögerung"}, {"Edge jump","Edge-Jump"}, {"Edge bug","Edgebug"}, {"Jump bug","Jumpbug"},
+			{"Null movement","Null-Movement"}, {"Fast stop","Fast-Stop"}, {"Speed HUD","Speed-HUD"},
+			{"Jump stats","Jump-Stats"}, {"Prestrafe","Prestrafe"}, {"Long jump helper","Longjump-Hilfe"},
+			{"Auto duck","Auto-Duck"},
+			{"FOV world x100","FOV Welt x100"}, {"FOV viewmodel x100","FOV Waffen x100"}, {"No fog","Kein Nebel"}, {"Full bright","Fullbright"},
+			{"Third person","3rd-Person"}, {"3rd person distance","Kameradistanz"},
+			{"Crosshair","Fadenkreuz"}, {"Crosshair color","Fadenkreuz-Farbe"}, {"Crosshair size","Fadenkreuz-Größe"}, {"FPS / pos overlay","FPS-/Pos-Overlay"},
+			{"Grenade path","Granaten-Flugbahn"}, {"Landing marker","Landemarkierung"},
+			{"Aimbot","Aimbot"}, {"Auto shoot","Auto-Schuss"}, {"Silent aim","Silent-Aim"},
+			{"Hitbox: Head >","Hitbox: Kopf >"}, {"Hitbox: Center >","Hitbox: Körper >"},
+			{"Priority: FOV >","Priorität: FOV >"}, {"Priority: Distance >","Priorität: Distanz >"},
+			{"Visible only","Nur sichtbare"}, {"Skip incapped","Keine liegenden"},
+			{"Target commons","Ziel: Commons"}, {"Target specials","Ziel: Specials"},
+			{"Aim FOV x10","Aim-FOV x10"}, {"Smoothing","Glättung"},
+			{"Per-weapon aim","Aim pro Waffe"},
+			{"Weapon group: Rifles >","Gruppe: Gewehre >"}, {"Weapon group: SMG >","Gruppe: MP >"},
+			{"Weapon group: Shotguns >","Gruppe: Schrotflinten >"}, {"Weapon group: Snipers >","Gruppe: Sniper >"},
+			{"Weapon group: Pistols >","Gruppe: Pistolen >"},
+			{"Wpn FOV x10","Waffen-FOV x10"}, {"Wpn smoothing","Waffen-Glättung"},
+			{"Wpn hitbox: Head >","Waffen-Hitbox: Kopf >"}, {"Wpn hitbox: Center >","Waffen-Hitbox: Körper >"},
+			{"Aimbot key","Aimbot-Taste"}, {"Trigger bot","Triggerbot"},
+			{"Trigger visible only","Nur sichtbare (Trigger)"}, {"Trigger key","Trigger-Taste"},
+			{"Auto pistol","Auto-Pistole"}, {"Auto shove","Auto-Schubser"},
+			{"No spread","Kein Spread"}, {"Killfeed","Killfeed"},
+			{"Hitmarker","Hitmarker"}, {"Hit sound","Hit-Sound"},
+			{"Damage numbers","Schadenszahlen"}, {"Hit pitch","Hit-Tonhöhe"},
+			{"Number lifetime","Zahlen-Dauer"}, {"Cross hitmark","Trefferkreuz"},
+			{"Session stats","Session-Stats"}, {"Damage flash","Schadensblitz"},
+			{"Damage arrow","Schadenspfeil"}, {"No screen effects","Keine Bildeffekte"},
+			{"Common counter","Common-Zähler"},
+			{"Weapon HUD","Waffen-HUD"}, {"Reload alerts","Nachladewarnung"},
+			{"ESP max distance","ESP-Distanz"}, {"Hide hands","Hände verstecken"},
+			{"Spit alert","Spucke-Alarm"}, {"SPIT! MOVE","SPUCKE! WEG"},
+			{"Min damage","Min. Schaden"}, {"ESP panic key","ESP-Paniktaste"},
+			{"Radar","Radar"}, {"Spectators","Zuschauer"},
+			{"Spectators (%d)","Zuschauer (%d)"},
+			{"Alerts","Alarme"}, {"Tank alert","Tank-Alarm"}, {"Witch alert","Hexen-Alarm"},
+			{"SI list","SI-Liste"}, {"Pinned warning","Gepinnt-Warnung"}, {"Revive alert","Wiederbelebungsalarm"},
+			{"Tank HP bar","Tank-HP-Balken"}, {"PINNED","GEPINNT"}, {"REVIVE","WIEDERBELEBEN"},
+			{"wriggle WASD+mouse","wackeln WASD+Maus"},
+			{"TANK","TANK"}, {"WITCH","HEXE"},
+			{"Save config","Config speichern"}, {"Load config","Config laden"},
+			{"Config slot: 1 >","Config-Slot: 1 >"}, {"Config slot: 2 >","Config-Slot: 2 >"},
+			{"Config slot: 3 >","Config-Slot: 3 >"},
+			{"Menu key","Menütaste"}, {"STYLE","STIL"},
+			{"Menu accent","Menü-Akzent"}, {"ESP enemy","ESP-Gegner"}, {"ESP ally","ESP-Verbündete"}, {"Chams tank","Chams: Tank"},
+			{"Language: English >","Sprache: Englisch >"}, {"Language: Russian >","Sprache: Russisch >"},
+			{"Language: German >","Sprache: Deutsch >"},
+			{"F11 = unload cheat","F11 = Cheat entladen"},
+			{"drag header | WASD free | F11 unload | %d fps","Kopfzeile ziehen | WASD frei | F11 Entladen | %d fps"},
+			{"[press key]","[Taste drücken]"}, {"off","aus"},
+			{"killed","getötet"}, {"died","gestorben"}, {"strafes","Strafes"}, {"sync","Sync"},
+		};
+		const auto& tbl = (Cur() == 2) ? tblDe : tblRu;
 		auto it = tbl.find(szEn);
 		return it != tbl.end() ? it->second.c_str() : szEn;
 	}

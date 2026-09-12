@@ -164,9 +164,9 @@ namespace Vars
 		inline bool bOpen = false;
 		inline int nKey = VK_INSERT;
 		inline Color clrAccent = { 0, 255, 171, 255 };
-		// RU/EN всего меню: системный язык по умолчанию (до Config.Load),
-		// хранится в конфиге, переключается кнопкой и F7.
-		inline bool bRussian = ((GetUserDefaultUILanguage() & 0x3FF) == 0x19);
+		// Язык всего меню: 0 EN, 1 RU, 2 DE. Системный по умолчанию
+		// (до Config.Load), хранится в конфиге, переключается кнопкой и F7.
+		inline int nLang = ((GetUserDefaultUILanguage() & 0x3FF) == 0x19) ? 1 : 0;
 	}
 
 	namespace NoSpread
