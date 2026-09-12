@@ -1,6 +1,6 @@
 #pragma once
 
-// Языки всего чита: 0 EN, 1 RU, 2 DE, 3 ES. Индекс живёт в Vars::Menu::nLang
+// Языки всего чита: 0 EN, 1 RU, 2 DE, 3 ES, 4 PT. Индекс живёт в Vars::Menu::nLang
 // (сохраняется в конфиг как menu.lang), T() переводит подписи меню по
 // EN-оригиналу. Внутренние ID везде остаются английскими: помощь, анимации
 // и конфиг от языка не зависят. IsRu() оставлен для хелпов, у них только RU/EN.
@@ -13,7 +13,7 @@
 
 namespace Lang
 {
-	inline constexpr int kCount = 4; // 0 EN, 1 RU, 2 DE, 3 ES
+	inline constexpr int kCount = 5; // 0 EN, 1 RU, 2 DE, 3 ES, 4 PT
 
 	inline int Cur()
 	{
@@ -30,6 +30,7 @@ namespace Lang
 			case 1: return "Русский";
 			case 2: return "Deutsch";
 			case 3: return "Español";
+			case 4: return "Português";
 			default: return "English";
 		}
 	}
@@ -103,6 +104,7 @@ namespace Lang
 			{"Menu accent","Акцент меню"}, {"ESP enemy","ESP враги"}, {"ESP ally","ESP союзники"}, {"Chams tank","Чамсы: танк"},
 			{"Language: English >","Язык: Английский >"}, {"Language: Russian >","Язык: Русский >"},
 			{"Language: German >","Язык: Немецкий >"}, {"Language: Spanish >","Язык: Испанский >"},
+			{"Language: Portuguese >","Язык: Португальский >"},
 			{"F11 = unload cheat","F11 = выгрузить чит"},
 			{"drag header | WASD free | F11 unload | %d fps","тащи за шапку | WASD свободны | F11 выгрузка | %d fps"},
 			{"[press key]","[нажми клавишу]"}, {"off","выкл"},
@@ -171,6 +173,7 @@ namespace Lang
 			{"Menu accent","Menü-Akzent"}, {"ESP enemy","ESP-Gegner"}, {"ESP ally","ESP-Verbündete"}, {"Chams tank","Chams: Tank"},
 			{"Language: English >","Sprache: Englisch >"}, {"Language: Russian >","Sprache: Russisch >"},
 			{"Language: German >","Sprache: Deutsch >"}, {"Language: Spanish >","Sprache: Spanisch >"},
+			{"Language: Portuguese >","Sprache: Portugiesisch >"},
 			{"F11 = unload cheat","F11 = Cheat entladen"},
 			{"drag header | WASD free | F11 unload | %d fps","Kopfzeile ziehen | WASD frei | F11 Entladen | %d fps"},
 			{"[press key]","[Taste drücken]"}, {"off","aus"},
@@ -239,12 +242,82 @@ namespace Lang
 			{"Menu accent","Acento menú"}, {"ESP enemy","ESP enemigos"}, {"ESP ally","ESP aliados"}, {"Chams tank","Chams: tank"},
 			{"Language: English >","Idioma: Inglés >"}, {"Language: Russian >","Idioma: Ruso >"},
 			{"Language: German >","Idioma: Alemán >"}, {"Language: Spanish >","Idioma: Español >"},
+			{"Language: Portuguese >","Idioma: Portugués >"},
 			{"F11 = unload cheat","F11 = descargar cheat"},
 			{"drag header | WASD free | F11 unload | %d fps","arrastra cabecera | WASD libres | F11 descargar | %d fps"},
 			{"[press key]","[pulsa tecla]"}, {"off","apagado"},
 			{"killed","mató"}, {"died","murió"}, {"strafes","strafeos"}, {"sync","sync"},
 		};
-		const auto& tbl = (Cur() == 2) ? tblDe : (Cur() == 3) ? tblEs : tblRu;
+		static const std::map<std::string, std::string> tblPt = {
+			{"Visuals","Visual"}, {"Move","Movimento"}, {"View","Vista"}, {"Combat","Combate"}, {"Misc","Extras"},
+			{"ESP box","ESP caixa"}, {"ESP health bar","ESP barra HP"}, {"ESP name","ESP nomes"},
+			{"ESP distance","ESP distância"}, {"ESP items","ESP itens"}, {"ESP commons","ESP comuns"},
+			{"ESP special infected","ESP especiais"}, {"ESP witch","ESP witch"},
+			{"Snaplines","Linhas"}, {"Filled boxes","Caixas cheias"},
+			{"HP text near bar","Texto HP"}, {"Weapon text","Texto arma"},
+			{"Ammo count","Munição"}, {"Show teammates","Ver time"},
+			{"Team HP panel","Painel HP time"}, {"Throwable timers","Timers granadas"},
+			{"Chams","Chams"}, {"Chams through walls","Chams atrás paredes"}, {"Chams palette >","Paleta chams >"},
+			{"No visual recoil","Sem recuo visual"},
+			{"Bunny hop","Bunnyhop"}, {"Bhop: Perfect >","Bhop: Perfeito >"}, {"Bhop: Legit >","Bhop: Legit >"},
+			{"Auto strafe","Auto-strafe"},
+			{"Strafe: Legit >","Strafe: Legit >"}, {"Strafe: Rage >","Strafe: Rage >"},
+			{"Strafe: W-Only >","Strafe: W-Only >"}, {"Strafe: Directional >","Strafe: Direcional >"},
+			{"Bhop delay","Atraso bhop"}, {"Edge jump","Edge-jump"}, {"Edge bug","Edgebug"}, {"Jump bug","Jumpbug"},
+			{"Null movement","Null-movement"}, {"Fast stop","Parada rápida"}, {"Speed HUD","HUD velocidade"},
+			{"Jump stats","Stats pulo"}, {"Prestrafe","Prestrafe"}, {"Long jump helper","Ajuda longjump"},
+			{"Auto duck","Auto-agachar"},
+			{"FOV world x100","FOV mundo x100"}, {"FOV viewmodel x100","FOV arma x100"}, {"No fog","Sem neblina"}, {"Full bright","Fullbright"},
+			{"Third person","3ª pessoa"}, {"3rd person distance","Distância câmera"},
+			{"Crosshair","Mira"}, {"Crosshair color","Cor mira"}, {"Crosshair size","Tamanho mira"}, {"FPS / pos overlay","Overlay FPS/pos"},
+			{"Grenade path","Trajetória granadas"}, {"Landing marker","Marca pouso"},
+			{"Aimbot","Aimbot"}, {"Auto shoot","Auto-tiro"}, {"Silent aim","Silent-aim"},
+			{"Hitbox: Head >","Hitbox: Cabeça >"}, {"Hitbox: Center >","Hitbox: Corpo >"},
+			{"Priority: FOV >","Prioridade: FOV >"}, {"Priority: Distance >","Prioridade: Distância >"},
+			{"Visible only","Só visíveis"}, {"Skip incapped","Sem caídos"},
+			{"Target commons","Alvo: comuns"}, {"Target specials","Alvo: especiais"},
+			{"Aim FOV x10","FOV aim x10"}, {"Smoothing","Suavização"},
+			{"Per-weapon aim","Aim por arma"},
+			{"Weapon group: Rifles >","Grupo: Fuzis >"}, {"Weapon group: SMG >","Grupo: SMGs >"},
+			{"Weapon group: Shotguns >","Grupo: Escopetas >"}, {"Weapon group: Snipers >","Grupo: Snipers >"},
+			{"Weapon group: Pistols >","Grupo: Pistolas >"},
+			{"Wpn FOV x10","FOV arma x10"}, {"Wpn smoothing","Suavização arma"},
+			{"Wpn hitbox: Head >","Hitbox arma: Cabeça >"}, {"Wpn hitbox: Center >","Hitbox arma: Corpo >"},
+			{"Aimbot key","Tecla aimbot"}, {"Trigger bot","Triggerbot"},
+			{"Trigger visible only","Só visíveis (trigger)"}, {"Trigger key","Tecla trigger"},
+			{"Auto pistol","Auto-pistola"}, {"Auto shove","Auto-empurrão"},
+			{"No spread","Sem dispersão"}, {"Killfeed","Killfeed"},
+			{"Hitmarker","Hitmarker"}, {"Hit sound","Som hit"},
+			{"Damage numbers","Números dano"}, {"Hit pitch","Tom hit"},
+			{"Number lifetime","Duração números"}, {"Cross hitmark","Cruz acerto"},
+			{"Session stats","Stats sessão"}, {"Damage flash","Flash dano"},
+			{"Damage arrow","Seta dano"}, {"No screen effects","Sem efeitos tela"},
+			{"Common counter","Contador comuns"},
+			{"Weapon HUD","HUD arma"}, {"Reload alerts","Alertas recarga"},
+			{"ESP max distance","Distância ESP"}, {"Hide hands","Ocultar mãos"},
+			{"Spit alert","Alerta gosma"}, {"SPIT! MOVE","GOSMA! CORRE"},
+			{"Min damage","Dano mín."}, {"ESP panic key","Tecla pânico ESP"},
+			{"Radar","Radar"}, {"Spectators","Espectadores"},
+			{"Spectators (%d)","Espectadores (%d)"},
+			{"Alerts","Alertas"}, {"Tank alert","Alerta tank"}, {"Witch alert","Alerta witch"},
+			{"SI list","Lista SI"}, {"Pinned warning","Alerta agarrado"}, {"Revive alert","Alerta reviver"},
+			{"Tank HP bar","Barra HP tank"}, {"PINNED","AGARRADO"}, {"REVIVE","REVIVE"},
+			{"wriggle WASD+mouse","mexe WASD+mouse"},
+			{"TANK","TANK"}, {"WITCH","WITCH"},
+			{"Save config","Salvar config"}, {"Load config","Carregar config"},
+			{"Config slot: 1 >","Slot config: 1 >"}, {"Config slot: 2 >","Slot config: 2 >"},
+			{"Config slot: 3 >","Slot config: 3 >"},
+			{"Menu key","Tecla menu"}, {"STYLE","ESTILO"},
+			{"Menu accent","Cor menu"}, {"ESP enemy","ESP inimigos"}, {"ESP ally","ESP aliados"}, {"Chams tank","Chams: tank"},
+			{"Language: English >","Idioma: Inglês >"}, {"Language: Russian >","Idioma: Russo >"},
+			{"Language: German >","Idioma: Alemão >"}, {"Language: Spanish >","Idioma: Espanhol >"},
+			{"Language: Portuguese >","Idioma: Português >"},
+			{"F11 = unload cheat","F11 = descarregar cheat"},
+			{"drag header | WASD free | F11 unload | %d fps","arrasta topo | WASD livres | F11 descarregar | %d fps"},
+			{"[press key]","[prime tecla]"}, {"off","desligado"},
+			{"killed","matou"}, {"died","morreu"}, {"strafes","strafes"}, {"sync","sync"},
+		};
+		const auto& tbl = (Cur() == 2) ? tblDe : (Cur() == 3) ? tblEs : (Cur() == 4) ? tblPt : tblRu;
 		auto it = tbl.find(szEn);
 		return it != tbl.end() ? it->second.c_str() : szEn;
 	}
