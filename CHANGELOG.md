@@ -5,6 +5,8 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.7] - 2026-09-12
+
 ### Added / Добавлено
 
 - German menu language (EN / RU / DE cycle via button + `F7`, saved as
