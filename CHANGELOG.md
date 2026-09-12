@@ -5,6 +5,21 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+### Changed / Изменено
+
+- Main README is English-only and rewritten (about, how it works, features,
+  config/logs, structure, screenshots); Russian content lives in
+  `README_RU.md`. Главный README только на английском и переписан
+  (о проекте, устройство, фичи, конфиги, структура, скриншоты); русский —
+  в `README_RU.md`.
+- Loader cleanup: footer pills are visible/clickable again (window height
+  fix), dead code and hardcoded dev paths removed. Чистка лоадера: футер
+  снова виден и кликабелен (фикс высоты окна), мёртвый код и захардкоженные
+  пути удалены.
+- ESP boxes are now corner brackets with dimmed snaplines, bordered HP bar
+  and shadowed names. Боксы ESP — уголки, приглушённые снаплайны, HP-бар
+  с обводкой, ники с тенью.
+
 ## [3.7] - 2026-09-12
 
 ### Added / Добавлено

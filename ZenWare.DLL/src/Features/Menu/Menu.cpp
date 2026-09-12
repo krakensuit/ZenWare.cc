@@ -54,7 +54,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 	struct HelpEntry_t { const char* label; const char* title; const char* text; const char* ruTitle; const char* ruText; };
 	static const HelpEntry_t kHelp[] = {
 		{"ESP","ESP","Master switch for player ESP. Shows boxes, health and names through walls.","ESP","Главный выключатель ESP. Боксы, HP и ники сквозь стены."},
-		{"ESP box","ESP box","2D bounding box around each player, colored by team.","ESP бокс","2D-бокс вокруг игрока, цвет по команде."},
+		{"ESP box","ESP box","Corner brackets around each player, colored by team.","ESP бокс","Уголки вокруг игрока, цвет по команде."},
 		{"ESP health bar","ESP health bar","Vertical bar left of the box. Green is full HP, red is low.","ESP полоса HP","Вертикальная полоса слева от бокса. Зелёная — полное HP, красная — низкое."},
 		{"ESP name","ESP name","Player nickname drawn above the box.","ESP ники","Ник игрока над боксом."},
 		{"ESP distance","ESP distance","Distance in meters next to the name.","ESP дистанция","Дистанция в метрах рядом с ником."},
@@ -572,6 +572,7 @@ void CFeatures_Menu::DrawHelpPopup(const MouseState_t& mouse){
 }
 void CFeatures_Menu::SectionLabel(const char* const szLabel){
  G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,"%s",Lang::T(szLabel));
+ G::Draw.Rect(m_rc.nX+12,m_nItemY+17,26,2,CLR_ACCENT_SOFT);
  m_nItemY+=20;
 }
 void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const szLabel,Color* pValue){

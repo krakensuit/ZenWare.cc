@@ -9,8 +9,19 @@
 
 namespace
 {
-	// Рамка как у space: цветная 1px + чёрная снаружи + чёрная изнутри.
-	// Уголки убраны: тройная вложенность выглядела криво на мелких боксах.
+	// Уголки вместо полного прямоугольника: читается чище на мелких боксах,
+	// чёрная подложка под цветными уголками держит контраст на светлых картах.
+	static void CornerLines(int x, int y, int w, int h, int cl, const Color& clr)
+	{
+		G::Draw.Line(x, y, x + cl, y, clr);
+		G::Draw.Line(x, y, x, y + cl, clr);
+		G::Draw.Line(x + w - cl, y, x + w, y, clr);
+		G::Draw.Line(x + w, y, x + w, y + cl, clr);
+		G::Draw.Line(x, y + h - cl, x, y + h, clr);
+		G::Draw.Line(x, y + h, x + cl, y + h, clr);
+		G::Draw.Line(x + w, y + h - cl, x + w, y + h, clr);
+		G::Draw.Line(x + w - cl, y + h, x + w, y + h, clr);
+	}
 	void DrawEspBox(int x, int y, int w, int h, const Color& clr)
 	{
 		if (w <= 2 || h <= 2)
@@ -18,9 +29,11 @@ namespace
 			G::Draw.OutlinedRect(x, y, w, h, clr);
 			return;
 		}
-		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { 0, 0, 0, 255 });
-		G::Draw.OutlinedRect(x, y, w, h, clr);
-		G::Draw.OutlinedRect(x + 1, y + 1, w - 2, h - 2, { 0, 0, 0, 255 });
+		int cl = (w < h ? w : h) / 4;
+		if (cl < 3) cl = 3;
+		if (cl > 14) cl = 14;
+		CornerLines(x - 1, y - 1, w + 2, h + 2, cl + 2, { 0, 0, 0, 255 });
+		CornerLines(x, y, w, h, cl, clr);
 	}
 }
 
@@ -162,23 +175,23 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 		DrawEspBox(x, y, w, h, clrTeam);
 	}
 
-	//Snapline from the bottom of the screen.
+	//Snapline from the bottom of the screen (dimmed so it stays in background).
 	if (Vars::ESP::bSnaplines)
-		G::Draw.Line(G::Draw.m_nScreenW / 2, G::Draw.m_nScreenH, x + (w / 2), y + h, clrTeam);
+		G::Draw.Line(G::Draw.m_nScreenW / 2, G::Draw.m_nScreenH, x + (w / 2), y + h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 110 });
 
-	// ХП-бар слева как у space: чёрная подложка на всю высоту + зелёная
-	// заливка снизу вверх по доле от max HP (не от 100 — у СИ больше).
+	// ХП-бар слева: чёрная обводка + заливка снизу вверх по доле от max HP
+	// (не от 100 — у СИ больше).
 	if (Vars::ESP::bHealthBar)
 	{
 		const int nBarX = x - 5;
 
-		if (nBarX >= 0)
+		if (nBarX >= 1)
 		{
 			const int nFillH = (h * nHealth) / nMaxHp;
-			G::Draw.Rect(nBarX, y, 4, h, { 0, 0, 0, 255 });
+			G::Draw.OutlinedRect(nBarX - 1, y - 1, 6, h + 2, { 0, 0, 0, 255 });
 
 			if (nFillH > 0)
-				G::Draw.Rect(nBarX + 1, y + h - nFillH, 2, nFillH, G::Util.GetHealthColor(nHealth, nMaxHp));
+				G::Draw.Rect(nBarX, y + h - nFillH, 4, nFillH, G::Util.GetHealthColor(nHealth, nMaxHp));
 		}
 
 		if (Vars::ESP::bHealthText)
@@ -195,7 +208,10 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			pi.name[31] = '\0';
 
 			if (pi.name[0])
+			{
+				G::Draw.String(EFonts::ESP_NAME, nCenterX + 1, y - 9, { 0, 0, 0, 220 }, TXT_CENTERXY, "%s", pi.name);
 				G::Draw.String(EFonts::ESP_NAME, nCenterX, y - 10, Color(230, 212, 50, 255), TXT_CENTERXY, "%s", pi.name);
+			}
 		}
 	}
 

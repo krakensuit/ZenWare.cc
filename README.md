@@ -6,7 +6,7 @@
 
 **Internal + External training software for Left 4 Dead 2**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.6`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.7`
 
 <br />
 
@@ -18,7 +18,7 @@
 
 <br /><br />
 
-**🌐 Language / Язык / Sprache / Idioma / Idioma / Język / Langue / 语言:**
+**🌐 Language:**
 
 | | | | |
 |---|---|---|---|
@@ -35,28 +35,13 @@
 > No prebuilt `.exe` / `.dll` in this repo or Releases — build from source,
 > launch the game with `-insecure`, play your own map (`map c1m1_hotel`).
 > VAC-secured servers = ban risk. Use at your own risk.
->
-> **Только исходники · Только обучение и локальный сервер.**
-> Готовых `.exe` / `.dll` в репозитории и релизах нет — собери из исходников,
-> запускай игру с `-insecure`, играй на своей карте (`map c1m1_hotel`).
-> VAC-серверы = риск бана. Всё на твой риск.
 
 ## Navigate
 
 | | | | |
 |---|---|---|---|
-| [About](#english) | [Build & Run](#build-en) | [Hotkeys](#hotkeys-en) | [FAQ](#faq-en) |
-| [О проекте](#russian) | [Сборка](#build-ru) | [Клавиши](#hotkeys-ru) | [Проблемы](#faq-ru) |
-
-## At a glance
-
-| Component | Mode | What it does |
-|---|---|---|
-| `ZenWare.DLL` | Internal (injected) | ESP, Chams, Aimbot, Movement, Menu — `bin/Release/ZenWare.dll` |
-| `ZenWare.Loader` | GUI launcher, local build only | Single-file assembly, themes, language — `dist/` stays on your PC |
-| `ZenWare.External` | External (no injection) | RPM + GDI overlay + `SendInput` bhop/strafe — safest to study first |
-
-Details: [SECURITY.md](SECURITY.md) · Third-party: [NOTICE.md](NOTICE.md) · License: [LICENSE](LICENSE)
+| [About](#english) | [How it works](#how-it-works) | [Features](#features) | [Build & Run](#build-and-run--local-only) |
+| [Hotkeys](#hotkeys) | [Config & Logs](#config--logs) | [Project structure](#project-structure) | [FAQ](#troubleshooting) |
 
 ---
 
@@ -65,60 +50,129 @@ Details: [SECURITY.md](SECURITY.md) · Third-party: [NOTICE.md](NOTICE.md) · Li
 
 ### About
 
-Based on [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base). Three parts, one solution (`ZenWare.sln`, `Release | Win32`):
+ZenWare.cc is a training sandbox for Left 4 Dead 2 (Source engine, 2009).
+It exists for one purpose: learning how game internals work — rendering,
+prediction, movement and networking — on your own PC, on your own server,
+with `-insecure`. There is no VAC bypass, no support for official servers,
+and no prebuilt binaries anywhere in this project.
 
-| Part | Output |
-|---|---|
-| `ZenWare.DLL` — internal module | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` — GUI loader | local `dist/ZenWare.exe`, never published, releases-page pill |
-| `ZenWare.External` — read-only overlay | `bin/Release/ZenWare.External.exe` |
+The codebase started from [Lak3/l4d2-internal-base](https://github.com/Lak3/l4d2-internal-base)
+and grew into three independent tools in one solution (`ZenWare.sln`, `Release | Win32`):
+
+| Part | Mode | What it does | Output |
+|---|---|---|---|
+| `ZenWare.DLL` | Internal (injected) | Full cheat: ESP, Chams, Aimbot, Movement, in-game menu | `bin/Release/ZenWare.dll` (x86, /MT) |
+| `ZenWare.Loader` | GUI launcher, local build only | Manual-map / LoadLibrary injection, themes, 8 languages | local `dist/ZenWare.exe`, never published |
+| `ZenWare.External` | External (no injection) | RPM reads + GDI overlay + `SendInput` bhop/strafe | `bin/Release/ZenWare.External.exe` |
+
+New to this kind of software? Start with the **External** overlay — it never
+touches game memory for writing and is the safest way to study the pipeline.
+Details: [SECURITY.md](SECURITY.md) · Third-party: [NOTICE.md](NOTICE.md) ·
+License: [LICENSE](LICENSE) · Runtime wiring: [ARCHITECTURE.md](ARCHITECTURE.md).
+
+<a id="how-it-works"></a>
+### How it works
+
+**Internal DLL.** On inject, `DllMain` spawns a thread (never runs logic on
+the loader lock) and `Entry::Load` runs an ordered, fail-closed init:
+logger → crash recorders → `serverbrowser.dll` wait → pattern scan (with
+`ZenWare.offsets` RVA cache) → interfaces (`VEngineCvar007` probed in
+`vstdlib.dll` first) → netvars → `MinHook` hooks → config load. Any missing
+pattern or interface aborts with a message box instead of crashing.
+
+Per frame two chains run:
+
+- **Tick** (`ClientMode::CreateMove`) — prediction wrap, then movement
+  (BunnyHop → AutoStrafe → JumpStats → AutoShove), then combat (Aimbot →
+  TriggerBot → AutoPistol → NoSpread). The engine original is called exactly
+  once per tick and its result is reused.
+- **Frame** (`EngineVGui::Paint`, `PAINT_UIPANELS` only) — thirdperson /
+  fullbright / hide-hands cvars, then Killfeed tick, Hitmarker tick, ESP,
+  Radar, Alerts, Menu, crosshair, grenade preview, overlay, and the animated
+  Killfeed / Hitmarker / JumpStats draws.
+
+There are no engine game-events by design — Killfeed and Hitmarker poll
+HP/alive transitions. Drawing goes only through the `G::Draw` facade over
+`MatSystemSurface`; entity reads are netvars-only with `ClassID` checks
+before any virtual call.
+
+**Loader.** A Win32 GUI app with a splash screen, dark/light system theme,
+8 interface languages and an animated RGB logo. It embeds the DLL, the
+External overlay and the logo as resources, so the build output is a single
+file. Injection is manual-map (relocations, imports, section protection,
+header wipe) with a `LoadLibrary` fallback. No network code, no auto-update.
+
+**External.** A read-only tool: `ReadProcessMemory` snapshots at 20 Hz, a
+click-through layered GDI overlay draws at 60 Hz, movement uses `SendInput`
+only. Signature + anchor + validation resolver re-finds addresses every run.
 
 ### Features
 
 <details open>
 <summary><b>Visuals</b> — ESP · Chams · Overlays</summary>
 
-- **ESP** — boxes, health bar, names, distance, weapons/items, commons, all Special Infected incl. Boomer (class-name fallback for foreign builds)
-- **Chams** — 5 palettes, allies / enemies / all SI, through walls
-- **World** — NoFog, world + viewmodel FOV, thirdperson, custom crosshair, FPS overlay
-- **Intel** — 2D radar, spectator list, Tank / Witch alerts, killfeed, hitmarker (hitsound + damage numbers)
-- **Team play** — pinned warning, revive alert, tank HP bar, team HP panel, SI nearby list
-- **Feedback** — cross hitmark, session stats (hits/shots/accuracy), damage flash, min-damage filter, thrown grenade timers
-- **Throwables** — grenade trajectory preview (molotov / pipe / bile / grenade launcher) with landing marker
+- **ESP** — boxes, health bar + optional HP text, names, distance, weapons
+  with clip ammo, ground items, commons, all Special Infected including
+  Boomer (class-name fallback for foreign builds), distance limit
+- **Chams** — 5 palettes, separate colors for enemies / allies / Tank,
+  through-walls toggle, ghost and dormant filtering
+- **World** — NoFog, separate world + viewmodel FOV sliders, thirdperson
+  with distance slider, viewmodel hide, custom crosshair, FPS/pos/HP overlay
+- **Intel** — 2D yaw-rotated radar, spectator list (observer targets),
+  Tank / Witch distance alerts, polled killfeed with slide-in cards,
+  hitmarker with hitsound, damage numbers and session stats
+- **Team play** — pinned-by-Smoker/Hunter warning, revive alert, Tank HP bar,
+  team HP panel, nearby-SI list, spit (goo) alert, thrown-grenade timers
+- **Feedback** — cross hitmark, hits/shots/accuracy stats, red damage flash,
+  damage-direction arrow to the last attacker, min-damage filter
+- **Throwables** — grenade trajectory preview (molotov / pipe / bile /
+  grenade launcher) with bounce simulation and landing marker
 
 </details>
 
 <details>
 <summary><b>Combat</b> — aim assist</summary>
 
-- **Aimbot** — silent, FOV / Distance priority, head / center, smoothing, visible-only, commons + all SI
-- **Per-weapon** — own FOV / smoothing / hitbox per group (rifles, SMG, shotguns, snipers, pistols)
-- **Helpers** — TriggerBot, AutoShove, AutoPistol, NoSpread (toggleable)
+- **Aimbot** — silent aim, FOV / Distance priority, head / center point,
+  smoothing, visible-only check, key bind, commons + all SI + Tank
+- **Per-weapon tuning** — own FOV / smoothing / hitbox per group (rifles,
+  SMGs, shotguns, snipers, pistols)
+- **Helpers** — TriggerBot (fires on the post-aim ray, no 1-tick lag),
+  AutoShove (frees pinned mates), AutoPistol, NoSpread (11-gun whitelist)
 
 </details>
 
 <details>
 <summary><b>Movement</b> — bhop & strafe</summary>
 
-- **Bhop kit** — perfect / legit BunnyHop, EdgeJump, EdgeBug, JumpBug, LongJump, FastStop, Prestrafe, AutoDuck, JumpStats, SpeedHUD
-- **Strafe** — legit / rage / w-only / directional AutoStrafe
+- **Bhop kit** — perfect / legit BunnyHop, EdgeJump, EdgeBug, JumpBug,
+  LongJump helper, FastStop, Prestrafe, AutoDuck, configurable jump delay
+- **Strafe** — legit / rage / W-only / directional AutoStrafe
+- **JumpStats** — KZ-style panel: distance, prestrafe, max speed, fall,
+  height, airtime, live sync %, strafe count, JB / EB counters
 
 </details>
 
 <details>
 <summary><b>Menu / System</b></summary>
 
-- `INSERT` menu · `F11` unload · language EN/RU/DE/ES/PT/PL/FR/ZH (button + `F7`) · animated RGB logo · `?` help icons · tabs · wheel scroll
-- Config — 3 slots (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`, `bool / int / float / Color`)
-- Logger — `%TEMP%/ZenWare.log` → `<gamedir>/ZenWare.log` (per-pid fallback)
-- Offsets cache — `<gamedir>/ZenWare.offsets` (auto, delete to force rescan)
+- In-game menu (`INSERT`): 5 tabs, per-tab scroll, animated RGB logo,
+  `?` help popups (EN + RU), color swatches, key binding rows, sliders
+- 8 interface languages with live switching (button or `F7`):
+  EN / RU / DE / ES / PT / PL / FR / ZH
+- Config — 3 slots (`ZenWare.cfg` / `ZenWare2.cfg` / `ZenWare3.cfg`),
+  `bool / int / float / Color`, float sliders use int proxies with resync
+- Logger — `%TEMP%/ZenWare.log` relocated to `<gamedir>/ZenWare.log`
+  (per-PID fallback), crash records with `module+offset` breadcrumbs
+- Offsets cache — `<gamedir>/ZenWare.offsets` (auto, delete to force rescan);
+  `Tools/SigScan` verifies all 15 patterns offline against your game files
 
 </details>
 
-<a id="build-en"></a>
+<a id="build-and-run--local-only"></a>
 ### Build and run — local only
 
-**1. Build**
+**1. Build** (Visual Studio 2022 with `Desktop development with C++`):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1
@@ -153,7 +207,7 @@ External-only (no injection): run your local
 | SDK | Windows SDK `10.0.26100.0` |
 | Target | `Release` · `Win32` (x86) |
 
-<a id="hotkeys-en"></a>
+<a id="hotkeys"></a>
 ### Hotkeys
 
 | Key | Action |
@@ -166,12 +220,30 @@ External-only (no injection): run your local
 
 Rebind: `Misc → Menu key / Aimbot key` — click → `[press key]` → press a key, `ESC` = off.
 
+<a id="config--logs"></a>
+### Config & logs
+
+- Config slots live next to the game DLL path resolution: `ZenWare.cfg`,
+  `ZenWare2.cfg`, `ZenWare3.cfg` — plain `key=value`, one value per line.
+  Session-only values (JB/EB counters, notify timestamps) are never saved.
+- Runtime log: `<gamedir>/left4dead2/ZenWare.log`. Crash reports look like
+  `[!!!] EXCEPTION code=... at module+0x...` followed by the last breadcrumb
+  — that pair is everything needed to locate a crash, no dumps required.
+- Signature cache: `<gamedir>/left4dead2/ZenWare.offsets` stores RVAs plus a
+  module fingerprint; after a game update delete it or run
+  `Verify-Signatures.bat` and fix `Offsets.cpp` if it reports `NOT FOUND`.
+
 ### Project structure
 
 ```text
 ZenWare.cc/
 ├── ZenWare.sln                  solution (DLL + Loader + External)
-├── ZenWare.DLL/                 internal module (+ MinHook, SDK, Features, Hooks)
+├── ZenWare.DLL/                 internal module
+│   ├── src/Entry/               init order, crash recorders, unload
+│   ├── src/Hooks/               ClientMode / EngineVGui / ModelRender / WndProc …
+│   ├── src/SDK/                 L4D2 interfaces, entities, DrawManager, GameUtil
+│   ├── src/Features/            Vars (settings) + Aimbot/ESP/Menu/… + Config + Lang
+│   └── src/Util/                Logger, Pattern, Offsets cache, NetVars, MinHook
 ├── ZenWare.Loader/              GUI loader — local build only, no auto-update
 ├── ZenWare.External/            external overlay — ESP, Memory, Movement, Overlay
 ├── Tools/SigScan/               signature verifier for your local client.dll
@@ -181,29 +253,36 @@ ZenWare.cc/
 ├── Verify-Signatures.bat        one-click pattern check vs your game files
 ├── START-ZenWare.bat            local external launcher
 ├── README.md · LICENSE · NOTICE.md · SECURITY.md · CHANGELOG.md · ARCHITECTURE.md
+└── README_RU/DE/ES/PT/PL/FR/ZH.md   translations of this file
 ```
 
-<a id="faq-en"></a>
+### Screenshots
+
+Capture guide: [docs/screenshots/HOWTO.md](docs/screenshots/HOWTO.md).
+`menu.png` (INSERT menu) · `esp.png` (ESP + radar vs horde) · `loader.png` (loader window).
+
+<a id="troubleshooting"></a>
 ### Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| `XorString` MessageBox on start | Signature broke after a game update → double-click `Verify-Signatures.bat`, update `Offsets.cpp` |
-| Crash after `Paint` | Open the log → find `[!!!] EXCEPTION` → report `module+0x...`, no dumps |
+| `XorString` / `FATAL ERROR` MessageBox on start | Signature broke after a game update → double-click `Verify-Signatures.bat`, update `Offsets.cpp` |
+| Crash in game | Open the log → find `[!!!] EXCEPTION` → report `module+0x...` plus the last breadcrumb, no dumps |
 | Antivirus flag | Folder → exclusions (heuristic on `WriteProcessMemory` / `CreateRemoteThread`) |
 | Squares instead of letters | Press `F7` (font fallback / language) |
 | External: no boxes | Check top overlay lines (resolver diagnostics) and signatures |
+| Menu opens but clicks go to the game | Close the game menu first (`ESC` handled by the cheat only when its own menu is open) |
 
 <a id="legal"></a>
-## Legal / Право
+## Legal
 
-| Topic | EN | RU |
-|---|---|---|
-| License | MIT — [LICENSE](LICENSE), `AS IS`, no warranty | MIT — [LICENSE](LICENSE), `AS IS`, без гарантий |
-| Third-party | [NOTICE.md](NOTICE.md): MinHook, FontAwesome, Valve SDK headers, base | [NOTICE.md](NOTICE.md): MinHook, FontAwesome, заголовки Valve, база |
-| Trademarks | Left 4 Dead 2 / Steam by Valve. Not affiliated, not endorsed | Left 4 Dead 2 / Steam принадлежат Valve. Не связан, не одобрен |
-| Distribution | Source-only — [SECURITY.md](SECURITY.md), no binaries | Только исходники — [SECURITY.md](SECURITY.md), без бинарников |
-| Use | Local `-insecure` only. No VAC bypass. Bans are yours | Только локальный `-insecure`. Обхода VAC нет. Баны — твои |
+| Topic | Terms |
+|---|---|
+| License | MIT — [LICENSE](LICENSE), `AS IS`, no warranty |
+| Third-party | [NOTICE.md](NOTICE.md): MinHook, FontAwesome, Valve SDK headers, base |
+| Trademarks | Left 4 Dead 2 / Steam by Valve. Not affiliated, not endorsed |
+| Distribution | Source-only — [SECURITY.md](SECURITY.md), no binaries |
+| Use | Local `-insecure` only. No VAC bypass. Bans are yours |
 
 <div align="center">
 

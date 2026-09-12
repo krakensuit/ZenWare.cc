@@ -22,13 +22,10 @@
 #define ZENWARE_VER_WSTR ZW_WIDEN(ZENWARE_VER_STR)
 namespace {
 constexpr int WINDOW_W = 620;
-constexpr int WINDOW_H = 300;
-constexpr int IDC_PATH = 1001;
-constexpr int IDC_BROWSE = 1002;
+constexpr int WINDOW_H = 334; // футер (пилюли языка/обновлений) на y304-326 должен влезать
 constexpr int IDC_INJECT = 1003;
 constexpr int IDC_STATUS = 1005;
 constexpr int IDC_LAUNCH = 1008;
-constexpr int IDC_LABEL = 1006;
 
 struct Theme_t {
  COLORREF bg, ctl, text, dim, accent, accent2, alt, alt2, border;
@@ -66,6 +63,7 @@ static RECT g_rcUpdate={0,0,0,0};
 // dt-анимации: экспоненциальное сглаживание вместо фиксированного шага
 static float g_flHovLaunch=0.0f, g_flHovInject=0.0f; // подсветка кнопок под курсором
 static float g_flPressMode=0.0f; // тактильный отклик пилюли режима
+static float g_flModeHovA=0.0f; // подсветка пилюли режима под курсором
 static float g_flWinAlpha=0.0f;  // fade-in главного окна
 static bool g_bFading=true;
 static ULONGLONG g_ullLastTick=0;
@@ -83,8 +81,6 @@ void ApplyDwm(){
  if(FAILED(DwmSetWindowAttribute(g_hMain,20,&d,sizeof(d)))) DwmSetWindowAttribute(g_hMain,19,&d,sizeof(d));
  INT r=2; DwmSetWindowAttribute(g_hMain,33,&r,sizeof(r));
 }
-void ApplyCtrlTheme(){
-}
 void RefreshTheme(){
  g_theme=MakeTheme(IsSystemDark());
  DestroyGdi();
@@ -93,7 +89,6 @@ void RefreshTheme(){
  g_brBorder=CreateSolidBrush(g_theme.border);
  ApplyDwm();
  if(g_hMain) InvalidateRect(g_hMain,nullptr,TRUE);
- ApplyCtrlTheme();
 }
 void InitFonts(HWND hwnd){
  if(g_fUI)DeleteObject(g_fUI); if(g_fTitle)DeleteObject(g_fTitle); if(g_fSmall)DeleteObject(g_fSmall);
@@ -161,7 +156,7 @@ DWORD WINAPI InjectThread(LPVOID p){
  EnableWindow(g_hInject,TRUE); InterlockedExchange(&g_busy,0); delete c; return 0;
 }
 static bool FindDll(wchar_t* out){
- const wchar_t* cands[] = { L"/ZenWare.dll", L"/../../../ZenWare.DLL/bin/Release/ZenWare.dll", L"C:/Users/ilya/Desktop/ZenWare.cc/ZenWare.DLL/bin/Release/ZenWare.dll" };
+ const wchar_t* cands[] = { L"/ZenWare.dll", L"/../../../ZenWare.DLL/bin/Release/ZenWare.dll" };
  wchar_t dir[MAX_PATH]={};
  GetModuleFileNameW(NULL,dir,MAX_PATH);
  wchar_t* s=wcsrchr(dir,92); if(s) *s=0;
@@ -212,7 +207,7 @@ void ToggleLang(){
 void LaunchExternal(){
  wchar_t dir[MAX_PATH]={}; GetModuleFileNameW(NULL,dir,MAX_PATH);
  wchar_t* s=wcsrchr(dir,L'\\'); if(s) *s=0;
- const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe",L"C:\\Users\\ilya\\Desktop\\ZenWare.cc\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
+ const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
  wchar_t goods[MAX_PATH]={};
  wchar_t tried[3][MAX_PATH]={};
  for(int i=0;i<3;i++){
@@ -663,35 +658,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT",g_bExternal?L"EXTERNAL STARTEN":L"INJECT",g_bExternal?L"INICIAR EXTERNAL":L"INYECTAR",g_bExternal?L"INICIAR EXTERNAL":L"INJETAR",g_bExternal?L"URUCHOM EXTERNAL":L"WSTRZYKIJ",g_bExternal?L"LANCER EXTERNAL":L"INJECTER",g_bExternal?L"启动 EXTERNAL":L"注入"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
     g_hStatus=CreateWindowExW(0,L"STATIC",LoaderUtil::SW(L"Готов",L"Ready",L"Bereit",L"Listo",L"Pronto",L"Gotowy",L"Prêt",L"就绪"),WS_CHILD|WS_VISIBLE,44,204,556,20,h,(HMENU)IDC_STATUS,nullptr,nullptr);
     SendMessageW(g_hStatus,WM_SETFONT,(WPARAM)g_fUI,TRUE);
-   // Autopoisk DLL moved into FindDll()
-#if 0
-  {
-   wchar_t szFound[MAX_PATH] = { };
-   wchar_t szExeDir[MAX_PATH] = { };
-   GetModuleFileNameW(NULL, szExeDir, MAX_PATH);
-   wchar_t* pSlash = wcsrchr(szExeDir, L'\\');
-   if (pSlash) *pSlash = L'\0';
-   const wchar_t* cands[] = { L"\\ZenWare.dll", L"\\..\\ZenWare.DLL\\bin\\Release\\ZenWare.dll" };
-   for (auto rel : cands) {
-       wchar_t szTry[MAX_PATH] = { };
-       wchar_t szFull[MAX_PATH] = { };
-       wcscpy_s(szTry, szExeDir);
-       wcscat_s(szTry, rel);
-       GetFullPathNameW(szTry, MAX_PATH, szFull, nullptr);
-       if (GetFileAttributesW(szFull) != INVALID_FILE_ATTRIBUTES) { wcscpy_s(szFound, szFull); break; }
-   }
-   if (!szFound[0]) {
-       const wchar_t* dev = L"C:\\Users\\ilya\\Desktop\\ZenWare.cc\\ZenWare.DLL\\bin\\Release\\ZenWare.dll";
-       if (GetFileAttributesW(dev) != INVALID_FILE_ATTRIBUTES) wcscpy_s(szFound, dev);
-   }
-   if (szFound[0]) {
-       char nb[MAX_PATH] = { };
-       WideCharToMultiByte(CP_ACP, 0, szFound, -1, nb, MAX_PATH, nullptr, nullptr);
-       SetWindowTextA(g_hPath, nb);
-   }
-  }
-   #endif
-   ApplyCtrlTheme(); SetTimer(h,1,16,nullptr); break;
+    SetTimer(h,1,16,nullptr); break;
  }
   case WM_TIMER:
     if(w==1){
@@ -743,7 +710,6 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    for(int b:{IDC_LAUNCH,IDC_INJECT}){ HWND bh=GetDlgItem(h,b);
    RECT r; GetWindowRect(bh,&r); MapWindowPoints(HWND_DESKTOP,h,(POINT*)&r,2);
    InvalidateRect(h,&r,FALSE); }
-   (void)id;
    {
     POINT mp{GET_X_LPARAM(l),GET_Y_LPARAM(l)};
     bool mh=PtInRect(&g_rcMode,mp)!=FALSE;
@@ -829,7 +795,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     int sq=(int)(g_flPressMode*4.0f); // прижимается на 4px
     RECT vr={rc.right-170+sq,16+sq/2,rc.right-20-sq,42-sq/2}; g_rcMode=vr;
     float hovT=g_bModeHov?1.0f:0.0f;
-    static float g_flModeHovA=0.0f; g_flModeHovA=hovT; // dt-сглаживание делает WM_TIMER
+    g_flModeHovA=hovT;
     COLORREF mfill=Mix2(g_theme.dark?RGB(6,14,11):RGB(255,255,255),Mix2(g_theme.ctl,Acc(),60),(int)(g_flModeHovA*255));
     HBRUSH vb=CreateSolidBrush(mfill); HPEN vp=CreatePen(PS_SOLID,1,Mix2(g_theme.border,Acc(),(int)(g_flModeHovA*255)));
    auto vo1=SelectObject(dc,vb); auto vo2=SelectObject(dc,vp);
@@ -839,11 +805,6 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    DrawTextW(dc,g_bExternal?L"EXTERNAL • x86":L"INTERNAL • x86",-1,&vr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
   // подписи секций
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
-
-
-  // рамки вокруг полей
-
-
 
   // прогресс-бар инжекта
   if(g_busy){
@@ -914,12 +875,10 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  case WM_COMMAND:
   if(HIWORD(w)==BN_CLICKED){
    switch(LOWORD(w)){
-         case 0xBEEF: break; // IDC_BROWSE removed
       case IDC_INJECT: if(g_bExternal) LaunchExternal(); else StartInject(); SetFocus(h); break;
      case IDC_LAUNCH: LaunchGame(); SetFocus(h); break;
     }
    }
-   else if(HIWORD(w)==EN_SETFOCUS || HIWORD(w)==EN_KILLFOCUS){ RECT pf={20,100,424,134}; InvalidateRect(h,&pf,FALSE); }
   break;
   case WM_KEYDOWN:{
    static const int seq[]={VK_UP,VK_UP,VK_DOWN,VK_DOWN,VK_LEFT,VK_RIGHT,VK_LEFT,VK_RIGHT,'B','A'};
