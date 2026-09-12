@@ -78,6 +78,7 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Chams","Chams","Flat materials on player models, visible through walls.","Чамсы","Плоские материалы на моделях, видно сквозь стены."},
 		{"Chams through walls","Chams through walls","Ignores depth check so chams show through walls.","Чамсы сквозь стены","Отключает проверку глубины: чамсы видно сквозь стены."},
 		{"Chams palette >","Chams palette","Cycles 5 enemy and ally color presets.","Палитра чамсов","Перебор 5 пресетов цветов врагов и союзников."},
+		{"SI class colors","SI class colors","Own ESP and chams color per special class, fallback to enemy color.","Цвета классов SI","Свой цвет ESP и чамсов для каждого класса особых, иначе цвет врага."},
 		{"No visual recoil","No visual recoil","Removes screen punch locally. Server spread is untouched.","Без виз. отдачи","Убирает тряску экрана локально. Разброс сервера не трогает."},
 		{"Bunny hop","Bunny hop","Auto-jump on landing. Hold SPACE while moving.","Бхоп","Авто-прыжок при приземлении. Держи ПРОБЕЛ в движении."},
 		{"Bhop: Perfect >","Bhop style","Perfect forces a jump every tick. Legit only uses your own keypress.","Стиль бхопа","Идеал жмёт прыжок каждый тик. Легит использует только твоё нажатие."},
@@ -107,14 +108,17 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 		{"Crosshair","Crosshair","Custom center crosshair.","Прицел","Кастомный прицел по центру."},
 		{"Crosshair size","Crosshair size","Crosshair arm length in pixels.","Размер прицела","Длина рисок прицела в пикселях."},
 		{"FPS / pos overlay","FPS overlay","FPS and position readout in the bottom-left corner.","FPS / поз. оверлей","FPS и координаты в левом нижнем углу."},
+		{"Bind list","Bind list","Feature keys with hold state, top-right under the killfeed.","Список биндов","Клавиши фич с состоянием удержания, справа под киллфидом."},
 		{"No screen effects","No screen effects","Skips post-screen effects: bile overlay, blur, stun fade. Off restores the original picture.","Без эффектов экрана","Пропускает пост-эффекты: рвоту на экране, блюр, ослепление. Выкл возвращает обычную картинку."},
 		{"Common counter","Common counter","Alive common infected within ~40m, bottom-left above the speed readout.","Счётчик обычных","Живые обычные в радиусе ~40м, слева внизу над скоростью."},
 		{"Weapon HUD","Weapon HUD","Active weapon name, clip and reserve ammo under the crosshair.","HUD оружия","Активное оружие, магазин и запас под прицелом."},
 		{"Reload alerts","Reload alerts","RELOADING text and red clip when 5 or fewer rounds left.","Алерты перезарядки","Текст RELOADING и красный магазин при 5 и меньше патронах."},
+		{"Spread circle","Spread circle","NoSpread radius circle around the crosshair.","Круг разброса","Круг радиуса NoSpread вокруг прицела."},
 		{"ESP max distance","ESP distance","Cutoff in meters for all ESP, 0 = unlimited. Cleans the screen and saves frames.","Дистанция ESP","Отсечка ESP в метрах, 0 = без лимита. Чище экран и больше FPS."},
 		{"Hide hands","Hide hands","r_drawviewmodel 0 without console, restored on toggle off.","Скрыть руки","r_drawviewmodel 0 без консоли, возвращается при выключении."},
 		{"Spit alert","Spit alert","Red warning when standing inside spitter goo (~4.5m).","Алерт блевотины","Красное предупреждение, если стоишь в блевотине (~4.5м)."},
 		{"Damage arrow","Damage arrow","Arrow toward the last attacker for 3 seconds (best-effort guess, no engine events).","Стрелка урона","Стрелка на последнего атакующего на 3 секунды (эвристика, ивентов в движке нет)."},
+		{"Damage log","Damage log","Last 6 damage events: dealt, kills and incoming, bottom-right.","Лог урона","Последние 6 событий урона: нанесённый, киллы и входящий, справа внизу."},
 		{"Aimbot","Aimbot","Silent aim at head or center within FOV. Hold the aim key.","Аимбот","Сайлент-наведение в голову или центр в пределах FOV. Держи клавишу аима."},
 		{"Auto shoot","Auto shoot","Fires automatically while a target is locked.","Авто-огонь","Автоматический огонь при захвате цели."},
 		{"Silent aim","Silent aim","The server sees aimed angles, your screen stays still.","Сайлент-аим","Сервер видит наведённые углы, твой экран стоит на месте."},
@@ -314,6 +318,7 @@ void CFeatures_Menu::Render(){
     BindRow(mouse,"ESP panic key",&Vars::ESP::nPanicKey);
    Checkbox(mouse,"Chams",&Vars::Chams::bEnabled);
    Checkbox(mouse,"Chams through walls",&Vars::Chams::bThroughWalls);
+   Checkbox(mouse,"SI class colors",&Vars::Chams::bSIColors);
    Button(mouse,"Chams palette >",[](){ Vars::Chams::nPalette=(Vars::Chams::nPalette+1)%5; });
    Checkbox(mouse,"No visual recoil",&Vars::VisualRecoil::bEnabled);
    break;
@@ -352,11 +357,13 @@ void CFeatures_Menu::Render(){
      if (Vars::Grenade::bEnabled)
       Checkbox(mouse,"Landing marker",&Vars::Grenade::bLanding);
      Checkbox(mouse,"FPS / pos overlay",&Vars::Visuals::bOverlay);
+     Checkbox(mouse,"Bind list",&Vars::Visuals::bBindList);
      Checkbox(mouse,"No screen effects",&Vars::Visuals::bNoScreenFx);
      Checkbox(mouse,"Common counter",&Vars::Visuals::bCommonCount);
      Checkbox(mouse,"Weapon HUD",&Vars::Visuals::bWeaponHud);
      if (Vars::Visuals::bWeaponHud)
       Checkbox(mouse,"Reload alerts",&Vars::Visuals::bReloadAlert);
+     Checkbox(mouse,"Spread circle",&Vars::Visuals::bSpreadCircle);
      SliderInt(mouse,"ESP max distance",&Vars::Visuals::nEspMaxDistS,0,200);
      Checkbox(mouse,"Killfeed",&Vars::Killfeed::bEnabled);
      Checkbox(mouse,"Hitmarker",&Vars::Hitmarker::bEnabled);
@@ -368,6 +375,7 @@ void CFeatures_Menu::Render(){
        Checkbox(mouse,"Session stats",&Vars::Hitmarker::bStats);
        Checkbox(mouse,"Damage flash",&Vars::Hitmarker::bDmgFlash);
        Checkbox(mouse,"Damage arrow",&Vars::Hitmarker::bDmgArrow);
+       Checkbox(mouse,"Damage log",&Vars::Hitmarker::bDmgLog);
       SliderInt(mouse,"Hit pitch",&Vars::Hitmarker::nPitch,200,2000);
       SliderInt(mouse,"Number lifetime",&Vars::Hitmarker::nDurationMs,400,3000);
       SliderInt(mouse,"Min damage",&Vars::Hitmarker::nMinDmg,0,100);

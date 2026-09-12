@@ -306,6 +306,29 @@ void CFeatures_Visuals::DrawCrosshair()
 		}
 	}
 
+	// Круг разброса NoSpread: радиус ~ текущий спред ствола.
+	if (Vars::Visuals::bSpreadCircle && pLocal && I::ClientEntityList)
+	{
+		float flSpread = 0.0f;
+		EHANDLE hActive = pLocal->m_hActiveWeapon();
+		if (hActive.IsValid())
+		{
+			IClientEntity* pViaHandle = I::ClientEntityList->GetClientEntityFromHandle(hActive);
+			//IsGunEntity гейтит чужую таблицу: GetCurrentSpread — виртуалка
+			//C_TerrorWeapon, на меле/пиле/греннике слот чужой (краш).
+			if (G::Util.IsGunEntity(pViaHandle))
+			{
+				C_TerrorWeapon* pTW = pViaHandle->As<C_TerrorWeapon*>();
+				if (pTW) flSpread = pTW->GetCurrentSpread();
+			}
+		}
+		if (flSpread > 0.0001f)
+		{
+			const int nR = U::Math.Clamp((int)(flSpread * 1200.0f), 4, 120);
+			G::Draw.Circle(nCX, nCY, nR, 32, Color(clr.r(), clr.g(), clr.b(), 160));
+		}
+	}
+
 	// Крест попадания: 0.25 c после зачтённого урона.
 	if (Vars::Hitmarker::bEnabled && Vars::Hitmarker::bXMark)
 	{
@@ -319,6 +342,25 @@ void CFeatures_Visuals::DrawCrosshair()
 			G::Draw.Line(nCX + 6, nCY + 12, nCX + 12, nCY + 6, clrX);
 		}
 	}
+}
+//Имя клавиши для панели биндов: мышь отдельно, остальное через Win32.
+static void KeyLabel(const int nVk, char* const szOut, const int nSize)
+{
+	if (nVk <= 0) { strcpy_s(szOut, nSize, "always"); return; }
+	switch (nVk)
+	{
+		case VK_LBUTTON: strcpy_s(szOut, nSize, "LMB"); return;
+		case VK_RBUTTON: strcpy_s(szOut, nSize, "RMB"); return;
+		case VK_MBUTTON: strcpy_s(szOut, nSize, "MMB"); return;
+		case VK_XBUTTON1: strcpy_s(szOut, nSize, "M4"); return;
+		case VK_XBUTTON2: strcpy_s(szOut, nSize, "M5"); return;
+		case VK_SPACE: strcpy_s(szOut, nSize, "Space"); return;
+		default: break;
+	}
+	const UINT nSc = MapVirtualKeyA((UINT)nVk, MAPVK_VK_TO_VSC);
+	if (nSc && GetKeyNameTextA((LONG)(nSc << 16), szOut, nSize))
+		return;
+	sprintf_s(szOut, nSize, "%d", nVk);
 }
 
 void CFeatures_Visuals::DrawOverlay()
@@ -393,5 +435,22 @@ void CFeatures_Visuals::DrawOverlay()
 		if (flSpeed > 400) clrSpd = { 255, 220, 0, 255 };
 		G::Draw.String(EFonts::MENU_CONSOLAS, 8, G::Draw.m_nScreenH - 54,
 			clrSpd, TXT_DEFAULT, "speed %.0f u/s", flSpeed);
+	}
+
+	// Панель биндов: клавиши фич + удержание. Справа, под карточками киллфида.
+	if (Vars::Visuals::bBindList)
+	{
+		char szAim[32], szMenu[32], szPanic[32];
+		KeyLabel(Vars::Aimbot::nKey, szAim, sizeof(szAim));
+		KeyLabel(Vars::Menu::nKey, szMenu, sizeof(szMenu));
+		KeyLabel(Vars::ESP::nPanicKey, szPanic, sizeof(szPanic));
+		const bool bAim = !Vars::Aimbot::nKey || (GetAsyncKeyState(Vars::Aimbot::nKey) & 0x8000);
+		const bool bHop = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
+		const int nBX = G::Draw.m_nScreenW - 228;
+		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 280, Color(140, 160, 152, 255), TXT_DEFAULT, "binds");
+		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 296, bAim ? Color(0, 255, 171, 255) : Color(120, 130, 126, 255), TXT_DEFAULT, "aimbot [%s]", szAim);
+		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 312, bHop ? Color(0, 255, 171, 255) : Color(120, 130, 126, 255), TXT_DEFAULT, "bhop [Space]");
+		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 328, Color(120, 130, 126, 255), TXT_DEFAULT, "menu [%s]", szMenu);
+		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 344, Color(120, 130, 126, 255), TXT_DEFAULT, "panic [%s]", szPanic);
 	}
 }

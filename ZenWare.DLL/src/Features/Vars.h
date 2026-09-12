@@ -94,6 +94,7 @@ namespace Vars
 		inline Color clrEnemy = { 150, 15, 15, 255 };
 		inline Color clrAlly = { 15, 150, 150, 255 };
 		inline Color clrTank = { 150, 100, 15, 255 };
+		inline bool bSIColors = true; //per-class SI colors (ESP + chams), fallback clrEnemy
 	}
 
 	namespace ESP
@@ -139,6 +140,8 @@ namespace Vars
 		inline float flEspMaxDist = 0.0f; //ESP cutoff, meters, 0 = unlimited
 		inline int nEspMaxDistS = 0; //meter slider proxy
 		inline bool bHideHands = false; //r_drawviewmodel 0 via ICvar (restored off)
+		inline bool bSpreadCircle = false; //NoSpread radius circle around crosshair
+		inline bool bBindList = false; //active key binds panel (top-right)
 	}
 
 	namespace Radar
@@ -188,6 +191,7 @@ namespace Vars
 		inline bool bStats = false;    // панель статистики сессии
 		inline bool bDmgFlash = true;  // красная вспышка при уроне по тебе
 		inline bool bDmgArrow = true;  // стрелка на последнего атакующего
+		inline bool bDmgLog = false;   // панель лога урона (нанесённый + по тебе)
 		inline int nPitch = 1000;      // Hz, menu 200..2000
 		inline int nDurationMs = 1200; // ms, menu 400..3000
 		inline int nMinDmg = 0;        // скрывать цифры урона меньше N, 0 = все

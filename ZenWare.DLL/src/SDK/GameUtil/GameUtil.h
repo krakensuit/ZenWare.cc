@@ -30,6 +30,8 @@ public:
 	bool IsGunEntity(IClientEntity* pEntity);
 	//Бумер и сдвинутые ID чужих билдов: опознаём СИ по имени класса.
 	bool IsSpecialByName(const char* szNet);
+	//Фиксированная палитра классов СИ (ESP + чамсы), fallback для неизвестных.
+	Color SIClassColor(const int nClassID, const Color& clrFallback);
 };
 
 namespace G { inline CGlobal_GameUtil Util; }

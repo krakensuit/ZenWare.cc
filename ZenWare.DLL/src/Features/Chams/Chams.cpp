@@ -107,7 +107,9 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 		else
 		{
 			pMaterial = m_pEnemy;
-			clr = Vars::Chams::clrEnemy;
+			ClientClass* pCC = pPlayer->GetClientClass();
+			const int nCID = (pCC) ? pCC->m_ClassID : -1;
+			clr = Vars::Chams::bSIColors ? G::Util.SIClassColor(nCID, Vars::Chams::clrEnemy) : Vars::Chams::clrEnemy;
 		}
 	}
 	else

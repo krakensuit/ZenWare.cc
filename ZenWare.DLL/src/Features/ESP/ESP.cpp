@@ -448,7 +448,7 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 		default: break;
 	}
 
-	const Color& clrTeam = Vars::Chams::clrEnemy;
+	const Color clrTeam = Vars::Chams::bSIColors ? G::Util.SIClassColor(nClassID, Vars::Chams::clrEnemy) : Vars::Chams::clrEnemy;
 	if (Vars::ESP::bFilled)
 		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
 	DrawEspBox(x, y, w, h, clrTeam);

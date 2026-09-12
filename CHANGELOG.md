@@ -5,6 +5,13 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+### Added / Добавлено
+
+- Spread circle around the crosshair (live NoSpread radius), per-class SI
+  colors for ESP and chams, bind list panel, damage log panel (dealt,
+  kills, incoming). Круг разброса у прицела, цвета классов SI для ESP и
+  чамсов, панель биндов, лог урона (нанесённый, киллы, входящий).
+
 ### Changed / Изменено
 
 - All 8 READMEs rewritten with the expanded template (about, how it works,

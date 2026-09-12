@@ -239,3 +239,17 @@ bool CGlobal_GameUtil::IsSpecialByName(const char* szNet)
 	return false;
 }
 
+Color CGlobal_GameUtil::SIClassColor(const int nClassID, const Color& clrFallback)
+{
+	switch (nClassID)
+	{
+		case Hunter: return { 90, 200, 255, 255 };
+		case Smoker: return { 80, 220, 80, 255 };
+		case Jockey: return { 170, 80, 255, 255 };
+		case Spitter: return { 150, 255, 60, 255 };
+		case Charger: return { 255, 210, 0, 255 };
+		default: break;
+	}
+	return clrFallback;
+}
+

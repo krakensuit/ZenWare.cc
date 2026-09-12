@@ -101,6 +101,24 @@ void CFeatures_Hitmarker::PlayHit(bool bKill)
 	std::thread([nFreq, bKill]() { Beep(nFreq, bKill ? 120 : 60); }).detach();
 }
 
+//Короткое имя класса сущности для лога урона (без префикса C, игроки = Survivor).
+static const char* ClassShort(IClientEntity* pEntity)
+{
+	if (!pEntity)
+		return "?";
+	ClientClass* pCC = pEntity->GetClientClass();
+	if (!pCC || !pCC->m_pNetworkName || !pCC->m_pNetworkName[0])
+		return "?";
+	const char* s = pCC->m_pNetworkName;
+	if (strcmp(s, "CTerrorPlayer") == 0 || strcmp(s, "SurvivorBot") == 0)
+		return "Survivor";
+	if (strcmp(s, "Infected") == 0)
+		return "Common";
+	if (s[0] == 'C' && s[1] >= 'A' && s[1] <= 'Z')
+		return s + 1;
+	return s;
+}
+
 void CFeatures_Hitmarker::OnTick()
 {
 	U::Log.Crumb("Hitmarker::OnTick");
@@ -124,12 +142,14 @@ void CFeatures_Hitmarker::OnTick()
 
 	// Урон по нам: просадка HP локального между кадрами.
 	bool bJustDamaged = false;
+	int nIncoming = 0;
 	{
 		const int nHp = pLocal->GetHealth();
 		if (m_nLocalHp >= 0 && nHp < m_nLocalHp)
 		{
 			m_flLastDmgT = I::GlobalVars->curtime;
 			bJustDamaged = true;
+			nIncoming = m_nLocalHp - nHp;
 		}
 		m_nLocalHp = nHp;
 	}
@@ -179,6 +199,17 @@ void CFeatures_Hitmarker::OnTick()
 			m_nKills++;
 		PlayHit(bKill);
 
+		if (Vars::Hitmarker::bDmgLog)
+		{
+			DmgLog_t e;
+			if (bKill) sprintf_s(e.szText, "KILL %s", ClassShort(pEntity));
+			else sprintf_s(e.szText, "-%d %s", nDmg, ClassShort(pEntity));
+			e.clr = bKill ? Color(255, 70, 70, 255) : Color(0, 255, 171, 255);
+			e.flT = flNow;
+			m_aLog.push_back(e);
+			while (m_aLog.size() > 6) m_aLog.erase(m_aLog.begin());
+		}
+
 		if (Vars::Hitmarker::bNumbers && m_aNums.size() < 12)
 		{
 			HitNum_t m;
@@ -194,11 +225,12 @@ void CFeatures_Hitmarker::OnTick()
 
 	// Откуда прилетело: в кадр урона ищем ближайшего видимого врага.
 	// Дорогой скан (трейсы) — только по факту просадки HP, не каждый кадр.
-	if (bJustDamaged && Vars::Hitmarker::bDmgArrow)
+	if (bJustDamaged && (Vars::Hitmarker::bDmgArrow || Vars::Hitmarker::bDmgLog))
 	{
 		float flBest = 2000.0f * 2000.0f;
 		Vector vBest;
 		bool bFound = false;
+		const char* szBestCls = "?";
 
 		for (int n = 1; n <= nMax; n++)
 		{
@@ -220,13 +252,25 @@ void CFeatures_Hitmarker::OnTick()
 			flBest = flD2;
 			vBest = vAnchor;
 			bFound = true;
+			szBestCls = ClassShort(pEntity);
 		}
 
-		if (bFound)
+		if (bFound && Vars::Hitmarker::bDmgArrow)
 		{
 			m_vAttacker = vBest;
 			m_flAttackerT = flNow;
 			m_bHasAttacker = true;
+		}
+
+		if (Vars::Hitmarker::bDmgLog && nIncoming > 0)
+		{
+			DmgLog_t e;
+			if (bFound) sprintf_s(e.szText, "-%d <- %s", nIncoming, szBestCls);
+			else sprintf_s(e.szText, "-%d <- ?", nIncoming);
+			e.clr = Color(255, 170, 60, 255);
+			e.flT = flNow;
+			m_aLog.push_back(e);
+			while (m_aLog.size() > 6) m_aLog.erase(m_aLog.begin());
 		}
 	}
 }
@@ -329,6 +373,27 @@ void CFeatures_Hitmarker::Draw()
 		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, "session");
 		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0 + 16, Color(235, 245, 240, 255), TXT_DEFAULT, "hits %d / shots %d", m_nHits, m_nShots);
 		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0 + 32, Color(0, 255, 171, 255), TXT_DEFAULT, "acc %d%%  kills %d", nAcc, m_nKills);
+	}
+
+	// Лог урона: справа внизу над сессионной статой, записи живут 4 c.
+	if (Vars::Hitmarker::bDmgLog && !m_aLog.empty())
+	{
+		for (int i = (int)m_aLog.size() - 1; i >= 0; --i)
+		{
+			if (flNow - m_aLog[i].flT > 4.0f) { m_aLog.erase(m_aLog.begin() + i); continue; }
+		}
+		const int nLX = G::Draw.m_nScreenW - 228;
+		int nLY = G::Draw.m_nScreenH - 240;
+		for (size_t i = 0; i < m_aLog.size(); i++)
+		{
+			const float flAge = flNow - m_aLog[i].flT;
+			if (flAge < 0.0f)
+				continue;
+			const int nA = (int)(255.0f * (1.0f - flAge / 4.0f));
+			const Color& c = m_aLog[i].clr;
+			G::Draw.String(EFonts::MENU_CONSOLAS, nLX, nLY, Color(c.r(), c.g(), c.b(), nA), TXT_DEFAULT, "%s", m_aLog[i].szText);
+			nLY += 16;
+		}
 	}
 }
 
