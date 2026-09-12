@@ -11,6 +11,9 @@ All notable changes to ZenWare.cc are documented here.
   `menu.lang`) and `README_DE.md` linked from the main README.
   Немецкий язык меню (переключение кнопкой + `F7`, хранится в
   `menu.lang`) и `README_DE.md` со ссылкой из основного README.
+- Spanish menu language (EN / RU / DE / ES cycle) and `README_ES.md`
+  linked from the main README.
+  Испанский язык меню и `README_ES.md` со ссылкой из основного README.
 - Weapon HUD under the crosshair: active weapon name, clip and reserve
   (`m_iAmmo`) + RELOADING text and red LOW AMMO at 5 rounds or less.
   HUD оружия под прицелом: имя, магазин, запас + RELOADING и красный
