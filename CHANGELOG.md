@@ -5,6 +5,8 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.1] - 2026-09-12
+
 ### Added / Добавлено
 
 - Spread circle around the crosshair (live NoSpread radius), per-class SI
@@ -15,9 +17,9 @@ All notable changes to ZenWare.cc are documented here.
 ### Changed / Изменено
 
 - All 8 READMEs rewritten with the expanded template (about, how it works,
-  detailed features, config/logs, structure, screenshots), badges bumped to
-  v3.8. Все 8 README переписаны по расширенному шаблону, бейджи подняты
-  до v3.8.
+  detailed features, config/logs, structure), screenshots sections removed,
+  badges bumped to v3.8. Все 8 README переписаны по расширенному шаблону,
+  секции скриншотов удалены, бейджи подняты до v3.8.
 
 ## [3.8] - 2026-09-12
 
