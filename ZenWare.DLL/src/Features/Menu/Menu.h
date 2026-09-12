@@ -71,6 +71,9 @@ private:
 	int m_nDragOffX = 0;
 	int m_nDragOffY = 0;
 
+	//BindRow ловит клавишу: PollMenuKey в это время не тогглит меню.
+	static bool s_bKeyCapture;
+
 	// Прокрутка контента вкладок (Combat не влезает в 480px).
 	int m_nScroll[5] = { };
 	int m_nContentH[5] = { };

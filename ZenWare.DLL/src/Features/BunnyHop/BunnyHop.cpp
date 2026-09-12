@@ -24,7 +24,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
 	{
-		s_bWasOnGround = true;
+		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
 		return;
@@ -32,7 +32,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	if (!G::Util.IsValidTeam(pLocal->GetTeamNumber()))
 	{
-		s_bWasOnGround = true;
+		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
 		return;
@@ -43,15 +43,29 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	if (nMoveType == MOVETYPE_LADDER || nMoveType == MOVETYPE_NOCLIP || nMoveType == MOVETYPE_OBSERVER)
 	{
-		s_bWasOnGround = true;
+		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
 		return;
 	}
 
-	//Смена карты: tick_count начался заново, старый тик прыжка — в будущем.
-	if (s_nLastJumpTick != 0 && cmd->tick_count < s_nLastJumpTick)
+	//В воде и в инкапе движком не рулим: бхоп-спам всплытия, трейсы багов
+	//под водой и EdgeJump с подводного уступа.
+	if (pLocal->m_nWaterLevel() > 1 || pLocal->m_isIncapacitated())
+	{
+		s_bWasOnGround = false;
+		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
+		return;
+	}
+
+	//Смена карты: tick_count начался заново, старые статики — в будущем.
+	if (s_nLastJumpTick != 0 && cmd->tick_count < s_nLastJumpTick)
+	{
+		s_bWasOnGround = false;
+		s_bJbDuck = false;
+		s_nLastJumpTick = 0;
+	}
 
 	const bool bOnGround = (pLocal->m_fFlags() & FL_ONGROUND) != 0;
 	const bool bDucking = (pLocal->m_fFlags() & FL_DUCKING) != 0;
@@ -83,7 +97,9 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 				CTraceFilterHitAll filter(pLocal);
 				G::Util.Trace(origin, down, MASK_PLAYERSOLID, &filter, &tr);
 
-				if (tr.fraction < 1.0f && !tr.startsolid)
+				//fraction>0: при дохлом EngineTrace структура нулевая и
+				//иначе баг выстрелил бы без земли под ногами (fail-open).
+				if (tr.fraction > 0.0f && tr.fraction < 1.0f && !tr.startsolid)
 				{
 					//Duck only inside the real bug window (~2 ticks to impact),
 					//ducking earlier just lands ducked without the bug.
@@ -154,21 +170,22 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			{
 				//Don't jump if ducking and edgebug wants to keep duck.
 				if (!(bDucking && Vars::BunnyHop::bEdgeBug))
+				{
 					cmd->buttons |= IN_JUMP;
+					s_nLastJumpTick = cmd->tick_count;
+				}
 
 				//Long-jump helper: crouch-jump gives extra distance.
 				if (Vars::BunnyHop::bLongJumpHelper)
 					cmd->buttons |= IN_DUCK;
-
-				s_nLastJumpTick = cmd->tick_count;
 			}
 		}
 		else
 		{
 			//In air - release jump so next landing can be perfect.
-			//Keep duck if edgebug wants to bug the landing, and never strip
-			//an edgejump that just fired on this tick.
-			if (!Vars::BunnyHop::bEdgeBug && !bEdgeJumped)
+			//Держим всегда (и при bEdgeBug): иначе held-jump перефайрит
+			//в тик приземления и убьёт EB-утку в том же тике.
+			if (!bEdgeJumped)
 				cmd->buttons &= ~IN_JUMP;
 		}
 	}
@@ -187,7 +204,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			CTraceFilterHitAll filter(pLocal);
 			G::Util.Trace(origin, down, MASK_PLAYERSOLID, &filter, &tr);
 
-			if (tr.fraction < 1.0f && !tr.startsolid)
+			if (tr.fraction > 0.0f && tr.fraction < 1.0f && !tr.startsolid)
 			{
 				//Same tight window as jumpbug: duck ~2 ticks before impact.
 				const float flInterval = (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));

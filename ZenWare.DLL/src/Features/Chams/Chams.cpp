@@ -38,7 +38,7 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 {
 	ApplyPalette();
 
-	if (!Vars::Chams::bEnabled || !I::EngineClient->IsInGame())
+	if (!Vars::Chams::bEnabled || !I::EngineClient || !I::ClientEntityList || !I::ModelRender || !I::EngineClient->IsInGame())
 		return false;
 
 	if (!(pInfo.flags & STUDIO_RENDER) || (pInfo.flags & STUDIO_SHADOWDEPTHTEXTURE))
@@ -81,18 +81,22 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 	if (!pLocal)
 		return false;
 
-	const int nTeam = pPlayer->GetTeamNumber();
+	const int nTeam = pIClient->As<C_BaseEntity*>()->m_iTeamNum();
 	if (!G::Util.IsValidTeam(nTeam))
 		return false;
 
-	if (pPlayer->deadflag() || pPlayer->m_lifeState() != 0 || pPlayer->GetHealth() <= 0)
+	C_BasePlayer* pBasePlayer = pIClient->As<C_BasePlayer*>();
+	if (pBasePlayer->deadflag() || pBasePlayer->m_lifeState() != 0)
+		return false;
+	if (pPlayer->GetHealth() <= 0 && !G::Util.IsSpecialByName(pCC->m_pNetworkName)
+		&& !U::Math.CompareGroup(pCC->m_ClassID, Hunter, Smoker, Jockey, Spitter, Charger))
 		return false;
 
 	if (pPlayer->m_isGhost())
 		return false;
 
 	//Enemy/ally is resolved relative to the local player's team.
-	const bool bIsEnemy = (pLocal && pPlayer->GetTeamNumber() != pLocal->GetTeamNumber());
+	const bool bIsEnemy = (pLocal && nTeam != pLocal->GetTeamNumber());
 
 	IMaterial* pMaterial = nullptr;
 	Color clr = Vars::Chams::clrAlly;

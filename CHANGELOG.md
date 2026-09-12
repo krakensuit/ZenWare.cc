@@ -5,6 +5,26 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.2] - 2026-09-12
+
+### Fixed / Исправлено
+
+- Audit sweep: melee-vtable gates (`IsGunEntity` before `GetWeaponID` in
+  ESP/WeaponHUD, ClassID gate in DrawGrenade), SI handled via netvars
+  (Killfeed/Chams, no `C_TerrorPlayer` virtuals on siblings), SI/common
+  kills counted in Hitmarker, damage flash/arrow/stats no longer gated on
+  outgoing damage, prediction time restore behind `m_bInPrediction` flag,
+  AutoShove runs after Aimbot, aimbot hitbox/prio clamps, trigger uses
+  crosshair-trace hit as visibility proof + dormant check, NoSpread spread
+  sanity, JB/EB traces require real hit, water/incap bails, EdgeJump disarm
+  on reset, JumpStats takeoff arming + strafe counting + counter toggle
+  gates, AutoStrafe statics reset, Config::Load clamps + Save resync,
+  menu capture/XBUTTON/F11/drag/focus fixes, loader OOB fix, CTable scan
+  cap + bounds, DrawManager font lookup, CreateMove cmd check before
+  original. Аудит: гейты виртуалок на меле, СИ через нетвары, киллы СИ
+  в хитмаркере, флаг предикта, порядок шова, клампы конфига и меню,
+  фикс OOB лоадера, капы CTable, проверки DrawManager.
+
 ## [3.8.1] - 2026-09-12
 
 ### Added / Добавлено

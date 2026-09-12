@@ -52,7 +52,7 @@ void CFeatures_Radar::Render()
 		return;
 
 	const Vector vLocal = pLocal->m_vecOrigin();
-	Vector vAng;
+	Vector vAng{};
 	I::EngineClient->GetViewAngles(vAng);
 	const float flYaw = (float)(vAng.y * (M_PI / 180.0));
 

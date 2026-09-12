@@ -16,6 +16,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0)
 	{
 		m_bAir = false;
+		m_bSeenGround = false;
 		m_last.valid = false;
 		return;
 	}
@@ -30,6 +31,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 			|| pLocal->m_nWaterLevel() > 1)
 		{
 			m_bAir = false;
+			m_bSeenGround = false;
 			m_last.valid = false;
 			return;
 		}
@@ -39,6 +41,13 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 	const Vector vel = pLocal->m_vecVelocity();
 	const float speed2d = vel.Lenght2D();
 	const int tick = cmd->tick_count;
+
+	//Взлёт только после ≥1 живого наземного тика: иначе загрузка DLL,
+	//респаун в падении или выход из лестницы синтезируют взлёт из воздуха.
+	if (bOnGround)
+		m_bSeenGround = true;
+	if (!m_bAir && !bOnGround && !m_bSeenGround)
+		return;
 
 	if (!m_bAir && !bOnGround)
 	{
@@ -83,7 +92,9 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 
 		if (side)
 		{
-			if (m_nLastSide && side != m_nLastSide)
+			//Первый стрейф 0→side тоже считается (раньше каждый прыжок
+			//недосчитывал 1).
+			if (side != m_nLastSide)
 				m_nStrafes++;
 
 			m_nLastSide = side;
@@ -138,8 +149,10 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 			&& tick >= Vars::BunnyHop::nEbShowTick && (tick - Vars::BunnyHop::nEbShowTick) <= 6;
 		const bool bJbFired = Vars::BunnyHop::bJumpBug && Vars::BunnyHop::nJbShowTick != 0
 			&& tick >= Vars::BunnyHop::nJbShowTick && (tick - Vars::BunnyHop::nJbShowTick) <= 6;
-		const bool bManualEb = !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -500.0f && dist > 150.0f;
-		const bool bManualJb = !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -350.0f;
+		//Ручной дак — только при включённой фиче и без AutoDuck
+		//(иначе каждый прыжок с зажатым приседом был бы "+1 JB/EB").
+		const bool bManualEb = Vars::BunnyHop::bEdgeBug && !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -500.0f && dist > 150.0f;
+		const bool bManualJb = Vars::BunnyHop::bJumpBug && !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -350.0f && dist > 100.0f;
 		m_last.eb = bDucked && (bEbFired || bManualEb);
 		m_last.fall = m_fMaxFall;
 		m_last.height = (m_fMaxHeight > 0.0f) ? m_fMaxHeight : 0.0f;

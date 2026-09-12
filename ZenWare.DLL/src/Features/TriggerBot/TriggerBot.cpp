@@ -42,13 +42,15 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 
 	C_BaseEntity* pHit = TraceCrosshair(pLocal, cmd->viewangles);
 
-	if (!pHit)
+	if (!pHit || pHit->IsDormant())
 		return;
 
 	//tr.m_pEnt — любой объект (проп/оружие/стена): As<> до гейта = чужая таблица.
 	C_TerrorPlayer* pTarget = G::Util.IsPlayerEntity(pHit) ? pHit->As<C_TerrorPlayer*>() : nullptr;
 
-	if (G::Util.IsValidTarget(pLocal, pTarget, Vars::TriggerBot::bVisibleOnly))
+	//Видимость уже доказана самим попаданием кроссхейр-трейса: глаз-в-глаза
+	//проверка здесь душила бы огонь при видимой голове и закрытой груди.
+	if (G::Util.IsValidTarget(pLocal, pTarget, false))
 	{
 		cmd->buttons |= IN_ATTACK;
 		return;

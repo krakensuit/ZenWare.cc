@@ -50,6 +50,7 @@ private:
 	int m_nLastSide = 0;
 	bool m_bDuckAtLand = false;
 	int m_nLastGroundTick = 0;
+	bool m_bSeenGround = false; // takeoff только после живого наземного тика
 	int m_nShowUntil = 0;
 
 	Jump_t m_last = { };

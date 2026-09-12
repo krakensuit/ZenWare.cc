@@ -31,7 +31,10 @@ CFeatures_Menu::MouseState_t GetMouse(){
  static bool s_bPrevDown=false;
  CFeatures_Menu::MouseState_t s; GetCursorPos(&s.pt);
  if(Hooks::WndProc::hwGame) ScreenToClient(Hooks::WndProc::hwGame,&s.pt);
- s.bDown=(GetAsyncKeyState(VK_LBUTTON)&0x8000)!=0;
+ //Клик по чужому окну (второй монитор/оверлей) при открытом меню
+ //не должен переключать чекбоксы: давим bDown вне игры.
+ s.bDown=(GetAsyncKeyState(VK_LBUTTON)&0x8000)!=0
+  && (!Hooks::WndProc::hwGame || GetForegroundWindow()==Hooks::WndProc::hwGame);
  s.bClicked=(s.bDown && !s_bPrevDown); s_bPrevDown=s.bDown; return s;
 }
 bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p.y>=y&&p.y<=y+h; }
@@ -219,6 +222,9 @@ void DrawRgbLogo(int x, int y){
 }
 void CFeatures_Menu::PollMenuKey(){
  if(Vars::Menu::nKey==0) return;
+ //Пока ловим клавишу для бинда — тоггл меню заморожен, иначе INSERT
+ //в режиме capture закроет меню, а capture останется висеть.
+ if(s_bKeyCapture) return;
  static bool s_bPrev=false;
  const bool bDown=(GetAsyncKeyState(Vars::Menu::nKey)&0x8000)!=0;
  if(bDown && !s_bPrev) Toggle();
@@ -240,9 +246,12 @@ void CFeatures_Menu::Render(){
  m_flDt = dt; s_menuDt = dt;
  m_flAnim = s_alpha;
  s_alpha = Anim::Approach(s_alpha, bOpen ? 1.0f : 0.0f, dt, 9.0f);
+ //F11 работает и при открытом меню (раньше футер врал: опрос был только закрытым).
+ {
+  static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
+ }
   if(s_alpha < 0.01f){
    ClipCursor(nullptr); // на всякий: отпускаем мышь, пока меню закрыто
-   static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
   m_szHelpId=nullptr; m_szHelpTitle=nullptr; m_szHelpText=nullptr;
   if(!Vars::Menu::bOpen && G::Draw.m_nScreenW > 0){
    const float whue=fmodf((float)GetTickCount64()/38.0f,360.0f);
@@ -271,7 +280,13 @@ void CFeatures_Menu::Render(){
  if(!m_bPosInit){ m_nPosX=(G::Draw.m_nScreenW-PANEL_W)/2; m_nPosY=(G::Draw.m_nScreenH-PANEL_H)/3; m_bPosInit=true; }
  if(mouse.bDown && !m_bDragging && Hovered(mouse.pt,m_nPosX,m_nPosY,PANEL_W,HEADER_H)){ m_bDragging=true; m_nDragOffX=mouse.pt.x-m_nPosX; m_nDragOffY=mouse.pt.y-m_nPosY; }
  if(!mouse.bDown) m_bDragging=false;
- if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY; }
+ //Панель нельзя увезти за экран навсегда: клампим с запасом 60px на захват.
+ if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY;
+  if(G::Draw.m_nScreenW>0&&G::Draw.m_nScreenH>0){
+   if(m_nPosX<-(PANEL_W-60)) m_nPosX=-(PANEL_W-60); if(m_nPosX>G::Draw.m_nScreenW-60) m_nPosX=G::Draw.m_nScreenW-60;
+   if(m_nPosY<0) m_nPosY=0; if(m_nPosY>G::Draw.m_nScreenH-40) m_nPosY=G::Draw.m_nScreenH-40;
+  }
+ }
  Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f; Vars::Visuals::flVmFOV=Vars::Visuals::nVmFOVSlider/100.0f; Vars::Visuals::flEspMaxDist=(float)Vars::Visuals::nEspMaxDistS;
  m_rc.nX=m_nPosX; m_rc.nY=m_nPosY;
  //красивое открытие/закрытие: fade + scale от центра панели + лёгкий подъем при открытии
@@ -320,6 +335,7 @@ void CFeatures_Menu::Render(){
    Checkbox(mouse,"Chams through walls",&Vars::Chams::bThroughWalls);
    Checkbox(mouse,"SI class colors",&Vars::Chams::bSIColors);
    Button(mouse,"Chams palette >",[](){ Vars::Chams::nPalette=(Vars::Chams::nPalette+1)%5; });
+   LabelInt("Active palette",Vars::Chams::nPalette);
    Checkbox(mouse,"No visual recoil",&Vars::VisualRecoil::bEnabled);
    break;
   }
@@ -731,6 +747,7 @@ void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*
  if(bClick&&!bHelp&&pfnAction) pfnAction();
  m_nItemY+=nRowH;
 }
+bool CFeatures_Menu::s_bKeyCapture = false;
 void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* pValue){
  static int* s_pCapturing=nullptr;
  const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
@@ -745,7 +762,8 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
  char szVal[32]={};
  if(s_pCapturing==pValue){
   strcpy_s(szVal,Lang::T("[press key]"));
-  for(int vk=0x08;vk<0xFE;vk++){ if(vk==VK_LBUTTON||vk==VK_RBUTTON||vk==VK_MBUTTON) continue; if(vk==VK_F7||vk==VK_F11) continue; if(GetAsyncKeyState(vk)&0x8000){ if(vk==VK_ESCAPE) *pValue=0; else *pValue=vk; s_pCapturing=nullptr; break; } }
+  s_bKeyCapture = true;
+  for(int vk=0x05;vk<0xFE;vk++){ if(vk==0x07) continue; if(vk==VK_LBUTTON||vk==VK_RBUTTON||vk==VK_MBUTTON) continue; if(vk==VK_F7||vk==VK_F11) continue; if(GetAsyncKeyState(vk)&0x8000){ if(vk==VK_ESCAPE) *pValue=0; else *pValue=vk; s_pCapturing=nullptr; s_bKeyCapture=false; break; } }
  } else if(!*pValue){ sprintf_s(szVal,"[%s]",Lang::T("off")); }
  else { strcpy_s(szVal,"["); strcat_s(szVal,KeyName(*pValue)); strcat_s(szVal,"]"); }
  Color clrVal=(s_pCapturing==pValue)?CLR_ACCENT:CLR_TEXT_ON;

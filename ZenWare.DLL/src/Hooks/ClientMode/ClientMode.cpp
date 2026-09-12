@@ -39,10 +39,11 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 
 	//Оригинал вызывается ровно один раз: двойной прогон за тик дублировал
 	//движение/выбор оружия движком и ломал учёт предикта.
-	const bool bEngineHandled = Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd);
-
+	//cmd проверяем ДО оригинала: при null оригинал уже мог упасть внутри.
 	if (!cmd || !cmd->command_number)
-		return bEngineHandled;
+		return Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd);
+
+	const bool bEngineHandled = Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd);
 
 	if (bEngineHandled && I::Prediction)
 		I::Prediction->SetLocalViewAngles(cmd->viewangles);
@@ -67,23 +68,27 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 			// синк по мутированному всегда показывал бы ~100% со своим же ботом.
 			const float flRawSide = cmd->sidemove;
 			const int nRawMouseX = cmd->mousedx;
-			F::BunnyHop.Run(pLocal, cmd);
-			F::AutoStrafe.Run(pLocal, cmd);
-			F::JumpStats.OnTick(pLocal, cmd, flRawSide, nRawMouseX);
-			F::AutoShove.Run(pLocal, cmd);
+		F::BunnyHop.Run(pLocal, cmd);
+		F::AutoStrafe.Run(pLocal, cmd);
+		F::JumpStats.OnTick(pLocal, cmd, flRawSide, nRawMouseX);
 
-			//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
-			//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
-			C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
-			C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
+		//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
+		//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
+		C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
+		C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
 
-			if (pWeapon)
-			{
-				F::Aimbot.Run(pLocal, pWeapon, cmd);
-				F::TriggerBot.Run(pLocal, pWeapon, cmd);
-				F::AutoPistol.Run(pWeapon, cmd);
-				F::NoSpread.Run(pLocal, pWeapon, cmd);
-			}
+		if (pWeapon)
+		{
+			//Порядок load-bearing: NoSpread видит IN_ATTACK, форсированный
+			//аимом/триггером в этом же тике, только при этом порядке.
+			F::Aimbot.Run(pLocal, pWeapon, cmd);
+			F::TriggerBot.Run(pLocal, pWeapon, cmd);
+			F::AutoPistol.Run(pWeapon, cmd);
+			F::NoSpread.Run(pLocal, pWeapon, cmd);
+		}
+		//Шов последним: ставит свои углы на атакующего, Aimbot выше
+		//перезаписал бы их своим снапом — шов уходил бы мимо.
+		F::AutoShove.Run(pLocal, cmd);
 		}
 		F::EnginePrediction.Finish(pLocal, cmd);
 

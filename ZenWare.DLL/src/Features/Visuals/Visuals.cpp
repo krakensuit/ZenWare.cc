@@ -96,9 +96,16 @@ void CFeatures_Visuals::DrawGrenade()
 		return;
 
 	// Только с throwable в руках (молотов/пайп/желчь) или гранатомётом.
-	// Каст после проверки класса: в руках может быть медкит/меле с другой таблицей.
+	// Виртуалку GetWeaponID дёргаем только на этих 4 классах: в руках может
+	// быть медкит/меле/пила с чужой таблицей (IsWeaponEntity их пропускает).
 	C_BaseCombatWeapon* pBase = pLocal->GetActiveWeapon();
-	C_TerrorWeapon* pWpn = (pBase && G::Util.IsWeaponEntity(pBase)) ? pBase->As<C_TerrorWeapon*>() : nullptr;
+	C_TerrorWeapon* pWpn = nullptr;
+	if (pBase && G::Util.IsWeaponEntity(pBase))
+	{
+		ClientClass* pWCC = pBase->GetClientClass();
+		if (pWCC && U::Math.CompareGroup(pWCC->m_ClassID, CMolotov, CPipeBomb, CItem_VomitJar, CGrenadeLauncher))
+			pWpn = pBase->As<C_TerrorWeapon*>();
+	}
 	if (!pWpn)
 		return;
 	float flSpeed = 900.0f, flUp = 150.0f, flElast = 0.45f;
@@ -241,8 +248,8 @@ void CFeatures_Visuals::DrawCrosshair()
 	G::Draw.Rect(nCX - 1, nCY - 1, 2, 2, clr);
 
 	//HUD оружия: имя + магазин + запас под прицелом. Хендл активного оружия
-	//в тике смены может указывать на viewmodel/руки: каст только за гейтом
-	//IsWeaponEntity, иначе GetWeaponID идёт по чужой таблице (краш при инжекте).
+	//в тике смены может указывать на viewmodel/руки/меле: GetWeaponID только
+	//за IsGunEntity, иначе виртуалка идёт по чужой таблице.
 	if (Vars::Visuals::bWeaponHud && pLocal && I::ClientEntityList)
 	{
 		EHANDLE hActive = pLocal->m_hActiveWeapon();
@@ -257,7 +264,8 @@ void CFeatures_Visuals::DrawCrosshair()
 			const wchar_t* wszName = nullptr;
 			wchar_t wszFallback[48] = { };
 			C_TerrorWeapon* pTW = pActive->As<C_TerrorWeapon*>();
-			const int nID = pTW ? pTW->GetWeaponID() : 0;
+			// Меле/пила/гренник — сиблинги с чужой vtable: виртуалку только за IsGunEntity.
+			const int nID = (pTW && G::Util.IsGunEntity(pActive)) ? pTW->GetWeaponID() : 0;
 			if (nID > 0 && nID < 38 && wcscmp(g_aSpawnInfo[nID].m_szName, L"unknown") != 0)
 				wszName = g_aSpawnInfo[nID].m_szName;
 			else

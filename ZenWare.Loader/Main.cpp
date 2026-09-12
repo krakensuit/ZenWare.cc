@@ -209,8 +209,8 @@ void LaunchExternal(){
  wchar_t* s=wcsrchr(dir,L'\\'); if(s) *s=0;
  const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
  wchar_t goods[MAX_PATH]={};
- wchar_t tried[3][MAX_PATH]={};
- for(int i=0;i<3;i++){
+  wchar_t tried[2][MAX_PATH]={};
+  for(int i=0;i<2;i++){
   wchar_t t[MAX_PATH]={}, f[MAX_PATH]={};
   const wchar_t* rel=cands[i];
   if((rel[0]==L'\\'&&rel[1]==L'\\')||rel[1]==L':') wcscpy_s(t,rel);
@@ -234,7 +234,7 @@ void LaunchExternal(){
   }
   LoaderUtil::Status(g_hMain,LoaderUtil::S("External не найден — собери проект","External not found — build it","External fehlt — baue das Projekt","External no encontrado — compílalo","External não encontrado — compile o projeto","Nie znaleziono External — zbuduj projekt","External introuvable — compile le projet","未找到 External——请先构建"));
   LoaderUtil::Log(g_hMain,"[!] External exe not found, tried:");
-  for(int i=0;i<3;i++){ char nb[MAX_PATH*2]={}; WideCharToMultiByte(CP_ACP,0,tried[i],-1,nb,sizeof(nb),nullptr,nullptr); LoaderUtil::Log(g_hMain,"[?] %s",nb); }
+   for(int i=0;i<2;i++){ char nb[MAX_PATH*2]={}; WideCharToMultiByte(CP_ACP,0,tried[i],-1,nb,sizeof(nb),nullptr,nullptr); LoaderUtil::Log(g_hMain,"[?] %s",nb); }
   return;
  }
  ShellExecuteW(nullptr,L"open",goods,nullptr,nullptr,SW_SHOWNORMAL);

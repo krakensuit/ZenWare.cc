@@ -14,6 +14,8 @@ namespace {
 
 void CGlobal_DrawManager::Init()
 {
+	if (!I::MatSystemSurface)
+		return;
 	m_Fonts[EFonts::DEBUG]         = { "Consolas",  16, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
 	m_Fonts[EFonts::ESP]           = { "Tahoma",    11, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
 	m_Fonts[EFonts::ESP_NAME]      = { "Arial",     14, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
@@ -44,7 +46,12 @@ void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& 
 	// Литералы в исходниках — UTF-8 (/utf-8), конвертим явно: не зависит от локали Windows.
 	ToWide(cbuffer, wstr, 1024);
 
-	const HFont fnt = m_Fonts[font].m_hFont;
+	//find вместо operator[]: плохой enum иначе вставит HFont 0 в мапу
+	//и дальше полетит зов с нулевым шрифтом.
+	const auto itF = m_Fonts.find(font);
+	if (itF == m_Fonts.end() || !I::MatSystemSurface)
+		return;
+	const HFont fnt = itF->second.m_hFont;
 
 	if (align)
 	{
@@ -81,7 +88,10 @@ void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& 
 	vswprintf_s(wstr, str, va_alist);
 	va_end(va_alist);
 
-	const HFont fnt = m_Fonts[font].m_hFont;
+	const auto itF = m_Fonts.find(font);
+	if (itF == m_Fonts.end() || !I::MatSystemSurface)
+		return;
+	const HFont fnt = itF->second.m_hFont;
 
 	if (align)
 	{
@@ -171,19 +181,24 @@ int CGlobal_DrawManager::GetFontHeight(const EFonts& font) const
 
 int CGlobal_DrawManager::GetTextWidth(const EFonts& font, const char* const str)
 {
-	if (!str || !str[0])
+	if (!str || !str[0] || !I::MatSystemSurface)
 		return 0;
 
 	wchar_t wstr[1024] = { L'\0' };
 	ToWide(str, wstr, 1024);
 
 	int w = 0, h = 0;
-	I::MatSystemSurface->GetTextSize(m_Fonts[font].m_hFont, wstr, w, h);
+	const auto itF = m_Fonts.find(font);
+	if (itF == m_Fonts.end())
+		return 0;
+	I::MatSystemSurface->GetTextSize(itF->second.m_hFont, wstr, w, h);
 	return w;
 }
 
 void CGlobal_DrawManager::Triangle(Vector2D* v, const Color clr)
 {
+	if (!v || !I::MatSystemSurface)
+		return;
 	static int s_nTexture = I::MatSystemSurface->CreateNewTextureID(true);
 
 	Vertex_t Vertices[3] = { { v[0] }, { v[1] }, { v[2] } };

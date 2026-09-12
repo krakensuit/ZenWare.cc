@@ -334,6 +334,33 @@ void CFeatures_Config::Load()
 	Vars::Visuals::nThirdPersonDist = U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200);
 	Vars::BunnyHop::nJumpDelayTicks = U::Math.Clamp(Vars::BunnyHop::nJumpDelayTicks, 0, 20);
 	Vars::Visuals::nEspMaxDistS = U::Math.Clamp((int)(Vars::Visuals::flEspMaxDist + 0.5f), 0, 200);
+	//Кривой cfg = fail-open без этих клампов: мусор жил бы до первого
+	//открытия меню (float правится только из Render).
+	Vars::Menu::nLang = U::Math.Clamp(Vars::Menu::nLang, 0, 7);
+	Vars::Menu::nKey = U::Math.Clamp(Vars::Menu::nKey, 0, 254);
+	Vars::Aimbot::nKey = U::Math.Clamp(Vars::Aimbot::nKey, 0, 254);
+	Vars::TriggerBot::nKey = U::Math.Clamp(Vars::TriggerBot::nKey, 0, 254);
+	Vars::ESP::nPanicKey = U::Math.Clamp(Vars::ESP::nPanicKey, 0, 254);
+	Vars::Aimbot::flFOV = U::Math.Clamp(Vars::Aimbot::flFOV, 0.5f, 30.0f);
+	Vars::Aimbot::flSmoothing = U::Math.Clamp(Vars::Aimbot::flSmoothing, 0.0f, 60.0f);
+	Vars::Visuals::flViewFOV = U::Math.Clamp(Vars::Visuals::flViewFOV, 0.5f, 3.0f);
+	Vars::Visuals::flVmFOV = U::Math.Clamp(Vars::Visuals::flVmFOV, 0.5f, 3.0f);
+	Vars::Visuals::flEspMaxDist = U::Math.Clamp(Vars::Visuals::flEspMaxDist, 0.0f, 200.0f);
+	Vars::AimbotWpn::flRifleFov = U::Math.Clamp(Vars::AimbotWpn::flRifleFov, 0.5f, 30.0f);
+	Vars::AimbotWpn::flSmgFov = U::Math.Clamp(Vars::AimbotWpn::flSmgFov, 0.5f, 30.0f);
+	Vars::AimbotWpn::flShotgunFov = U::Math.Clamp(Vars::AimbotWpn::flShotgunFov, 0.5f, 30.0f);
+	Vars::AimbotWpn::flSniperFov = U::Math.Clamp(Vars::AimbotWpn::flSniperFov, 0.5f, 30.0f);
+	Vars::AimbotWpn::flPistolFov = U::Math.Clamp(Vars::AimbotWpn::flPistolFov, 0.5f, 30.0f);
+	Vars::AimbotWpn::nRifleSmooth = U::Math.Clamp(Vars::AimbotWpn::nRifleSmooth, 0, 60);
+	Vars::AimbotWpn::nSmgSmooth = U::Math.Clamp(Vars::AimbotWpn::nSmgSmooth, 0, 60);
+	Vars::AimbotWpn::nShotgunSmooth = U::Math.Clamp(Vars::AimbotWpn::nShotgunSmooth, 0, 60);
+	Vars::AimbotWpn::nSniperSmooth = U::Math.Clamp(Vars::AimbotWpn::nSniperSmooth, 0, 60);
+	Vars::AimbotWpn::nPistolSmooth = U::Math.Clamp(Vars::AimbotWpn::nPistolSmooth, 0, 60);
+	Vars::AimbotWpn::nRifleHitbox = U::Math.Clamp(Vars::AimbotWpn::nRifleHitbox, 0, 1);
+	Vars::AimbotWpn::nSmgHitbox = U::Math.Clamp(Vars::AimbotWpn::nSmgHitbox, 0, 1);
+	Vars::AimbotWpn::nShotgunHitbox = U::Math.Clamp(Vars::AimbotWpn::nShotgunHitbox, 0, 1);
+	Vars::AimbotWpn::nSniperHitbox = U::Math.Clamp(Vars::AimbotWpn::nSniperHitbox, 0, 1);
+	Vars::AimbotWpn::nPistolHitbox = U::Math.Clamp(Vars::AimbotWpn::nPistolHitbox, 0, 1);
 
 	fclose(pFile);
 }

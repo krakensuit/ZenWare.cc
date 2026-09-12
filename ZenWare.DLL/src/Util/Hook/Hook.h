@@ -33,17 +33,19 @@ namespace Hook
 
 			m_pBase = (unsigned int**)(pTable);
 
-			while (reinterpret_cast<unsigned int*>(*m_pBase)[m_nSize])
+			//Движковые vtable не null-terminated: скан без капа уходит
+			//в немаппленные страницы на инжекте. 512 слотов с запасом.
+			while (m_nSize < 512u && reinterpret_cast<unsigned int*>(*m_pBase)[m_nSize])
 				m_nSize += 1u;
 
-			m_pOriginals = std::make_unique<void* []>(m_nSize);
+			m_pOriginals = std::make_unique<void* []>(m_nSize + 1u);
 
 			return (m_pBase && m_nSize);
 		}
 
 		inline bool Hook(void* pDetour, const unsigned int nIndex)
 		{
-			if (m_pBase && m_nSize)
+			if (m_pBase && m_nSize && nIndex < m_nSize)
 				return (MH_CreateHook((*reinterpret_cast<void***>(m_pBase))[nIndex], pDetour, &m_pOriginals[nIndex]) == MH_STATUS::MH_OK);
 
 			return false;
@@ -52,7 +54,7 @@ namespace Hook
 	public:
 		template<typename FN>
 		inline FN Original(const unsigned int nIndex) const {
-			return reinterpret_cast<FN>(m_pOriginals[nIndex]);
+			return (nIndex < m_nSize) ? reinterpret_cast<FN>(m_pOriginals[nIndex]) : nullptr;
 		}
 
 	private:

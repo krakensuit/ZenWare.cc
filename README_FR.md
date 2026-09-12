@@ -2,7 +2,7 @@
 
 **Logiciel d'entraînement interne + externe pour Left 4 Dead 2**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.8.1`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.8.2`
 
 > **Sources uniquement · Apprentissage et serveurs locaux uniquement.**
 > Aucun `.exe` / `.dll` compilé dans ce dépôt ni dans les Releases — compile depuis les sources,

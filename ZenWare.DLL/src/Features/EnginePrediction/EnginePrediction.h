@@ -20,6 +20,7 @@ private:
 
 	int m_nOldTickCount = 0;
 	int m_nPredictedFlags = 0;
+	bool m_bInPrediction = false;
 
 	CMoveData m_MoveData = { };
 };

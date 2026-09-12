@@ -7,7 +7,7 @@ void CFeatures_VisualRecoil::FrameStageNotify(ClientFrameStage_t curStage)
 	if (!Vars::VisualRecoil::bEnabled || curStage != FRAME_RENDER_START)
 		return;
 
-	if (!I::EngineClient->IsInGame())
+	if (!I::EngineClient || !I::EngineClient->IsInGame())
 		return;
 
 	const int nLocalIndex = I::EngineClient->GetLocalPlayer();

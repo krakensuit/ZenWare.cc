@@ -165,6 +165,10 @@ Vector CUtil_Math::GetAngleToPosition(const Vector vFrom, const Vector vTo)
 	if (vDelta.LenghtSqr() < 1.0f)
 		return Vector(0.0f, 0.0f, 0.0f);
 	const float flHyp = ::sqrtf((vDelta.x * vDelta.x) + (vDelta.y * vDelta.y));
+	//Строго вертикальная цель (x==y==0): atan(y/x) = NaN, выживало только
+	//за счёт downstream ClampAngles. Явный yaw=0 вместо NaN.
+	if (flHyp < 0.001f)
+		return { (::atanf(vDelta.z / 0.001f) * M_RADPI), 0.0f, 0.0f };
 
 	return { (::atanf(vDelta.z / flHyp) * M_RADPI), (::atanf(vDelta.y / vDelta.x) * M_RADPI) + (180.0f * (vDelta.x >= 0.0f)), 0.0f };
 }

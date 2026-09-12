@@ -14,30 +14,49 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	if (!Vars::BunnyHop::bAutoStrafe || !pLocal || !cmd || !cmd->command_number)
 		return;
 
+	//Статики выше ранних return: иначе смерть/вода/лестница оставляют
+	//stale-направление круга на следующий прыжок.
+	static int s_nLastSide = 1;
+	static int s_nCircleSide = 1;
+
 	//Как в BunnyHop: мёртвый/гость/чужая команда/вода не стрейфятся,
 	//иначе портятся s_nLastSide/s_nCircleSide и стата синка.
-	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
+	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost()
+		|| pLocal->m_isIncapacitated())
+	{
+		s_nLastSide = 1;
+		s_nCircleSide = 1;
 		return;
+	}
 
 	if (!G::Util.IsValidTeam(pLocal->GetTeamNumber()))
+	{
+		s_nLastSide = 1;
+		s_nCircleSide = 1;
 		return;
+	}
 
 	if (pLocal->m_nWaterLevel() > 1)
+	{
+		s_nLastSide = 1;
+		s_nCircleSide = 1;
 		return;
+	}
 
 	const unsigned char nMoveType = pLocal->m_MoveType();
 
 	if (nMoveType == MOVETYPE_LADDER || nMoveType == MOVETYPE_NOCLIP || nMoveType == MOVETYPE_OBSERVER)
+	{
+		s_nLastSide = 1;
+		s_nCircleSide = 1;
 		return;
+	}
 
 	const int flags = pLocal->m_fFlags();
 	const bool bOnGround = (flags & FL_ONGROUND) != 0;
 
 	if (bOnGround)
 		return;
-
-	static int s_nLastSide = 1;
-	static int s_nCircleSide = 1;
 
 	const int mode = Vars::BunnyHop::nAutoStrafeMode;
 

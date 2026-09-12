@@ -20,6 +20,14 @@ void CFeatures_NoSpread::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CU
 		pWeapon->UpdateSpread();
 		const float flSpread = pWeapon->GetCurrentSpread();
 
+		//Мусор из UpdateSpread после обновы игры: SharedRandomFloat(min>max)
+		//с NaN/отрицательным разбросом — пропускаем тик вместо порчи углов.
+		if (!isfinite(flSpread) || flSpread < 0.0f || flSpread > 0.6f)
+		{
+			pWeapon->GetCurrentSpread() = flOldSpread;
+			return;
+		}
+
 		vAngle.x -= pfSharedRandomFloat("CTerrorGun::FireBullet HorizSpread", -flSpread, flSpread, 0);
 		vAngle.y -= pfSharedRandomFloat("CTerrorGun::FireBullet VertSpread", -flSpread, flSpread, 0);
 

@@ -80,6 +80,12 @@ namespace
 			s_wpn.flFOV = 5.0f;
 		if (!isfinite(s_wpn.flSmooth) || s_wpn.flSmooth < 0.0f || s_wpn.flSmooth > 64.0f)
 			s_wpn.flSmooth = 0.0f;
+		//Битый hitbox/prio из конфига: GetAimPoint вернул бы false всегда
+		//и аим молча никогда не лочился бы.
+		if (s_wpn.nHitbox < 0 || s_wpn.nHitbox > 1)
+			s_wpn.nHitbox = 0;
+		if (s_wpn.nPrio < 0 || s_wpn.nPrio > 1)
+			s_wpn.nPrio = 0;
 	}
 
 	bool FindCommonTarget(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vViewAngles, Vector& vOut)
@@ -292,10 +298,10 @@ void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUse
 	G::Util.FixMovement(vAngleTo, cmd);
 	cmd->viewangles = vAngleTo;
 
-	if (!Vars::Aimbot::bSilent)
+	if (!Vars::Aimbot::bSilent && I::EngineClient)
 		I::EngineClient->SetViewAngles(cmd->viewangles);
 
-	if (Vars::Aimbot::bAutoShoot && pWeapon->CanPrimaryAttack())
+	if (Vars::Aimbot::bAutoShoot && pWeapon && pWeapon->CanPrimaryAttack())
 		cmd->buttons |= IN_ATTACK;
 }
 
@@ -335,7 +341,7 @@ C_TerrorPlayer* CFeatures_Aimbot::FindTarget(C_TerrorPlayer* pLocal, const Vecto
 		const Vector vAngleTo = U::Math.GetAngleToPosition(vEyePos, vAimPoint);
 		const float flFov = U::Math.GetFovBetween(vViewAngles, vAngleTo);
 
-		if (flFov > s_wpn.flFOV)
+		if (!isfinite(flFov) || flFov > s_wpn.flFOV)
 			continue;
 
 		const float flWeight = GetWeight(pPlayer, vViewAngles, vEyePos, vAngleTo);

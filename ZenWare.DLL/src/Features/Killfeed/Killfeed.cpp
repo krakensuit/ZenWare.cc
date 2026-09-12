@@ -127,15 +127,18 @@ void CFeatures_Killfeed::OnTick()
             && nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter
             && nID != Charger && nID != Witch && !G::Util.IsSpecialByName(pCC->m_pNetworkName))
             continue;
-        //Ведьма — C_Infected, а не игрок: deadflag/lifeState из DT_BasePlayer
-        //на ней читают чужие поля. Живость — через IsInfectedAlive как в ESP.
+        //СИ — сиблинги C_TerrorPlayer: только нетвары C_BasePlayer/C_BaseEntity,
+        //никаких виртуалок GetHealth на чужих объектах.
+        const bool bIsSI = (nID == Hunter || nID == Smoker || nID == Jockey
+            || nID == Spitter || nID == Charger || nID == Witch
+            || G::Util.IsSpecialByName(pCC->m_pNetworkName));
         C_TerrorPlayer* pPlayer = nullptr;
         bool bAlive = false;
-        if (nID == Witch)
+        if (bIsSI)
         {
-            C_Infected* pWitch = pEntity->As<C_Infected*>();
-            if (!pWitch) continue;
-            bAlive = G::Util.IsInfectedAlive(pWitch->m_usSolidFlags(), pWitch->m_nSequence());
+            C_BasePlayer* pBase = pEntity->As<C_BasePlayer*>();
+            if (!pBase) continue;
+            bAlive = !pBase->deadflag() && pBase->m_lifeState() == 0;
         }
         else
         {

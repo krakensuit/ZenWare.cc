@@ -40,10 +40,12 @@ namespace
 void CFeatures_ESP::Render()
 {
 	U::Log.Crumb("ESP::Render");
-	if (!Vars::ESP::bEnabled || !I::EngineClient->IsInGame() || I::EngineVGui->IsGameUIVisible())
+	if (!Vars::ESP::bEnabled || !I::EngineClient || !I::EngineClient->IsInGame() || (I::EngineVGui && I::EngineVGui->IsGameUIVisible()))
 		return;
 
 	const int nLocalIndex = I::EngineClient->GetLocalPlayer();
+	if (nLocalIndex < 1 || !I::ClientEntityList)
+		return;
 
 	//Локал без проверки класса: в переходных тиках в слоте может быть мир/прокси,
 	//а дальше по коду идут виртуалки GetTeamNumber/GetHealth.
@@ -58,8 +60,9 @@ void CFeatures_ESP::Render()
 	//и чистый экран, и меньше работы в кадр на больших картах.
 	const Vector vLocal = pLocal->m_vecOrigin();
 	const float flMaxM = U::Math.Clamp(Vars::Visuals::flEspMaxDist, 0.0f, 500.0f);
+	const int nMaxEnt = I::ClientEntityList->GetMaxEntities();
 
-	for (int n = 1; n < (I::ClientEntityList->GetMaxEntities() + 1); n++)
+	for (int n = 1; n < (nMaxEnt + 1); n++)
 	{
 		if (n == nLocalIndex)
 			continue;
@@ -248,7 +251,7 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			bool bHasName = false;
 			C_TerrorWeapon* pTW = pActive->As<C_TerrorWeapon*>();
 
-			if (pTW)
+			if (pTW && G::Util.IsGunEntity(pActive))
 			{
 				int id = pTW->GetWeaponID();
 

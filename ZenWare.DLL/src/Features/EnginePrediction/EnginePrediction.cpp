@@ -70,12 +70,14 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 	pLocal->m_nTickBase() = nOldTickBase;
 	pLocal->m_fFlags() = nOldFlags;
+	m_bInPrediction = true;
 }
 
 void CFeatures_EnginePrediction::Finish(C_BasePlayer* pLocal, CUserCmd* cmd)
 {
-	if (!pLocal)
+	if (!pLocal || !m_bInPrediction)
 		return;
+	m_bInPrediction = false;
 
 	if (I::GameMovement)
 		I::GameMovement->FinishTrackPredictionErrors(pLocal);

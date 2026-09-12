@@ -53,12 +53,12 @@ namespace
 			const int nTeam = pEnt->m_iTeamNum();
 			if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == pLocal->GetTeamNumber())
 				return false;
-			nHpOut = pEnt->GetHealth();
-			vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
-			return nHpOut > 0;
-		}
+		nHpOut = pEnt->GetHealth();
+		vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
+		return nHpOut >= 0;
+	}
 
-		// Обычные + ведьма.
+	// Обычные + ведьма.
 		if (nID == Infected || nID == Witch)
 		{
 			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
@@ -67,13 +67,13 @@ namespace
 				return false;
 			if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
 				return false;
-			nHpOut = pEnt->GetHealth();
-			vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
-			return nHpOut > 0;
-		}
-
-		return false;
+		nHpOut = pEnt->GetHealth();
+		vAnchorOut = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.7f);
+		return nHpOut >= 0;
 	}
+
+	return false;
+}
 
 	bool IsVisibleTo(C_TerrorPlayer* pLocal, const Vector& vEye, const Vector& vPoint)
 	{
@@ -277,17 +277,18 @@ void CFeatures_Hitmarker::OnTick()
 
 void CFeatures_Hitmarker::Draw()
 {
-	if (m_aNums.empty() || !G::Draw.m_nScreenW || !I::GlobalVars)
+	if (!G::Draw.m_nScreenW || !I::GlobalVars)
 		return;
 
 	const float flNow = I::GlobalVars->curtime;
 	const float flDur = U::Math.Clamp(Vars::Hitmarker::nDurationMs, 400, 3000) / 1000.0f;
 
+	if (!m_aNums.empty())
 	for (int i = (int)m_aNums.size() - 1; i >= 0; --i)
 	{
 		HitNum_t& m = m_aNums[i];
 		const float flAge = flNow - m.flT;
-		if (flAge > flDur) { m_aNums.erase(m_aNums.begin() + i); continue; }
+		if (flAge > flDur || flAge < -0.5f) { m_aNums.erase(m_aNums.begin() + i); continue; }
 		if (flAge < 0.0f)
 			continue;
 
