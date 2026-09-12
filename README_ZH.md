@@ -2,7 +2,7 @@
 
 **Left 4 Dead 2 训练用内外挂**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.8.3`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.8.4`
 
 > **仅源代码 · 仅学习与本地服务器。**
 > 本仓库与 Releases 中没有预编译的 `.exe` / `.dll` —— 请从源码构建，

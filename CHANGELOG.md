@@ -5,6 +5,20 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.4] - 2026-09-12
+
+### Fixed / Исправлено
+
+- AutoShove never fired: tongue owner (Smoker) and pounce attacker (Hunter)
+  are SI classes, rejected by the old `IsPlayerEntity` gate — now checked
+  by ClassID, attacker handled via netvars only. Автошов не срабатывал:
+  держатель языка и автор прыжка — классы СИ, старый гейт их резал.
+- Chams no longer reads the `CTerrorPlayer` ghost netvar on SI/Tank
+  (garbage could silently hide their chams). Чамсы больше не читают
+  нетвар ghost на СИ/танке.
+- `GetEyePosition` widened to `C_BaseEntity` (netvars only, no virtuals).
+  `GetEyePosition` расширен до `C_BaseEntity` (только нетвары).
+
 ## [3.8.3] - 2026-09-12
 
 ### Fixed / Исправлено

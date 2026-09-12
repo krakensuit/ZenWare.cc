@@ -121,12 +121,13 @@ IMaterial* CGlobal_GameUtil::CreateMaterial(const char* const szVars)
 // slots in this SDK dump and must not be trusted.
 // ---------------------------------------------------------------------------
 
-Vector CGlobal_GameUtil::GetEyePosition(C_TerrorPlayer* pEntity)
+Vector CGlobal_GameUtil::GetEyePosition(C_BaseEntity* pEntity)
 {
 	if (!pEntity)
 		return Vector(0.0f, 0.0f, 0.0f);
 
-	return pEntity->m_vecOrigin() + pEntity->m_vecViewOffset();
+	C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
+	return pEntity->m_vecOrigin() + pPl->m_vecViewOffset();
 }
 
 bool CGlobal_GameUtil::IsValidTarget(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, bool bCheckVisible)

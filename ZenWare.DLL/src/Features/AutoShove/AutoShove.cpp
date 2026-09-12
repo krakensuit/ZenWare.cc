@@ -43,13 +43,22 @@ void CFeatures_AutoShove::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		//Aim at the attacker and shove.
 		C_BaseEntity* pAttBase = bTongued ? pMate->m_tongueOwner().Get() : pMate->m_pounceAttacker().Get();
 
-		//Хендл атакующего мог протухнуть: без гейта As<> + виртуалка по чужой таблице.
-		if (!pAttBase || !G::Util.IsPlayerEntity(pAttBase))
+		//Владелец языка — всегда курильщик, пина — всегда охотник: это классы
+		//СИ, а не игроки. Старый гейт IsPlayerEntity резал их всех — шов
+		//никогда не срабатывал. Проверяем класс явно, дальше только нетвары.
+		if (!pAttBase)
+			continue;
+		ClientClass* pAttCC = pAttBase->GetClientClass();
+		if (!pAttCC)
+			continue;
+		const int nAttID = pAttCC->m_ClassID;
+		if (!U::Math.CompareGroup(nAttID, Hunter, Smoker)
+			&& !G::Util.IsSpecialByName(pAttCC->m_pNetworkName))
 			continue;
 
-		C_TerrorPlayer* pAttacker = pAttBase->As<C_TerrorPlayer*>();
+		C_BasePlayer* pAttacker = pAttBase->As<C_BasePlayer*>();
 
-		if (pAttacker->deadflag() || pAttacker->m_lifeState() != 0 || pAttacker->GetHealth() <= 0)
+		if (pAttacker->deadflag() || pAttacker->m_lifeState() != 0)
 			continue;
 
 		const Vector vFrom = G::Util.GetEyePosition(pLocal);

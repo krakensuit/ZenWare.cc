@@ -88,11 +88,14 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 	C_BasePlayer* pBasePlayer = pIClient->As<C_BasePlayer*>();
 	if (pBasePlayer->deadflag() || pBasePlayer->m_lifeState() != 0)
 		return false;
-	if (pPlayer->GetHealth() <= 0 && !G::Util.IsSpecialByName(pCC->m_pNetworkName)
-		&& !U::Math.CompareGroup(pCC->m_ClassID, Hunter, Smoker, Jockey, Spitter, Charger))
+	//GetHealth — виртуалка базового слота, но m_isGhost — нетвар CTerrorPlayer:
+	//на СИ/танке он читал бы мусор и мог тихо гасить чамсы. Живость СИ уже
+	//проверена выше по deadflag/lifeState, виртуалка им не нужна.
+	const bool bIsRealPlayer = U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot);
+	if (bIsRealPlayer && pPlayer->GetHealth() <= 0)
 		return false;
 
-	if (pPlayer->m_isGhost())
+	if (bIsRealPlayer && pPlayer->m_isGhost())
 		return false;
 
 	//Enemy/ally is resolved relative to the local player's team.

@@ -18,7 +18,7 @@ public:
 	IMaterial* CreateMaterial(const char* const szVars);
 
 	//Shared target filtering (Aimbot/ESP/Chams). Netvars only, no unverified virtuals.
-	Vector GetEyePosition(C_TerrorPlayer* pEntity);
+	Vector GetEyePosition(C_BaseEntity* pEntity);
 	bool IsValidTarget(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, bool bCheckVisible = false);
 	bool IsTargetVisible(C_TerrorPlayer* pLocal, C_TerrorPlayer* pTarget, const Vector& vEyePos);
 	//ClassID гейты перед даункастом: As<T> это static_cast и тип не проверяет,

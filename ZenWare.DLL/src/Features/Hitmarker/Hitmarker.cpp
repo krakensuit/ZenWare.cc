@@ -65,6 +65,8 @@ namespace
 		C_Infected* pInf = pEntity->As<C_Infected*>();
 		if (!pEnt || !pInf)
 			return false;
+		//У обычных/ведьмы нет таблицы CBasePlayer: m_lifeState читал бы мусор.
+		//Авторитетная проверка живости — IsInfectedAlive, её достаточно.
 		if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
 			return false;
 			nHpOut = pEnt->GetHealth();
