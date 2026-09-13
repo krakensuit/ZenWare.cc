@@ -5,6 +5,26 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.11] - 2026-09-13
+
+### Fixed / Исправлено
+- Removed the manual engine-prediction wrapper from CreateMove entirely. It ran
+  `SetupMove/ProcessMovement/FinishMove` on the cmd being built, so every cmd
+  was simulated twice (our run + the engine's own prediction) and half the
+  player state stayed advanced afterwards (`m_hGroundEntity`, fall velocity,
+  duck time were never restored) — the ground-entity/flags desync broke
+  `CheckJumpButton` and made the bhop janky or dead. Reference implementations
+  (CSGOSimple, l4d2-internal-base) run movement on the engine's own predicted
+  state and only touch `cmd->buttons`; ZenWare does the same now. Movement and
+  combat both read the freshest predicted flags/origin in CreateMove.
+  Ручной prediction-wrap убран из CreateMove полностью: он прогонял
+  SetupMove/ProcessMovement/FinishMove по ещё не отправленной cmd — каждый тик
+  симулировался дважды, и половина состояния игрока оставалась продвинутой
+  (ground entity, скорость падения, duck-время не восстанавливались).
+  Рассинхрон ground-entity с флагами ломал CheckJumpButton — бхоп прыгал
+  криво или не прыгал. Референсы (CSGOSimple, l4d2-internal-base) работают на
+  собственном предикте движка и трогают только cmd->buttons — теперь так же.
+
 ## [3.8.10] - 2026-09-13
 
 ### Fixed / Исправлено

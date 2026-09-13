@@ -9,8 +9,8 @@
 #include "../../Features/AutoStrafe/AutoStrafe.h"
 #include "../../Features/AutoShove/AutoShove.h"
 #include "../../Features/BunnyHop/BunnyHop.h"
-#include "../../Features/EnginePrediction/EnginePrediction.h"
 #include "../../Features/NoSpread/NoSpread.h"
+
 #include "../../Features/TriggerBot/TriggerBot.h"
 #include "../../Features/Hitmarker/Hitmarker.h"
 #include "../../Features/JumpStats/JumpStats.h"
@@ -61,40 +61,37 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 
 	if (pLocal && !pLocal->deadflag())
 	{
-		// Движение — ДО prediction-wrap'а. Состояние сущности в CreateMove =
-		// конец cmd N-1, ровно с него движок начнёт симуляцию этой cmd, и
-		// флаги земли здесь свежие. Внутри wrap'а ProcessMovement уже ИСПОЛНЯЕТ
-		// прыжок этой cmd (CheckJumpButton стреляет на старте тика, пока игрок
-		// на земле) — флаги уезжают в «в воздухе», BunnyHop сам вырезал
-		// IN_JUMP из cmd, и бхоп не работал вовсе: прыжок существовал только
-		// в откатываемой симуляции.
+		// Движение и бой — на собственном предикте движка, как в референсах
+		// (CSGOSimple, l4d2-internal-base): сущность в CreateMove = конец
+		// cmd N-1, самый свежий предикт. Ручной SetupMove/ProcessMovement/
+		// FinishMove внутри CreateMove симулировал cmd дважды (наш прогон +
+		// предикт движка) и оставлял половину состояния продвинутой
+		// (m_hGroundEntity, m_flFallVelocity, ducktime не восстанавливались) —
+		// рассинхрон ground-entity с флагами рвал CheckJumpButton, бхоп прыгал
+		// криво или не прыгал вовсе.
 		const float flRawSide = cmd->sidemove;
 		const int nRawMouseX = cmd->mousedx;
 		F::BunnyHop.Run(pLocal, cmd);
 		F::AutoStrafe.Run(pLocal, cmd);
 		F::JumpStats.OnTick(pLocal, cmd, flRawSide, nRawMouseX);
 
-		F::EnginePrediction.Start(pLocal, cmd);
-		{
-			//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
-			//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
-			C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
-			C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
+		//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
+		//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
+		C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
+		C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
 
-			if (pWeapon)
-			{
-				//Порядок load-bearing: NoSpread видит IN_ATTACK, форсированный
-				//аимом/триггером в этом же тике, только при этом порядке.
-				F::Aimbot.Run(pLocal, pWeapon, cmd);
-				F::TriggerBot.Run(pLocal, pWeapon, cmd);
-				F::AutoPistol.Run(pWeapon, cmd);
-				F::NoSpread.Run(pLocal, pWeapon, cmd);
-			}
-			//Шов последним: ставит свои углы на атакующего, Aimbot выше
-			//перезаписал бы их своим снапом — шов уходил бы мимо.
-			F::AutoShove.Run(pLocal, cmd);
+		if (pWeapon)
+		{
+			//Порядок load-bearing: NoSpread видит IN_ATTACK, форсированный
+			//аимом/триггером в этом же тике, только при этом порядке.
+			F::Aimbot.Run(pLocal, pWeapon, cmd);
+			F::TriggerBot.Run(pLocal, pWeapon, cmd);
+			F::AutoPistol.Run(pWeapon, cmd);
+			F::NoSpread.Run(pLocal, pWeapon, cmd);
 		}
-		F::EnginePrediction.Finish(pLocal, cmd);
+		//Шов последним: ставит свои углы на атакующего, Aimbot выше
+		//перезаписал бы их своим снапом — шов уходил бы мимо.
+		F::AutoShove.Run(pLocal, cmd);
 
 		// Фронт IN_ATTACK для точности сессии: сэмпл ПОСЛЕ фич, иначе
 		// выстрелы аима/триггера (форс кнопок) не считались хитмаркером.
