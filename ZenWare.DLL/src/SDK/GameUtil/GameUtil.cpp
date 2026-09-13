@@ -126,7 +126,16 @@ Vector CGlobal_GameUtil::GetEyePosition(C_BaseEntity* pEntity)
 	if (!pEntity)
 		return Vector(0.0f, 0.0f, 0.0f);
 
+	// Только игроки: нетвары origin+viewOffset. Пpопсы/оружие/СИ не имеют
+	// валидного viewOffset — каст к C_BasePlayer на них даст мусор.
+	ClientClass* pCC = pEntity->GetClientClass();
+	if (!pCC || !(U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot, Tank)))
+		return pEntity->m_vecOrigin();
+
 	C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
+	if (!pPl)
+		return pEntity->m_vecOrigin();
+
 	return pEntity->m_vecOrigin() + pPl->m_vecViewOffset();
 }
 

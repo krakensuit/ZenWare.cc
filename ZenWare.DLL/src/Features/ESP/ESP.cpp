@@ -47,17 +47,13 @@ void CFeatures_ESP::Render()
 	if (nLocalIndex < 1 || !I::ClientEntityList)
 		return;
 
-	//Локал без проверки класса: в переходных тиках в слоте может быть мир/прокси,
-	//а дальше по коду идут виртуалки GetTeamNumber/GetHealth.
+	// Локал: только проверенные игроки, никаких viewmodel/прокси.
 	IClientEntity* pLocalEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
-
 	if (!G::Util.IsPlayerEntity(pLocalEnt))
 		return;
 
 	C_TerrorPlayer* pLocal = pLocalEnt->As<C_TerrorPlayer*>();
 
-	//Лимит дистанции: 0 = без лимита. Режет всё (игроки/СИ/предметы) —
-	//и чистый экран, и меньше работы в кадр на больших картах.
 	const Vector vLocal = pLocal->m_vecOrigin();
 	const float flMaxM = U::Math.Clamp(Vars::Visuals::flEspMaxDist, 0.0f, 500.0f);
 	const int nMaxEnt = I::ClientEntityList->GetMaxEntities();
@@ -68,16 +64,14 @@ void CFeatures_ESP::Render()
 			continue;
 
 		IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
-
 		if (!pEntity || pEntity->IsDormant())
 			continue;
 
 		ClientClass* pCC = pEntity->GetClientClass();
-
 		if (!pCC)
 			continue;
 
-		//Ап-каст до базы безопасен для любой сущности; дальность — по origin.
+		// Дистанция: ап-каст к C_BaseEntity безопасен для любой сущности (нетвары).
 		if (flMaxM > 0.5f)
 		{
 			C_BaseEntity* pBaseD = pEntity->As<C_BaseEntity*>();
@@ -91,16 +85,16 @@ void CFeatures_ESP::Render()
 			case SurvivorBot:
 			{
 				C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
+				if (!G::Util.IsPlayerEntity(pEntity)) // защита на случай сдвинутых ID
+					break;
 
 				if (G::Util.IsValidTarget(pLocal, pPlayer, false))
 					DrawPlayer(pLocal, pPlayer, n);
-				// Show Team как у space: своих рисуем только по тумблеру.
 				else if (Vars::ESP::bShowTeam && pPlayer && !pPlayer->deadflag()
 					&& pPlayer->m_lifeState() == 0 && pPlayer->GetHealth() > 0
 					&& pPlayer->GetTeamNumber() == pLocal->GetTeamNumber()
 					&& G::Util.IsValidTeam(pPlayer->GetTeamNumber()))
 					DrawPlayer(pLocal, pPlayer, n);
-
 				break;
 			}
 			case CWeaponSpawn:
@@ -115,41 +109,38 @@ void CFeatures_ESP::Render()
 			{
 				if (Vars::ESP::bItems)
 					DrawItem(pLocal, pEntity->As<C_BaseEntity*>());
-
 				break;
 			}
 			case Infected:
 			{
 				if (Vars::ESP::bCommon)
 					DrawCommon(pEntity->As<C_BaseEntity*>());
-
 				break;
 			}
-		case Hunter:
-		case Smoker:
-		case Jockey:
-		case Spitter:
-		case Charger:
-		case Tank:
-		{
-			if (Vars::ESP::bSpecialBoxes)
-				DrawSpecial(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_ClassID);
-			break;
-		}
-		case Witch:
-		{
-			if (Vars::ESP::bBossBoxes)
-				DrawBoss(pEntity->As<C_BaseEntity*>());
-			break;
-		}
-		default:
-		{
-			// ID нет в нашем дампе (бумер!) или чужой билд со сдвинутыми ID —
-			// опознаём по имени класса, оно не меняется.
-			if (Vars::ESP::bSpecialBoxes && pCC->m_pNetworkName)
-				DrawUnknown(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_pNetworkName);
-			break;
-		}
+			case Hunter:
+			case Smoker:
+			case Jockey:
+			case Spitter:
+			case Charger:
+			case Tank:
+			{
+				if (Vars::ESP::bSpecialBoxes)
+					DrawSpecial(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_ClassID);
+				break;
+			}
+			case Witch:
+			{
+				if (Vars::ESP::bBossBoxes)
+					DrawBoss(pEntity->As<C_BaseEntity*>());
+				break;
+			}
+			default:
+			{
+				// Бумер и сдвинутые ID: опознаём по имени класса.
+				if (Vars::ESP::bSpecialBoxes && pCC->m_pNetworkName)
+					DrawUnknown(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_pNetworkName);
+				break;
+			}
 		}
 	}
 

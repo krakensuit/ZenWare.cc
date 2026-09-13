@@ -90,6 +90,9 @@ namespace
 
 	bool FindCommonTarget(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vViewAngles, Vector& vOut)
 	{
+		if (!pLocal || !I::ClientEntityList)
+			return false;
+
 		bool bFound = false;
 		float flBest = 1e30f;
 
@@ -101,15 +104,14 @@ namespace
 				continue;
 
 			ClientClass* pCC = pEntity->GetClientClass();
-
 			if (!pCC)
 				continue;
 
 			const int nID = pCC->m_ClassID;
-
 			if (nID != Infected && nID != Witch)
 				continue;
 
+			// Commons/Infected — только нетвары, никаких виртуалок.
 			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
 			C_Infected* pInf = pEntity->As<C_Infected*>();
 
@@ -145,9 +147,12 @@ namespace
 
 	bool FindSpecialTarget(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vViewAngles, Vector& vOut)
 	{
+		if (!pLocal || !I::ClientEntityList)
+			return false;
+
 		bool bFound = false;
 		float flBest = 1e30f;
-		const int nLocalTeam = pLocal ? pLocal->GetTeamNumber() : 0;
+		const int nLocalTeam = pLocal->GetTeamNumber();
 
 		for (int n = 1; n <= I::ClientEntityList->GetMaxEntities(); n++)
 		{
@@ -157,32 +162,27 @@ namespace
 				continue;
 
 			ClientClass* pCC = pEntity->GetClientClass();
-
 			if (!pCC)
 				continue;
 
-		const int nID = pCC->m_ClassID;
+			const int nID = pCC->m_ClassID;
 
-		if (nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter && nID != Charger && nID != Tank)
-		{
-			// Фолбэк по имени: бумер и чужие билды со сдвинутыми ID.
-			if (!IsSpecialByName(pCC->m_pNetworkName))
-				continue;
-		}
+			if (nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter && nID != Charger && nID != Tank)
+			{
+				if (!IsSpecialByName(pCC->m_pNetworkName))
+					continue;
+			}
 
 			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
-
 			if (!pEnt)
 				continue;
 
 			const int nTeam = pEnt->m_iTeamNum();
-
 			if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == nLocalTeam)
 				continue;
 
-			//Light alive check (plain read, fail-closed).
+			// Alive check: только нетвары, никаких виртуалок.
 			C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
-
 			if (!pPl || pPl->m_lifeState() != 0)
 				continue;
 
