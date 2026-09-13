@@ -150,6 +150,12 @@ void CFeatures_ESP::Render()
 
 void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, const int nEntityIndex)
 {
+	// Защита от краша ESP::Render (0x12DF9 / 0x12D09): проверяем полный валид
+	// перед ЛЮБЫМ чтением виртуалок или нетваров на pPlayer.
+	if (!pPlayer || !G::Util.IsPlayerEntity(pPlayer)) return;
+	ClientClass* pCC = pPlayer->GetClientClass();
+	if (!pCC) return;
+
 	int x, y, w, h;
 
 	if (!GetBounds(pPlayer, x, y, w, h))

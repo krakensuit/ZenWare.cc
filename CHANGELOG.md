@@ -5,6 +5,14 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.7] - 2026-09-13
+
+### Fixed / Исправлено
+- ESP::Render crash guard (`IsPlayerEntity` + `GetClientClass` check before any virtual/netvar access) — устранён краш `0x12DF9`/`0x12D09`.
+- Aimbot::FindCommonTarget дополнительная валидация (`ClassID == Infected`) — устранён краш `0x5AD5` (`Aimbot:common`).
+- BunnyHop: `s_nJumpDelayTicks` статик + защита счётчика на смену карты/смерть.
+- ESP/Aimbot: версия везде `v3.8.7` (`resource.h`, `README_*`, `CHANGELOG`).
+
 ## [3.8.4] - 2026-09-12
 
 ### Fixed / Исправлено

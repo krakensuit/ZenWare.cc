@@ -112,13 +112,18 @@ namespace
 				continue;
 
 			// Commons/Infected — только нетвары, никаких виртуалок.
-			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
-			C_Infected* pInf = pEntity->As<C_Infected*>();
+		C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
+		C_Infected* pInf = pEntity->As<C_Infected*>();
 
-			if (!pEnt || !pInf)
-				continue;
+		if (!pEnt || !pInf)
+			continue;
 
-			if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
+		// Защита от краша Aimbot:common (0x5AD5): проверяем, что класс — действительно Infected
+		ClientClass* pCC2 = pEntity->GetClientClass();
+		if (!pCC2 || pCC2->m_ClassID != Infected)
+			continue;
+
+		if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
 				continue;
 
 			Vector vAim = pEnt->m_vecOrigin() + Vector(0.0f, 0.0f, pEnt->m_vecMaxs().z * 0.85f);

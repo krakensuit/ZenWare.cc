@@ -8,6 +8,6 @@
 // заголовком окна, сплэшем и VERSIONINFO exe автоматически.
 #define ZENWARE_VER_MAJOR 3
 #define ZENWARE_VER_MINOR 8
-#define ZENWARE_VER_PATCH 4
+#define ZENWARE_VER_PATCH 7
 
-#define ZENWARE_VER_STR "3.8.4"
+#define ZENWARE_VER_STR "3.8.7"
