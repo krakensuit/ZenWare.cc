@@ -24,19 +24,6 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	static int s_nLastJumpTick = 0;
 	static int s_nJumpDelayTicks = 0;
 
-	// Временная диагностика рваных прыжков: раз в секунду пишем сырые значения
-	// гардов в лог. Убрать после нахождения причины.
-	static int s_nDbgTick = 0;
-	if ((cmd->tick_count - s_nDbgTick) >= 66)
-	{
-		s_nDbgTick = cmd->tick_count;
-		U::Log.Write("[?] BunnyHop dbg: on=%d move=%u water=%d life=%u ghost=%d team=%d jump=%d",
-			(pLocal->m_fFlags() & FL_ONGROUND) != 0, (unsigned)pLocal->m_MoveType(),
-			pLocal->m_nWaterLevel(), (unsigned)pLocal->m_lifeState(),
-			(int)pLocal->m_isGhost(), pLocal->GetTeamNumber(),
-			(cmd->buttons & IN_JUMP) != 0);
-	}
-
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
 	{
 		s_bWasOnGround = false;

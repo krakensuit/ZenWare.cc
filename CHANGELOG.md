@@ -5,6 +5,27 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.10] - 2026-09-13
+
+### Fixed / Исправлено
+- Movement features ran INSIDE the prediction wrap, after `ProcessMovement` had
+  already simulated the current cmd: on a grounded tick with jump held the
+  simulation itself executed the jump, flags flipped to airborne, and BunnyHop
+  then stripped `IN_JUMP` from the cmd — the jump only ever existed inside the
+  rolled-back simulation, so the bhop never fired (3.8.9 regression; the 3.8.8
+  flakiness came from the same misplaced order plus double simulation).
+  BunnyHop/AutoStrafe/JumpStats now run BEFORE the wrap, on exactly the state
+  the engine will simulate this cmd from; combat features stay inside the wrap.
+  Фичи движения работали внутри prediction-wrap'а после того, как
+  `ProcessMovement` уже просимулировал текущую cmd: на наземном тике с зажатым
+  прыжком симуляция сама исполняла прыжок, флаги уезжали в «воздух», и BunnyHop
+  вырезал IN_JUMP — прыжок существовал только в откатываемой симуляции, бхоп
+  не стрелял вовсе (регрессия 3.8.9; рваность 3.8.8 — тот же порядок плюс
+  двойная симуляция). BunnyHop/AutoStrafe/JumpStats теперь до wrap'а, на
+  состоянии, с которого движок начнёт тик; бой остался внутри.
+- Removed the temporary BunnyHop debug logging (cause found and fixed).
+  Убран временный дебаг-лог BunnyHop (причина найдена и устранена).
+
 ## [3.8.9] - 2026-09-13
 
 ### Fixed / Исправлено

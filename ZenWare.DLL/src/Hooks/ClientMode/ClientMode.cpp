@@ -61,34 +61,38 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 
 	if (pLocal && !pLocal->deadflag())
 	{
-		F::EnginePrediction.Start(pLocal, cmd);
-		{
-			// Movement features work without active weapon (infected claws etc.)
-			// Снапшот сырого ввода для статов: AutoStrafe ниже форсит sidemove=±450,
-			// синк по мутированному всегда показывал бы ~100% со своим же ботом.
-			const float flRawSide = cmd->sidemove;
-			const int nRawMouseX = cmd->mousedx;
+		// Движение — ДО prediction-wrap'а. Состояние сущности в CreateMove =
+		// конец cmd N-1, ровно с него движок начнёт симуляцию этой cmd, и
+		// флаги земли здесь свежие. Внутри wrap'а ProcessMovement уже ИСПОЛНЯЕТ
+		// прыжок этой cmd (CheckJumpButton стреляет на старте тика, пока игрок
+		// на земле) — флаги уезжают в «в воздухе», BunnyHop сам вырезал
+		// IN_JUMP из cmd, и бхоп не работал вовсе: прыжок существовал только
+		// в откатываемой симуляции.
+		const float flRawSide = cmd->sidemove;
+		const int nRawMouseX = cmd->mousedx;
 		F::BunnyHop.Run(pLocal, cmd);
 		F::AutoStrafe.Run(pLocal, cmd);
 		F::JumpStats.OnTick(pLocal, cmd, flRawSide, nRawMouseX);
 
-		//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
-		//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
-		C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
-		C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
-
-		if (pWeapon)
+		F::EnginePrediction.Start(pLocal, cmd);
 		{
-			//Порядок load-bearing: NoSpread видит IN_ATTACK, форсированный
-			//аимом/триггером в этом же тике, только при этом порядке.
-			F::Aimbot.Run(pLocal, pWeapon, cmd);
-			F::TriggerBot.Run(pLocal, pWeapon, cmd);
-			F::AutoPistol.Run(pWeapon, cmd);
-			F::NoSpread.Run(pLocal, pWeapon, cmd);
-		}
-		//Шов последним: ставит свои углы на атакующего, Aimbot выше
-		//перезаписал бы их своим снапом — шов уходил бы мимо.
-		F::AutoShove.Run(pLocal, cmd);
+			//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
+			//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
+			C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
+			C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
+
+			if (pWeapon)
+			{
+				//Порядок load-bearing: NoSpread видит IN_ATTACK, форсированный
+				//аимом/триггером в этом же тике, только при этом порядке.
+				F::Aimbot.Run(pLocal, pWeapon, cmd);
+				F::TriggerBot.Run(pLocal, pWeapon, cmd);
+				F::AutoPistol.Run(pWeapon, cmd);
+				F::NoSpread.Run(pLocal, pWeapon, cmd);
+			}
+			//Шов последним: ставит свои углы на атакующего, Aimbot выше
+			//перезаписал бы их своим снапом — шов уходил бы мимо.
+			F::AutoShove.Run(pLocal, cmd);
 		}
 		F::EnginePrediction.Finish(pLocal, cmd);
 
