@@ -245,10 +245,12 @@ public:
 	M_NETVAR(m_iObserverMode, int, "CBasePlayer", "m_iObserverMode");
 	M_NETVAR(m_hObserverTarget, EHANDLE, "CBasePlayer", "m_hObserverTarget");
 	M_NETVAR(m_hViewModel, EHANDLE, "CBasePlayer", "m_hViewModel[0]");
-	M_NETVAR(m_szLastPlaceName, const char*, "CBasePlayer", "m_szLastPlaceName");
+	//m_szLastPlaceName убран: это char-массив в игре, а не указатель —
+	//объявление const char* читало первые 4 символа как адрес. Не используется.
 	M_NETVAR(m_vecLadderNormal, Vector, "CBasePlayer", "m_vecLadderNormal");
 	M_NETVAR(m_ladderSurfaceProps, int, "CBasePlayer", "m_ladderSurfaceProps");
-	M_NETVAR(m_ubEFNoInterpParity, int, "CBasePlayer", "m_ubEFNoInterpParity");
+	//ub-префикс = unsigned byte: чтение int-ом давало мусор соседних байтов.
+	M_NETVAR(m_ubEFNoInterpParity, unsigned char, "CBasePlayer", "m_ubEFNoInterpParity");
 	// Однобайтовый проп: в реальной таблице за ним сразу идёт m_lifeState
 	// (0x147). Чтение int с 0x146 тащило соседние байты как мусор
 	// (значения вида 0x777B0080), и гейт "water > 1" рандомно убивал бхоп.

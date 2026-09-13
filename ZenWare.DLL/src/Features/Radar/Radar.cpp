@@ -171,7 +171,9 @@ void CFeatures_Radar::Render()
 		if (pPl->m_hObserverTarget().GetEntryIndex() != nLocalIdx)
 			continue;
 		player_info_t pi = {};
-		if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
+		//GetPlayerInfo ждёт клиент-слот: индексы выше maxclients не подаём
+		//(ботовые СИ живут на сущностных индексах выше слотов).
+		if (n > I::EngineClient->GetMaxClients() || !I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 			continue;
 		pi.name[31] = '\0';
 		strcpy_s(aNames[nCount], pi.name);

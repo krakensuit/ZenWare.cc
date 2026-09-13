@@ -5,6 +5,41 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.13] - 2026-09-13
+
+### Fixed / Исправлено
+- Netvar manager now validates the declared type size against the real prop
+  size (RECVINFO stores `sizeof(field)` in `m_StringBufferSize` for every prop
+  type) and logs every mismatch as
+  `[!] netvar Class.Prop: real prop size N, declared M — FIX THE SDK TYPE`.
+  This is the systematic guard for the mis-typed-netvar class of bugs (the
+  m_nWaterLevel int-over-byte that randomly killed the bhop). Startup
+  netvar diagnostics pass the declared sizes too. Менеджер нетваров сверяет
+  объявленный размер типа с реальным размером пропа и пишет каждое
+  несовпадение в лог — системная защита от класса багов «int поверх байта»
+  (как m_nWaterLevel). Стартовая диагностика нетваров тоже передаёт размеры.
+- Mis-typed netvars fixed: `m_ubEFNoInterpParity` int → unsigned byte
+  ("ub" prefix, byte prop); removed `m_szLastPlaceName` declared as
+  `const char*` (it is a char array in the game, the old declaration aliased
+  the first 4 characters as a pointer; unused); `C_Infected::m_nWaterLevel`
+  int → unsigned byte (same byte prop as CBasePlayer's).
+  Исправлены неверно типизированные нетвары: m_ubEFNoInterpParity (байт),
+  убран m_szLastPlaceName (массив, а не указатель), C_Infected::m_nWaterLevel
+  (байт).
+- `GetPlayerInfo` calls in Radar/Alerts/ESP::DrawTeam are now gated by
+  `GetMaxClients()` (entity indices above the client slots are bot SI —
+  same guard Killfeed already documented and used). Вызовы GetPlayerInfo в
+  радаре/алертах/панели команды ограничены maxclients (тот же гейт, что уже
+  документирован в Killfeed).
+
+### Known crashes / Известные вылеты
+- All 7 exceptions recorded in the game log (0x12D09/0x12DF9 ESP::Render,
+  0x5AD5 Aimbot commons, 0x12979, 0x1B36D, one inside engine.dll) happened on
+  builds older than 3.8.5-3.8.7 and are covered by those fixes; the eight
+  sessions on 3.8.8+ contain zero exceptions. Все 7 исключений в логе
+  произошли на сборках старше 3.8.5-3.8.7 и покрыты их фиксами; восемь
+  сессий на 3.8.8+ — ни одного исключения.
+
 ## [3.8.12] - 2026-09-13
 
 ### Fixed / Исправлено

@@ -209,7 +209,8 @@ void CFeatures_Alerts::Render()
 			if (!pT->m_isIncapacitated())
 				continue;
 			player_info_t pi = {};
-			if (!I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
+			//GetPlayerInfo ждёт клиент-слот: индексы выше maxclients не подаём.
+			if (n > I::EngineClient->GetMaxClients() || !I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 				continue;
 			pi.name[31] = '\0';
 			const float flD = (pT->m_vecOrigin() - vEye).Lenght() / 52.5f;

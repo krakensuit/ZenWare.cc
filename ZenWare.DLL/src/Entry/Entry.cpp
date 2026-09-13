@@ -267,15 +267,16 @@ void CGlobal_ModuleEntry::Load()
 
 		//Диагностика нетваров: нулевой оффсет = имя таблицы/поля не найдено,
 		//все чтения по нему бьют в vtable (баги типа "бхоп не работает").
-		//Пришли хвост лога — сразу видно виновника.
+		//Третий аргумент = sizeof(объявленного типа): менеджер сверит с
+		//реальным размером пропа и пометит несовпадения в логе.
 		U::Log.Write("[*] netvar CBaseEntity.m_vecOrigin=0x%X m_iTeamNum=0x%X m_vecMaxs=0x%X",
-			U::NetVar.Get("CBaseEntity", "m_vecOrigin"), U::NetVar.Get("CBaseEntity", "m_iTeamNum"), U::NetVar.Get("CBaseEntity", "m_vecMaxs"));
+			U::NetVar.Get("CBaseEntity", "m_vecOrigin", sizeof(Vector)), U::NetVar.Get("CBaseEntity", "m_iTeamNum", sizeof(int)), U::NetVar.Get("CBaseEntity", "m_vecMaxs", sizeof(Vector)));
 		U::Log.Write("[*] netvar CBasePlayer.deadflag=0x%X m_lifeState=0x%X m_fFlags=0x%X m_nWaterLevel=0x%X",
-			U::NetVar.Get("CBasePlayer", "deadflag"), U::NetVar.Get("CBasePlayer", "m_lifeState"),
-			U::NetVar.Get("CBasePlayer", "m_fFlags"), U::NetVar.Get("CBasePlayer", "m_nWaterLevel"));
+			U::NetVar.Get("CBasePlayer", "deadflag", sizeof(bool)), U::NetVar.Get("CBasePlayer", "m_lifeState", sizeof(unsigned char)),
+			U::NetVar.Get("CBasePlayer", "m_fFlags", sizeof(int)), U::NetVar.Get("CBasePlayer", "m_nWaterLevel", sizeof(unsigned char)));
 		U::Log.Write("[*] netvar CTerrorPlayer.m_isIncapacitated=0x%X m_isGhost=0x%X CBaseCombatWeapon.m_iClip1=0x%X",
-			U::NetVar.Get("CTerrorPlayer", "m_isIncapacitated"), U::NetVar.Get("CTerrorPlayer", "m_isGhost"),
-			U::NetVar.Get("CBaseCombatWeapon", "m_iClip1"));
+			U::NetVar.Get("CTerrorPlayer", "m_isIncapacitated", sizeof(bool)), U::NetVar.Get("CTerrorPlayer", "m_isGhost", sizeof(bool)),
+			U::NetVar.Get("CBaseCombatWeapon", "m_iClip1", sizeof(int)));
 	}
 
 	U::Log.Write("[*] Initializing draw manager (fonts) ...");
