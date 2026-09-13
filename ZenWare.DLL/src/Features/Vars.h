@@ -64,7 +64,7 @@ namespace Vars
 	{
 		inline bool bEnabled = false;          // bunny hop master switch
 		inline int nBhopStyle = 0;             // 0 perfect (force every tick), 1 legit (own keypress only)
-		inline bool bAutoStrafe = false;
+		inline bool bAutoStrafe = true;
 		inline int nAutoStrafeMode = 0;        // 0 legit mousedx, 1 rage circle, 2 w-only, 3 directional
 		inline bool bEdgeJump = false;         // jump at ledge edge
 		inline bool bEdgeBug = false;          // duck at landing to keep speed

@@ -21,12 +21,14 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	static bool s_bWasOnGround = true;
 	static bool s_bJbDuck = false;
 	static int s_nLastJumpTick = 0;
+	static int s_nJumpDelayTicks = 0;
 
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
 	{
 		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
+		s_nJumpDelayTicks = 0;
 		return;
 	}
 
@@ -35,6 +37,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
+		s_nJumpDelayTicks = 0;
 		return;
 	}
 
@@ -46,6 +49,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
+		s_nJumpDelayTicks = 0;
 		return;
 	}
 
@@ -56,6 +60,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
+		s_nJumpDelayTicks = 0;
 		return;
 	}
 
@@ -65,6 +70,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		s_bWasOnGround = false;
 		s_bJbDuck = false;
 		s_nLastJumpTick = 0;
+		s_nJumpDelayTicks = 0;
 	}
 
 	const bool bOnGround = (pLocal->m_fFlags() & FL_ONGROUND) != 0;
@@ -171,8 +177,9 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 				//Don't jump if ducking and edgebug wants to keep duck.
 				if (!(bDucking && Vars::BunnyHop::bEdgeBug))
 				{
-					cmd->buttons |= IN_JUMP;
-					s_nLastJumpTick = cmd->tick_count;
+				cmd->buttons |= IN_JUMP;
+				s_nLastJumpTick = cmd->tick_count;
+				s_nJumpDelayTicks = 0;
 				}
 
 				//Long-jump helper: crouch-jump gives extra distance.
