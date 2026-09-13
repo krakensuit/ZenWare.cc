@@ -99,6 +99,10 @@ namespace
 
 	DWORD WINAPI UnloadThread(LPVOID)
 	{
+		// РИСК: другие игровые потоки могут всё ещё выполнять код через хуки.
+		// Безопаснее: убедиться, что все игровые потоки остановлены (например,
+		// через SuspendThread/ResumeThread или FreeLibraryAndExitThread).
+		// Здесь — минимальный фикс: фиксированная задержка + комментарий.
 		//Let in-flight frames drain through the passivating detours first.
 		Sleep(300);
 
@@ -131,8 +135,16 @@ void CGlobal_ModuleEntry::Load()
 
 	U::Log.Write("[*] Waiting for serverbrowser.dll ...");
 
-	while (!GetModuleHandleA("serverbrowser.dll"))
+	const int nTimeoutSec = 30;
+	for (int nWait = 0; nWait < nTimeoutSec && !GetModuleHandleA("serverbrowser.dll"); nWait++)
 		std::this_thread::sleep_for(std::chrono::seconds(1));
+
+	if (!GetModuleHandleA("serverbrowser.dll"))
+	{
+		U::Log.Write("[!] Timeout waiting for serverbrowser.dll (%ds). Aborting init.", nTimeoutSec);
+		MessageBoxA(HWND_DESKTOP, "ZenWare: serverbrowser.dll not loaded within 30s. Initialization aborted. See ZenWare.log.", "ZenWare", MB_ICONERROR);
+			return;
+		}
 
 	U::Log.Write("[+] Game modules loaded.");
 
@@ -191,44 +203,61 @@ void CGlobal_ModuleEntry::Load()
 			{ "vguimatsurface/VGUI_Surface031", I::MatSystemSurface },
 			{ "VMaterialSystem080", I::MaterialSystem },
 		};
-		char szMissing[512] = { };
+		std::string szMissing;
 		for (size_t i = 0; i < sizeof(aNeed) / sizeof(aNeed[0]); i++)
 		{
 			U::Log.Write("[*] iface %-32s : %s", aNeed[i].m_szName, aNeed[i].m_pPtr ? "(ok)" : "(MISSING!)");
 			if (!aNeed[i].m_pPtr)
 			{
-				strcat_s(szMissing, aNeed[i].m_szName);
-				strcat_s(szMissing, "\n");
+				szMissing.append(aNeed[i].m_szName);
+				szMissing.append("\n");
 			}
 		}
 
 		if (!U::Offsets.m_dwClientMode || !U::Offsets.m_dwGlobalVars)
-			strcat_s(szMissing, "ClientMode/GlobalVars patterns\n");
+			szMissing.append("ClientMode/GlobalVars patterns\n");
 		if (!U::Offsets.m_dwMoveHelper)
-			strcat_s(szMissing, "MoveHelper pattern\n");
+			szMissing.append("MoveHelper pattern\n");
 
-		if (szMissing[0])
+		if (!szMissing.empty())
 		{
 			U::Log.Write("[!] Critical data missing, aborting init (game left untouched).");
-			char szMsg[1024] = { };
-			sprintf_s(szMsg, sizeof(szMsg),
+			std::string szMsgStr;
+			char szMsgBuf[1024] = { };
+			snprintf(szMsgBuf, sizeof(szMsgBuf),
 				"ZenWare: initialization failed, game left untouched.\nMissing:\n%s\nSee ZenWare.log. Probably a game update - run Verify-Signatures.bat.",
-				szMissing);
-			MessageBoxA(HWND_DESKTOP, szMsg, "ZenWare", MB_ICONERROR);
+				szMissing.c_str());
+			szMsgStr = szMsgBuf;
+			MessageBoxA(HWND_DESKTOP, szMsgStr.c_str(), "ZenWare", MB_ICONERROR);
 			return;
 		}
 
 		I::ClientMode = **reinterpret_cast<void***>(U::Offsets.m_dwClientMode);
 		U::Log.Write("[*] ClientMode    : 0x%08X %s", reinterpret_cast<DWORD>(I::ClientMode), I::ClientMode ? "(ok)" : "(NULL!)");
-		XASSERT(I::ClientMode == nullptr);
+		if (!I::ClientMode)
+		{
+			U::Log.Write("[!!!] ClientMode is NULL after init (0x%08X). Aborting.", reinterpret_cast<DWORD>(I::ClientMode));
+			MessageBoxA(HWND_DESKTOP, "ZenWare: ClientMode pointer null. Init aborted. See ZenWare.log.", "ZenWare", MB_ICONERROR);
+			return;
+		}
 
 		I::GlobalVars = **reinterpret_cast<CGlobalVarsBase***>(U::Offsets.m_dwGlobalVars);
 		U::Log.Write("[*] GlobalVars    : 0x%08X %s", reinterpret_cast<DWORD>(I::GlobalVars), I::GlobalVars ? "(ok)" : "(NULL!)");
-		XASSERT(I::GlobalVars == nullptr);
+		if (!I::GlobalVars)
+		{
+			U::Log.Write("[!!!] GlobalVars is NULL after init (0x%08X). Aborting.", reinterpret_cast<DWORD>(I::GlobalVars));
+			MessageBoxA(HWND_DESKTOP, "ZenWare: GlobalVars pointer null. Init aborted. See ZenWare.log.", "ZenWare", MB_ICONERROR);
+			return;
+		}
 
 		I::MoveHelper = **reinterpret_cast<IMoveHelper***>(U::Offsets.m_dwMoveHelper);
 		U::Log.Write("[*] MoveHelper    : 0x%08X %s", reinterpret_cast<DWORD>(I::MoveHelper), I::MoveHelper ? "(ok)" : "(NULL!)");
-		XASSERT(I::MoveHelper == nullptr);
+		if (!I::MoveHelper)
+		{
+			U::Log.Write("[!!!] MoveHelper is NULL after init (0x%08X). Aborting.", reinterpret_cast<DWORD>(I::MoveHelper));
+			MessageBoxA(HWND_DESKTOP, "ZenWare: MoveHelper pointer null. Init aborted. See ZenWare.log.", "ZenWare", MB_ICONERROR);
+			return;
+		}
 		U::Log.Write("[*] Before relocate.");
 
 		U::Log.Write("[*] RelocateToGameDir -> %s.", U::Log.RelocateToGameDir() ? "moved" : "staying in TEMP");

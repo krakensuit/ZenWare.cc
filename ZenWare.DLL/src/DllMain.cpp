@@ -24,8 +24,15 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 		const HANDLE hThread = CreateThread(nullptr, 0, InitThread, hinstDLL, 0, nullptr);
 
-		if (hThread)
-			CloseHandle(hThread);
+		if (!hThread)
+		{
+			char szErrMsg[256] = { };
+			sprintf_s(szErrMsg, sizeof(szErrMsg), "ZenWare: CreateThread failed (error %lu). Init aborted.", static_cast<unsigned long>(GetLastError()));
+			MessageBoxA(nullptr, szErrMsg, "ZenWare Init Error", MB_ICONERROR);
+			return FALSE;
+		}
+
+		CloseHandle(hThread);
 	}
 
 	return TRUE;

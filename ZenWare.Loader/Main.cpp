@@ -185,17 +185,24 @@ void ToggleMode(){
  LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)",g_bExternal?"Modus: External (eigener Prozess)":"Modus: Internal (DLL-Inject)",g_bExternal?"Modo: External (proceso propio)":"Modo: Internal (inyección DLL)",g_bExternal?"Modo: External (processo próprio)":"Modo: Internal (injeção DLL)",g_bExternal?"Tryb: External (osobny proces)":"Tryb: Internal (wstrzyknięcie DLL)",g_bExternal?"Mode : External (processus séparé)":"Mode : Internal (injection DLL)",g_bExternal?"模式：External（独立进程）":"模式：Internal（注入 DLL）"));
  RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(g_hMain,&hdr,FALSE);
 }
-// Язык UI: 0=RU, 1=EN, 2=DE, 3=ES, 4=PT, 5=PL, 6=FR, 7=ZH. Хранится в реестре,
-// переживает обновления exe. Старые значения 1/2 = RU/EN, маппятся на 0/1.
-static void LoadLang(){
- DWORD v=0, s=sizeof(v);
- LONG r=RegGetValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",RRF_RT_REG_DWORD,nullptr,&v,&s);
- if(r==ERROR_SUCCESS&&(v<=7)){ LoaderUtil::g_nLang=(v==1||v==2)?(int)(v-1):(int)v; return; }
- LoaderUtil::g_nLang=1; // Английский по умолчанию; выбор пользователя — в реестре выше.
-}
+// Язык UI: 0=RU, 1=EN, 2=DE, 3=ES, 4=PT, 5=PL, 6=FR, 7=ZH. Живёт в реестре
+// в "Lang2" (новый формат). Легаси "Lang" писался в формате 1=RU/2=EN — после
+// перехода миграция (1->0, 2->1) молча портила выбор EN/DE при перезапуске.
 static void SaveLang(){
  DWORD v=(DWORD)LoaderUtil::g_nLang;
- RegSetKeyValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",REG_DWORD,&v,sizeof(v));
+ RegSetKeyValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang2",REG_DWORD,&v,sizeof(v));
+}
+static void LoadLang(){
+ DWORD v=0, s=sizeof(v);
+ if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang2",RRF_RT_REG_DWORD,nullptr,&v,&s)==ERROR_SUCCESS&&v<LoaderUtil::kLangCount){
+  LoaderUtil::g_nLang=(int)v; return;
+ }
+ if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",RRF_RT_REG_DWORD,nullptr,&v,&s)==ERROR_SUCCESS&&v<=7){
+  // Одноразовая миграция старого формата: 1=RU -> 0, 2=EN -> 1, остальные совпадают.
+  LoaderUtil::g_nLang=(v==1||v==2)?(int)(v-1):(int)v;
+  SaveLang(); return;
+ }
+ LoaderUtil::g_nLang=1; // Английский по умолчанию; выбор пользователя — в реестре выше.
 }
 void ToggleLang(){
  LoaderUtil::g_nLang=(LoaderUtil::g_nLang+1)%LoaderUtil::kLangCount;
@@ -205,9 +212,14 @@ void ToggleLang(){
  if(g_hMain){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(g_hMain,&all,FALSE); }
 }
 void LaunchExternal(){
+ // Тот же busy-флаг, что у инжекта: двойной клик давал два процесса оверлея
+ // (дублированный SendInput-bhop), а запуск во время инжекта — гонку файлов.
+ if(InterlockedExchange(&g_busy,1)) return;
+ struct BusyRel{ ~BusyRel(){ InterlockedExchange(&g_busy,0); } } rel;
  wchar_t dir[MAX_PATH]={}; GetModuleFileNameW(NULL,dir,MAX_PATH);
  wchar_t* s=wcsrchr(dir,L'\\'); if(s) *s=0;
- const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
+ // bin\Release -> корень репо: три "..", два оставляли несуществующий путь.
+ const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\..\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
  wchar_t goods[MAX_PATH]={};
   wchar_t tried[2][MAX_PATH]={};
   for(int i=0;i<2;i++){
@@ -241,10 +253,16 @@ void LaunchExternal(){
   LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched","External gestartet","External iniciado","External iniciado","External uruchomiony","External lancé","External 已启动"));
 }
 void StartInject(){
- wchar_t p[MAX_PATH]={};
-  if(!FindDll(p)){ MessageBoxW(g_hMain, LoaderUtil::SW(L"DLL не найдена рядом с лоадером",L"DLL not found next to loader",L"DLL fehlt neben dem Loader",L"DLL no encontrada junto al loader",L"DLL não encontrada ao lado do loader",L"Nie znaleziono DLL obok loadera",L"DLL introuvable à côté du loader",L"加载器旁未找到 DLL"), L"ZenWare", MB_ICONWARNING); return;}
- // Атомарный захват: два быстрых клика не дадут двойной инжект.
+ // Атомарный захват ДО поиска/распаковки: два быстрых клика иначе дважды
+ // писали DLL в один %TEMP% путь (второй CREATE_ALWAYS усекает файл, пока
+ // первый инжект уже читает его). Клики в игре кнопки блокирует EnableWindow,
+ // но он ставится позже, в потоке инжекта.
  if(InterlockedExchange(&g_busy,1)) return;
+ wchar_t p[MAX_PATH]={};
+ if(!FindDll(p)){
+  InterlockedExchange(&g_busy,0);
+  MessageBoxW(g_hMain, LoaderUtil::SW(L"DLL не найдена рядом с лоадером",L"DLL not found next to loader",L"DLL fehlt neben dem Loader",L"DLL no encontrada junto al loader",L"DLL não encontrada ao lado do loader",L"Nie znaleziono DLL obok loadera",L"DLL introuvable à côté du loader",L"加载器旁未找到 DLL"), L"ZenWare", MB_ICONWARNING); return;
+ }
  LoaderUtil::Status(g_hMain,LoaderUtil::S("Поиск процесса","Finding process","Prozess suchen","Buscando proceso","Procurando processo","Szukanie procesu","Recherche processus","正在查找进程"));
  DWORD pid=LoaderUtil::FindProcessId(L"left4dead2.exe");
  if(!pid){ LoaderUtil::Status(g_hMain,LoaderUtil::S("Игра не найдена","Game not found","Spiel nicht gefunden","Juego no encontrado","Jogo não encontrado","Nie znaleziono gry","Jeu introuvable","未找到游戏")); InterlockedExchange(&g_busy,0); return;}

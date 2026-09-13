@@ -5,6 +5,64 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.8] - 2026-09-13
+
+### Fixed / Исправлено
+- Loader manual-map stub: 23 bytes, not 22 — the trailing `ret` never reached the
+  target, so the remote thread executed zeros right after a "successful" DllMain
+  (AV in the game). Stub layout check added (fail-closed). В стабе manual-map
+  было 22 байта вместо 23: финальный `ret` не попадал в цель, поток после
+  возврата из DllMain исполнял нули (AV в игре).
+- External resolver: `SecHdr` now matches `IMAGE_SECTION_HEADER` (40 bytes; the
+  two WORD pairs were `uint32_t`) — section iteration drifted +4 per step, so
+  `.data` was never found and the runtime resolver silently always fell back to
+  hardcoded offsets. `SecHdr` в резолвере совпадает с реальным заголовком
+  секции: раньше `.data` не находилась и резолв всегда падал на хардкод.
+- External resolver: LocalPlayer signature now validates the rebased disp32
+  against the actual module base instead of the preferred `ImageBase` — on
+  ASLR-relocated builds the check silently failed. Сигнатурная ветка LocalPlayer
+  сверяет перебазированный адрес с фактической базой модуля, а не с preferred
+  `ImageBase` (на ASLR-билдах проверка молча проваливалась).
+- Loader: `g_busy` captured BEFORE DLL extraction in `StartInject`; `LaunchExternal`
+  guarded too — a double click no longer runs two `WriteTempFile` racing on the
+  same `%TEMP%` path or launches two overlay processes. `g_busy` берётся до
+  распаковки ресурсов; LaunchExternal тоже под guard — двойной клик больше не
+  гоняет две распаковки в один путь и два процесса оверлея.
+- Loader: untrusted-PE bounds in manual-map — `SizeOfHeaders`, relocation block
+  overrun, import directory/descriptor/thunk RVAs validated before use (heap OOB
+  reads on a corrupt image). Границы недоверенного PE в manual-map: SizeOfHeaders,
+  выход блока релокаций за каталог, RVA импортов проверяются до использования.
+- Loader: language persists in a new `Lang2` registry value; legacy `Lang`
+  migration applied once — EN/DE selection no longer reverted to RU/EN on restart.
+  Язык UI хранится в новом значении `Lang2`; миграция старого `Lang` одноразовая —
+  выбор EN/DE больше не сбрасывался на RU/EN после перезапуска.
+- Loader: `InjectStandard` read-back clamped to the buffer size; dead
+  `..\..\` fallback path to the External exe fixed (`..\..\..\`); `patch_theme.ps1`
+  (foreign hardcoded path, stale targets) removed. Read-back в InjectStandard
+  клампится в размер буфера; починен мёртвый fallback-путь к External.exe;
+  удалён мёртвый `patch_theme.ps1`.
+- Build-SingleFile.ps1: stale "updates arrive automatically" line (the updater
+  was removed) dropped from the generated KAK-ZAPUSTIT.txt. Из генерируемого
+  KAK-ZAPUSTIT.txt убрана строка про авто-обновления (апдейтер удалён).
+- Verify-Signatures.bat actually runs now: unquoted parens in an `echo` inside
+  nested `(...)` blocks were parsed as a block terminator (". was unexpected");
+  `cmd /c` quote-stripping chopped the quoted vswhere path into "C:\Program"
+  (fixed with a `call` prefix and hardcoded paths first); engine.dll and
+  vguimatsurface.dll are resolved from the game ROOT `bin\`, not
+  `left4dead2\bin` where they do not exist. Verified against the local game
+  build: 14 patterns OK, 0 failed (CheckForSequenceChange AMBIGUOUS is known
+  and its hook is disabled). Verify-Signatures.bat теперь реально работает:
+  незакавыченные скобки в `echo` внутри вложенных блоков рвали парсинг блока;
+  `cmd /c` срезал кавычки у пути vswhere (лечится префиксом `call`, захардкоженные
+  пути проверяются первыми); engine.dll и vguimatsurface.dll берутся из
+  корневого `bin\` игры, а не из `left4dead2\bin`. Проверено на локальном билде:
+  14 паттернов OK, 0 failed.
+- Entry: `std::string` for the missing-interfaces report; DllMain aborts with a
+  message box if `CreateThread` fails; 30 s bounded wait for `serverbrowser.dll`.
+  (параллельная сессия) Entry: отчёт о недостающих интерфейсах на `std::string`;
+  DllMain падает с сообщением, если `CreateThread` не сработал; ожидание
+  `serverbrowser.dll` ограничено 30 секундами.
+
 ## [3.8.7] - 2026-09-13
 
 ### Fixed / Исправлено

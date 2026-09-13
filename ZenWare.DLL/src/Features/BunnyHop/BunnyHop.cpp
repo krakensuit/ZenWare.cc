@@ -12,6 +12,7 @@
 void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 {
 	U::Log.Crumb("BunnyHop::Run");
+	ZTRACE_FIRST("BunnyHop:run");
 	if (!Vars::BunnyHop::bEnabled || !pLocal || !cmd || !cmd->command_number)
 		return;
 
@@ -22,6 +23,19 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	static bool s_bJbDuck = false;
 	static int s_nLastJumpTick = 0;
 	static int s_nJumpDelayTicks = 0;
+
+	// Временная диагностика рваных прыжков: раз в секунду пишем сырые значения
+	// гардов в лог. Убрать после нахождения причины.
+	static int s_nDbgTick = 0;
+	if ((cmd->tick_count - s_nDbgTick) >= 66)
+	{
+		s_nDbgTick = cmd->tick_count;
+		U::Log.Write("[?] BunnyHop dbg: on=%d move=%u water=%d life=%u ghost=%d team=%d jump=%d",
+			(pLocal->m_fFlags() & FL_ONGROUND) != 0, (unsigned)pLocal->m_MoveType(),
+			pLocal->m_nWaterLevel(), (unsigned)pLocal->m_lifeState(),
+			(int)pLocal->m_isGhost(), pLocal->GetTeamNumber(),
+			(cmd->buttons & IN_JUMP) != 0);
+	}
 
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost())
 	{
@@ -164,6 +178,10 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			cmd->forwardmove = 450.0f;
 	}
 
+	// Классический авто-бхоп для Source:
+	// На земле (FL_ONGROUND) + IN_JUMP в cmd -> оставляем IN_JUMP (прыжок).
+	// В воздухе + IN_JUMP нажата -> убираем IN_JUMP (cmd->buttons &= ~IN_JUMP),
+	// чтобы при следующем приземлении можно было сразу прыгнуть снова.
 	if (bWantJump)
 	{
 		if (bOnGround)

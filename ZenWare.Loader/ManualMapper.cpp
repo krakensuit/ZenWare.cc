@@ -301,6 +301,13 @@ bool CManualMapper::BuildLocalImage(HWND hwndLog, LoaderLog::Fn fnLog, const std
 
 	vecImage.assign(pNt->OptionalHeader.SizeOfImage, 0);
 
+	//Fail-closed: битый SizeOfHeaders иначе читал бы heap OOB из vecFile.
+	if (pNt->OptionalHeader.SizeOfHeaders > vecFile.size() || pNt->OptionalHeader.SizeOfHeaders > vecImage.size())
+	{
+		fnLog(hwndLog, "[!] SizeOfHeaders 0x%08X out of file/image bounds.", pNt->OptionalHeader.SizeOfHeaders);
+		return false;
+	}
+
 	memcpy(vecImage.data(), vecFile.data(), pNt->OptionalHeader.SizeOfHeaders);
 	fnLog(hwndLog, "    headers    : 0x%08X bytes -> image+0", pNt->OptionalHeader.SizeOfHeaders);
 
@@ -375,6 +382,14 @@ bool CManualMapper::ApplyRelocations(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pI
 			return false;
 		}
 
+		//Блок не должен вылезать за пределы каталога релокаций: битый
+		//SizeOfBlock иначе уводил чтение записей за границу образа.
+		if (pRelocBlob + pBlock->SizeOfBlock > pBlobEnd)
+		{
+			fnLog(hwndLog, "[!] Relocation block overruns directory (size %u).", pBlock->SizeOfBlock);
+			return false;
+		}
+
 		const DWORD dwCount = (pBlock->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
 		WORD* pwEntries = reinterpret_cast<WORD*>(pRelocBlob + sizeof(IMAGE_BASE_RELOCATION));
 
@@ -433,12 +448,32 @@ bool CManualMapper::ResolveImports(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pIma
 		return true;
 	}
 
+	//Fail-closed: каталог импортов обязан лежать внутри образа, а перебор
+	//дескрипторов — не выходить за его размер (битый образ иначе уводил
+	//цикл по мусорной памяти).
+	if (dir.VirtualAddress > pNt->OptionalHeader.SizeOfImage || dir.Size > pNt->OptionalHeader.SizeOfImage - dir.VirtualAddress)
+	{
+		fnLog(hwndLog, "[!] Import directory out of image bounds.");
+		return false;
+	}
+
+	const DWORD dwImageSize = pNt->OptionalHeader.SizeOfImage;
+	const auto* const pDescEnd = reinterpret_cast<const IMAGE_IMPORT_DESCRIPTOR*>(pImage + dir.VirtualAddress + dir.Size);
+
 	auto* pDesc = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(pImage + dir.VirtualAddress);
 
 	DWORD dwTotalModules = 0, dwTotalFuncs = 0;
 
-	for (; pDesc->Name != 0; ++pDesc, ++dwTotalModules)
+	for (; pDesc + 1 <= pDescEnd && pDesc->Name != 0; ++pDesc, ++dwTotalModules)
 	{
+		if (pDesc->Name >= dwImageSize
+			|| (pDesc->FirstThunk && pDesc->FirstThunk >= dwImageSize)
+			|| (pDesc->OriginalFirstThunk && pDesc->OriginalFirstThunk >= dwImageSize))
+		{
+			fnLog(hwndLog, "[!] Import descriptor RVA out of image bounds.");
+			return false;
+		}
+
 		char* szModuleName = reinterpret_cast<char*>(pImage + pDesc->Name);
 
 		//System modules are mapped at identical addresses in every process
@@ -472,6 +507,14 @@ bool CManualMapper::ResolveImports(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pIma
 			}
 			else
 			{
+				//Имя функции — RVA внутрь образа: за границей читать нельзя
+				//(ordinal-вариант выше несёт в этом поле флаг, не RVA).
+				if (pOrig->u1.AddressOfData >= dwImageSize)
+				{
+					fnLog(hwndLog, "[!] Import name RVA out of image bounds.");
+					return false;
+				}
+
 				auto* pByName = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(pImage + pOrig->u1.AddressOfData);
 				strncpy_s(szFn, reinterpret_cast<char*>(pByName->Name), _TRUNCATE);
 				pFunction = GetProcAddress(hModule, reinterpret_cast<char*>(pByName->Name));
@@ -539,7 +582,10 @@ bool CManualMapper::CallEntryAndWipeHeaders(HWND hwndLog, LoaderLog::Fn fnLog, c
 	//   mov eax, dwEntry
 	//   call eax                  ; DllMain (__stdcall, cleans its own args)
 	//   ret                       ; back to the thread dispatcher
-	BYTE abyStub[22] = { };
+	//Раскладка = 1+4 + 1+4 + 1+4 + 1+4 + 2 + 1 = 23 байта. Массив на 22
+	//молча терял финальный ret: WriteProcessMemory писал sizeof(abyStub),
+	//удалённый поток после возврата из DllMain уходил исполнять нули -> AV.
+	BYTE abyStub[23] = { };
 	size_t nIdx = 0;
 
 	abyStub[nIdx++] = 0x68; //push imm32 (Reserved = 0, buffer already zero)
@@ -562,6 +608,13 @@ bool CManualMapper::CallEntryAndWipeHeaders(HWND hwndLog, LoaderLog::Fn fnLog, c
 	abyStub[nIdx++] = 0xD0;
 
 	abyStub[nIdx++] = 0xC3; //ret
+
+	//Fail-closed: расхождение раскладки с размером буфера = инжект не запускаем.
+	if (nIdx != sizeof(abyStub))
+	{
+		fnLog(hwndLog, "[!] Stub layout mismatch: %u != %u bytes.", static_cast<unsigned>(nIdx), static_cast<unsigned>(sizeof(abyStub)));
+		return false;
+	}
 
 	fnLog(hwndLog, "[*] Stub: %u bytes, entry target 0x%08X.", static_cast<unsigned>(nIdx), dwEntry);
 
@@ -705,7 +758,9 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 		}
 
 		wchar_t wszCheck[MAX_PATH] = { };
-		ReadProcessMemory(hProcess, pRemotePath, wszCheck, nBytes, nullptr);
+		//Read-back строго в размер буфера: путь длиннее MAX_PATH-1 символов
+		//иначе переполнял wszCheck (nBytes доходит до 520 при 512-байтном буфере).
+		ReadProcessMemory(hProcess, pRemotePath, wszCheck, (nBytes < sizeof(wszCheck)) ? nBytes : sizeof(wszCheck), nullptr);
 		fnLog(hwndLog, "[+] Path written and read back: %ls", wszCheck);
 
 		fnStatus(hwndLog, LoaderUtil::S("Вызов LoadLibraryW", "Calling LoadLibraryW", "LoadLibraryW aufrufen", "Llamando LoadLibraryW", "Chamando LoadLibraryW", "Wywołanie LoadLibraryW", "Appel LoadLibraryW", "正在调用 LoadLibraryW"));

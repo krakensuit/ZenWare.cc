@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 REM Verify-Signatures: one-click pattern check against YOUR local game files.
 REM 1. Finds Steam install via registry.
 REM 2. Builds Tools\SigScan if needed (needs VS 2022 / Build Tools).
@@ -10,20 +10,26 @@ set ROOT=%~dp0
 if "%ROOT:~-1%"=="\" set ROOT=%ROOT:~0,-1%
 
 REM --- find MSBuild ---
+REM Hardcoded paths first: Community, then Build Tools. vswhere is the fallback.
 set MSBUILD=
-set VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
-if exist "%VSWHERE%" (
-  for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe"`) do set MSBUILD=%%i
+if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+if not defined MSBUILD if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe" set "MSBUILD=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+if not defined MSBUILD (
+  set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+  if exist "!VSWHERE!" (
+    REM "call" prefix: cmd /c strips the first and last quote of a quoted
+    REM command line, which chopped "C:\Program Files (x86)\..." into
+    REM "C:\Program". "call" keeps the quotes intact.
+    for /f "usebackq delims=" %%i in (`call "!VSWHERE!" -latest -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe"`) do set "MSBUILD=%%i"
+  )
 )
-if not defined MSBUILD if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" set MSBUILD=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe
-if not defined MSBUILD if exist "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe" set MSBUILD=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
 
 REM --- build SigScan if missing ---
-set SIGSCAN=%ROOT%\Tools\SigScan\bin\SigScan.exe
+set "SIGSCAN=%ROOT%\Tools\SigScan\bin\SigScan.exe"
 if not exist "%SIGSCAN%" (
   echo [Verify] SigScan.exe not found, building...
   if not defined MSBUILD (
-    echo [Verify] MSBuild not found. Install VS 2022 (Build Tools are enough).
+    echo [Verify] MSBuild not found. Install VS 2022 - Build Tools are enough.
     pause
     exit /b 1
   )
@@ -45,17 +51,20 @@ set STEAM=
 for /f "tokens=2*" %%a in ('reg query "HKCU\Software\Valve\Steam" /v SteamPath 2^>nul') do set STEAM=%%b
 if not defined STEAM set STEAM=C:\Program Files (x86)\Steam
 set STEAM=%STEAM:/=\%
-set BINDIR=%STEAM%\steamapps\common\Left 4 Dead 2\left4dead2\bin
-if not exist "%BINDIR%\client.dll" (
-  echo [Verify] client.dll not found at "%BINDIR%\client.dll"
+REM client.dll lives in left4dead2\bin, but engine.dll / vguimatsurface.dll
+REM live one level up, in the game root bin\.
+set "GAMEBIN=%STEAM%\steamapps\common\Left 4 Dead 2\left4dead2\bin"
+set "ROOTBIN=%STEAM%\steamapps\common\Left 4 Dead 2\bin"
+if not exist "%GAMEBIN%\client.dll" (
+  echo [Verify] client.dll not found at "%GAMEBIN%\client.dll"
   echo Edit STEAM path at the top of this file if Steam lives elsewhere.
   pause
   exit /b 1
 )
 
 echo [Verify] Checking patterns against:
-echo [Verify]   %BINDIR%\client.dll
-"%SIGSCAN%" "%BINDIR%\client.dll" "%BINDIR%\engine.dll" "%BINDIR%\vguimatsurface.dll"
+echo [Verify]   %GAMEBIN%\client.dll
+"%SIGSCAN%" "%GAMEBIN%\client.dll" "%ROOTBIN%\engine.dll" "%ROOTBIN%\vguimatsurface.dll"
 set RC=%ERRORLEVEL%
 echo.
 if %RC%==0 (

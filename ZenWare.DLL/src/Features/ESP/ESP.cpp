@@ -412,6 +412,28 @@ void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
 	if (Vars::ESP::bFilled)
 		G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
 	DrawEspBox(x, y, w, h, clrCommon);
+
+	// Имя обычного заражённого (Infected / Common).
+	if (Vars::ESP::bName)
+		G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrCommon, TXT_CENTERXY, "COMMON");
+
+	// Полоса здоровья через базовые виртуалки (C_BaseEntity).
+	if (Vars::ESP::bHealthBar && x - 6 >= 0)
+	{
+		const int nMaxHp = U::Math.Clamp(pEntity->GetMaxHealth() > 0 ? pEntity->GetMaxHealth() : 150, 1, 600);
+		const int nHP = U::Math.Clamp(pEntity->GetHealth(), 0, nMaxHp);
+		const int nFillH = (h * nHP) / nMaxHp;
+		G::Draw.Rect(x - 6, y, 4, h, { 0, 0, 0, 255 });
+		if (nFillH > 0)
+			G::Draw.Rect(x - 5, y + h - nFillH, 3, nFillH, G::Util.GetHealthColor(nHP, nMaxHp));
+
+		if (Vars::ESP::bHealthText)
+		{
+			char szHP[16] = { };
+			sprintf_s(szHP, sizeof(szHP), "%dhp", nHP);
+			G::Draw.String(EFonts::ESP, x - 5, y + (h / 2), Color(255, 255, 255, 255), TXT_CENTERXY, "%s", szHP);
+		}
+	}
 }
 
 void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const int nClassID)
@@ -459,10 +481,10 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 		const int nMaxHp = U::Math.Clamp(pTP ? pTP->m_iMaxHealth() : 100, 1, 6000);
 		const int nHP = U::Math.Clamp(pPl->GetHealth(), 0, nMaxHp);
 		const int nFillH = (h * nHP) / nMaxHp;
-		G::Draw.Rect(x - 5, y, 4, h, { 0, 0, 0, 255 });
+		G::Draw.Rect(x - 6, y, 4, h, { 0, 0, 0, 255 });
 
 		if (nFillH > 0)
-			G::Draw.Rect(x - 4, y + h - nFillH, 2, nFillH, G::Util.GetHealthColor(nHP, nMaxHp));
+			G::Draw.Rect(x - 5, y + h - nFillH, 3, nFillH, G::Util.GetHealthColor(nHP, nMaxHp));
 	}
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szName);
 
@@ -471,7 +493,7 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	{
 		char szInfo[32] = { };
 		const int nHP = pPl->GetHealth();
-		if (Vars::ESP::bHealthText) sprintf_s(szInfo, "%ihp", nHP);
+		if (Vars::ESP::bHealthText) sprintf_s(szInfo, sizeof(szInfo), "%ihp", nHP);
 		if (Vars::ESP::bDistance) sprintf_s(szInfo + strlen(szInfo), sizeof(szInfo) - strlen(szInfo), "%s%.0fm", szInfo[0] ? " " : "", G::Util.GetEyePosition(pLocal).DistTo(pEntity->m_vecOrigin()) / 52.5f);
 		if (szInfo[0])
 			G::Draw.String(EFonts::ESP, x + (w / 2), y + h + 2, Color(230, 230, 230, 255), TXT_CENTERXY, "%s", szInfo);

@@ -9,7 +9,13 @@ namespace
 	struct DosHdr { uint16_t e_magic; uint16_t e_rest[29]; int32_t e_lfanew; };
 	struct CoffHdr { uint32_t sig; uint16_t mach, nsec; uint32_t ts, sym, nsym; uint16_t optsz, chars; };
 	struct Opt32 { uint16_t magic; uint8_t rest[26]; uint32_t imageBase; };
-	struct SecHdr { char name[8]; uint32_t vsize, vaddr, rawsize, rawptr, reloc, line, nreloc, nline; uint32_t chars; };
+	// Точная копия IMAGE_SECTION_HEADER (40 байт): PointerToRelocations и
+	// PointerToLinenumbers — WORD, как и NumberOfRelocations/NumberOfLinenumbers.
+	// uint32_t на всех четырёх давал 44 байта: итерация секций уезжала на +4
+	// за шаг, ".data" не находилась никогда и runtime-резолв молча падал
+	// на хардкод из Offsets.h.
+	struct SecHdr { char name[8]; uint32_t vsize, vaddr, rawsize, rawptr, reloc, line; uint16_t nreloc, nline; uint32_t chars; };
+	static_assert(sizeof(SecHdr) == 40, "SecHdr must match IMAGE_SECTION_HEADER");
 #pragma pack(pop)
 
 	// Диапазон секции загруженного модуля: [base+rva, base+rva+vsize).
@@ -43,19 +49,6 @@ namespace
 			}
 		}
 		return false;
-	}
-
-	uint32_t ImageBase(const uint8_t* img, size_t len)
-	{
-		if (len < sizeof(DosHdr))
-			return 0;
-		const DosHdr* dos = (const DosHdr*)img;
-		if (dos->e_magic != 0x5A4D || dos->e_lfanew <= 0)
-			return 0;
-		size_t nt = (size_t)dos->e_lfanew;
-		if (nt + sizeof(CoffHdr) + sizeof(Opt32) > len)
-			return 0;
-		return ((const Opt32*)(img + nt + sizeof(CoffHdr)))->imageBase;
 	}
 
 	// Сканер по буферу (копия Memory::Scan, но с отчетом всех совпадений).
@@ -177,7 +170,6 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 	if (!ReadModule(mem, client, clientSize, cli, &out.dbgCliKB))
 		return false;
 	if (cli.size() >= 4) memcpy(&out.dbgCliHead, cli.data(), 4);
-	const uint32_t cliBase = ImageBase(cli.data(), cli.size());
 
 	uintptr_t anchor = 0; // валидный указатель локального игрока
 
@@ -187,14 +179,18 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		ParseSig("8B 0D ? ? ? ? 85 C9 74 ? 8B 01 8B 50 08 FF D2 8B 00 89 86 84 16 00 00", b, m);
 		int hits[4] = { };
 		out.dbgLpHits = FindAll(cli.data(), cli.size(), b, m, hits, 4);
-		if (out.dbgLpHits == 1 && cliBase)
+		if (out.dbgLpHits == 1)
 		{
+			// imm32 в живой памяти уже перебазирован (фактический VA): сверяем
+			// с фактической базой модуля. Preferred ImageBase из заголовка при
+			// релокации не меняется — на ASLR-билдах проверка молча врала и
+			// сигнатурная ветка никогда не срабатывала.
 			uint32_t disp;
 			memcpy(&disp, cli.data() + hits[0] + 2, 4);
-			if (disp >= cliBase && disp - cliBase < clientSize)
+			if (disp >= client && disp - client < (uint32_t)clientSize)
 			{
 				uintptr_t ent = 0;
-				uintptr_t addr = client + (disp - cliBase);
+				const uintptr_t addr = disp; // disp — уже живой VA процесса
 				EntCheck e;
 				if (mem.Read(addr, ent) && ent && ReadEnt(mem, ent, e))
 				{
@@ -206,7 +202,7 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 						fin = isfinite(org[i]) && fabsf(org[i]) < 20000.0f;
 					if (fin)
 					{
-						out.local = disp - cliBase;
+						out.local = disp - client;
 						strcpy_s(out.srcLocal, "sig");
 						anchor = ent;
 					}
