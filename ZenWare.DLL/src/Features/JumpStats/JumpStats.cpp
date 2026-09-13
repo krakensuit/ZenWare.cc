@@ -28,7 +28,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 
 		if (pLocal->m_isGhost() || nMoveType == MOVETYPE_LADDER
 			|| nMoveType == MOVETYPE_NOCLIP || nMoveType == MOVETYPE_OBSERVER
-			|| pLocal->m_nWaterLevel() > 1)
+			|| (pLocal->m_nWaterLevel() > 1 && pLocal->m_nWaterLevel() <= 3))
 		{
 			m_bAir = false;
 			m_bSeenGround = false;

@@ -249,7 +249,10 @@ public:
 	M_NETVAR(m_vecLadderNormal, Vector, "CBasePlayer", "m_vecLadderNormal");
 	M_NETVAR(m_ladderSurfaceProps, int, "CBasePlayer", "m_ladderSurfaceProps");
 	M_NETVAR(m_ubEFNoInterpParity, int, "CBasePlayer", "m_ubEFNoInterpParity");
-	M_NETVAR(m_nWaterLevel, int, "CBasePlayer", "m_nWaterLevel");
+	// Однобайтовый проп: в реальной таблице за ним сразу идёт m_lifeState
+	// (0x147). Чтение int с 0x146 тащило соседние байты как мусор
+	// (значения вида 0x777B0080), и гейт "water > 1" рандомно убивал бхоп.
+	M_NETVAR(m_nWaterLevel, unsigned char, "CBasePlayer", "m_nWaterLevel");
 	M_NETVAR(m_hPostProcessCtrl, int, "CBasePlayer", "m_hPostProcessCtrl");
 	M_NETVAR(m_hColorCorrectionCtrl, EHANDLE, "CBasePlayer", "m_hColorCorrectionCtrl");
 	M_NETVAR(m_PlayerFog_m_hCtrl, int, "CBasePlayer", "m_PlayerFog.m_hCtrl");

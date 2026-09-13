@@ -5,6 +5,38 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.12] - 2026-09-13
+
+### Fixed / Исправлено
+- **THE bhop root cause, found in the user's own game logs**: `m_nWaterLevel`
+  is a one-byte prop (the resolved offset 0x146 sits right before
+  `m_lifeState` at 0x147), but the SDK header declared it as a 4-byte `int` —
+  every read produced garbage like 0x777B0080, and the bhop gate
+  `m_nWaterLevel() > 1` silently disabled the bhop on ~half of all ticks.
+  That single mis-typed netvar explains every bhop report since 3.8.4
+  ("sometimes jumps, sometimes does not at all"), the broken JumpStats
+  landings in recent sessions, and why the prediction fixes of 3.8.9-3.8.11
+  changed nothing. The accessor is now `unsigned char`, and all three water
+  gates (BunnyHop/AutoStrafe/JumpStats) tolerate offset drift: a byte outside
+  0..3 is treated as garbage and does not gate. **Корень бхопа найден в
+  логах пользователя**: m_nWaterLevel — однобайтовый проп (оффсет 0x146, сразу
+  перед m_lifeState 0x147), а в заголовке он был объявлен как 4-байтовый int —
+  каждое чтение давало мусор, и гейт `m_nWaterLevel() > 1` молча выключал
+  бхоп примерно на половине тиков. Один неверно типизированный нетвар
+  объясняет все жалобы на бхоп с 3.8.4 и то, что фиксы предикта 3.8.9-3.8.11
+  ничего не изменили. Теперь доступ — unsigned char, а все три водяных гейта
+  толерантны к дрейфу оффсета (байт вне 0..3 = мусор, не гейтит).
+- Logger: the log file is now opened with `_SH_DENYWR`, so it stays readable
+  by other processes while the game writes it — live diagnosis during a
+  session is possible again (the exclusive lock made the log unreadable even
+  for reading). Лог открывается с `_SH_DENYWR` и читается другими процессами
+  прямо во время игры (эксклюзивная блокировка делала файл нечитаемым даже
+  на чтение).
+- BunnyHop: temporary ground/air transition logging (`[bh] ground/air tick=…
+  cmd=… flags=… jump_in_cmd=…`) for the next diagnostic session — a few lines
+  per hop, removed once the behavior is confirmed. Временный лог переходов
+  земля/воздух в BunnyHop для контрольной сессии (несколько строк на прыжок).
+
 ## [3.8.11] - 2026-09-13
 
 ### Fixed / Исправлено

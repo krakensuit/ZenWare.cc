@@ -55,14 +55,19 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	}
 
 	//В воде и в инкапе движком не рулим: бхоп-спам всплытия, трейсы багов
-	//под водой и EdgeJump с подводного уступа.
-	if (pLocal->m_nWaterLevel() > 1 || pLocal->m_isIncapacitated())
+	//под водой и EdgeJump с подводного уступа. Гейт толерантен к дрейфу
+	//оффсета: валидный water level — 0..3, всё остальное = мусор, не гейтим.
 	{
-		s_bWasOnGround = false;
-		s_bJbDuck = false;
-		s_nLastJumpTick = 0;
-		s_nJumpDelayTicks = 0;
-		return;
+		const unsigned char nWater = pLocal->m_nWaterLevel();
+
+		if ((nWater > 1 && nWater <= 3) || pLocal->m_isIncapacitated())
+		{
+			s_bWasOnGround = false;
+			s_bJbDuck = false;
+			s_nLastJumpTick = 0;
+			s_nJumpDelayTicks = 0;
+			return;
+		}
 	}
 
 	//Смена карты: tick_count начался заново, старые статики — в будущем.
@@ -157,6 +162,16 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	}
 
 	s_bWasOnGround = bOnGround;
+
+	//Временная диагностика (v3.8.12): ТОЛЬКО переходы земля/воздух, объём
+	//крошечный. Показывает: приходит ли IN_JUMP в cmd на посадке, какие флаги
+	//видит фича и как далеко друг от друга тики. Убрать после локализации.
+	if (s_bWasOnGround != bOnGround)
+		U::Log.Write("[bh] %s tick=%u cmd=%u flags=0x%02X jump_in_cmd=%d",
+			bOnGround ? "ground" : "air",
+			cmd->tick_count, cmd->command_number,
+			(unsigned)pLocal->m_fFlags(),
+			(cmd->buttons & IN_JUMP) ? 1 : 0);
 
 	//Prestrafe: slight forward boost when on ground to build speed faster.
 	if (Vars::BunnyHop::bPrestrafe && bOnGround && bWantJump)

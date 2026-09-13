@@ -36,7 +36,8 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		return;
 	}
 
-	if (pLocal->m_nWaterLevel() > 1)
+	//Валидный water level — 0..3: байтовый проп, мусор (>3) не гейтит.
+	if (pLocal->m_nWaterLevel() > 1 && pLocal->m_nWaterLevel() <= 3)
 	{
 		s_nLastSide = 1;
 		s_nCircleSide = 1;

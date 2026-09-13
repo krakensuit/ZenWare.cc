@@ -120,11 +120,13 @@ void CUtil_Logger::Open(const char* const szPath)
 	//Caller holds the critical section (or is single-threaded during Init).
 	strncpy_s(m_szPath, szPath, _TRUNCATE);
 
-	if (fopen_s(&m_pFile, m_szPath, "a") != 0)
-	{
-		m_pFile = nullptr;
+	//_SH_DENYWR: файл остаётся читаемым другими процессами ПОКА игра пишет —
+	//fopen_s держал лог эксклюзивно, и живая диагностика во время сессии
+	//была невозможна (файл не читался даже на чтение).
+	m_pFile = _fsopen(m_szPath, "a", _SH_DENYWR);
+
+	if (!m_pFile)
 		return;
-	}
 
 	SYSTEMTIME st = { };
 	GetLocalTime(&st);
