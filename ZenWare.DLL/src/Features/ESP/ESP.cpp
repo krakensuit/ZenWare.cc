@@ -29,6 +29,10 @@ namespace
 			G::Draw.OutlinedRect(x, y, w, h, clr);
 			return;
 		}
+		//Мягкое свечение: два внешних контура с падающей альфой — глубина
+		//без дорогих полигонов, поверх чёрной подложки читается на любом фоне.
+		G::Draw.OutlinedRect(x - 2, y - 2, w + 4, h + 4, { clr.r(), clr.g(), clr.b(), 40 });
+		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { clr.r(), clr.g(), clr.b(), 85 });
 		int cl = (w < h ? w : h) / 4;
 		if (cl < 3) cl = 3;
 		if (cl > 14) cl = 14;
@@ -191,7 +195,13 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			G::Draw.OutlinedRect(nBarX - 1, y - 1, 6, h + 2, { 0, 0, 0, 255 });
 
 			if (nFillH > 0)
-				G::Draw.Rect(nBarX, y + h - nFillH, 4, nFillH, G::Util.GetHealthColor(nHealth, nMaxHp));
+			{
+				//Вертикальный градиент поверх чёрной подложки: низ ярче —
+				//полоса читается объёмной, а не плоской заливкой.
+				const Color clrHp = G::Util.GetHealthColor(nHealth, nMaxHp);
+				G::Draw.GradientRect(nBarX, y + h - nFillH, nBarX + 4, y + h,
+					clrHp, { clrHp.r(), clrHp.g(), clrHp.b(), 110 }, false);
+			}
 		}
 
 		if (Vars::ESP::bHealthText)

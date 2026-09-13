@@ -19,6 +19,10 @@ private:
 	float m_flOldFrameTime = 0.0f;
 
 	int m_nOldTickCount = 0;
+	int m_nOldTickBase = 0;
+	int m_nOldFlags = 0;
+	Vector m_vOldOrigin = { };
+	Vector m_vOldVelocity = { };
 	int m_nPredictedFlags = 0;
 	bool m_bInPrediction = false;
 

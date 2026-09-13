@@ -241,10 +241,27 @@ void CFeatures_Visuals::DrawCrosshair()
 	const int nGap = 4 + U::Math.Clamp((int)(flSpeed / 50.0f), 0, 12);
 	constexpr int nThick = 2;
 
-	G::Draw.Rect(nCX - nGap - nS, nCY - (nThick / 2), nS, nThick, clr);
-	G::Draw.Rect(nCX + nGap, nCY - (nThick / 2), nS, nThick, clr);
-	G::Draw.Rect(nCX - (nThick / 2), nCY - nGap - nS, nThick, nS, clr);
-	G::Draw.Rect(nCX - (nThick / 2), nCY + nGap, nThick, nS, clr);
+	//Тёмная обводка под рисками: на светлых картах цветной прицел без
+	//контура сливается со снегом/небом. 4 смещённые копии + цвет поверх.
+	const Color clrOutline(0, 0, 0, 170);
+	const int nArmX0 = nCX - nGap - nS, nArmX1 = nCX + nGap;
+	const int nArmY0 = nCY - nGap - nS, nArmY1 = nCY + nGap;
+	for (int dx = -1; dx <= 1; dx++)
+	{
+		for (int dy = -1; dy <= 1; dy++)
+		{
+			if (!dx && !dy)
+				continue;
+			G::Draw.Rect(nArmX0 + dx, nCY - (nThick / 2) + dy, nS, nThick, clrOutline);
+			G::Draw.Rect(nArmX1 + dx, nCY - (nThick / 2) + dy, nS, nThick, clrOutline);
+			G::Draw.Rect(nCX - (nThick / 2) + dx, nArmY0 + dy, nThick, nS, clrOutline);
+			G::Draw.Rect(nCX - (nThick / 2) + dx, nArmY1 + dy, nThick, nS, clrOutline);
+		}
+	}
+	G::Draw.Rect(nArmX0, nCY - (nThick / 2), nS, nThick, clr);
+	G::Draw.Rect(nArmX1, nCY - (nThick / 2), nS, nThick, clr);
+	G::Draw.Rect(nCX - (nThick / 2), nArmY0, nThick, nS, clr);
+	G::Draw.Rect(nCX - (nThick / 2), nArmY1, nThick, nS, clr);
 	G::Draw.Rect(nCX - 1, nCY - 1, 2, 2, clr);
 
 	//HUD оружия: имя + магазин + запас под прицелом. Хендл активного оружия

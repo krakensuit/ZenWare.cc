@@ -5,6 +5,34 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.9] - 2026-09-13
+
+### Fixed / Исправлено
+- EnginePrediction: full state snapshot/restore. Previously flags/tickbase were
+  rolled back inside `Start` while origin/velocity stayed advanced and were never
+  restored — movement features read one-tick-stale ground flags (bhop randomly
+  skipped landings, "does not jump at all") and `ProcessMovement` ran on an
+  already-advanced state (jerky "triple jumps", garbage jump distance, dead
+  JumpBug window, JumpStats filter discarding every jump). EnginePrediction:
+  полный снапшот/откат состояния — раньше флаги откатывались в `Start`, а
+  origin/velocity оставались продвинутыми и не восстанавливались: фичи движения
+  читали устаревшие флаги земли (бхоп пропускал посадки, «не прыгает»), а
+  движение симулировалось по сдвинутому состоянию (рваные прыжки, мусорная
+  дистанция, мёртвое окно JumpBug, стата отбрасывала все прыжки).
+- JumpStats: takeoff is measured from the last ground tick (ground origin +
+  ground speed snapshot) instead of the first airborne tick — distance and
+  prestrafe no longer systematically undershoot by one tick. Взлёт статы
+  считается от последнего наземного тика — дистанция и престрейф больше не
+  занижены на тик.
+
+### Changed / Изменено
+- Visual polish: ESP boxes got a soft two-layer glow; the health bar is now a
+  vertical gradient; the custom crosshair draws a dark outline around its arms
+  (readable on snow/sky); the jump stats panel sits on a translucent backing
+  card with a green/grey verdict accent. Визуальный полиш: мягкое двухслойное
+  свечение ESP-боксов, градиентная полоса HP, тёмная обводка прицела (видно на
+  снегу/небе), карточка-подложка панели статы прыжка с зелёным/серым акцентом.
+
 ## [3.8.8] - 2026-09-13
 
 ### Fixed / Исправлено

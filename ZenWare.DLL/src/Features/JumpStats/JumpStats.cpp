@@ -44,17 +44,23 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 
 	//Взлёт только после ≥1 живого наземного тика: иначе загрузка DLL,
 	//респаун в падении или выход из лестницы синтезируют взлёт из воздуха.
+	//Заодно снимаем наземное состояние: на первом воздушном тике origin уже
+	//уехал на ~1 тик — дистанция и престрейф с него систематически врали.
 	if (bOnGround)
+	{
 		m_bSeenGround = true;
+		m_vGroundOrigin = pLocal->m_vecOrigin();
+		m_fGroundSpeed = speed2d;
+	}
 	if (!m_bAir && !bOnGround && !m_bSeenGround)
 		return;
 
 	if (!m_bAir && !bOnGround)
 	{
-		//Takeoff.
+		//Takeoff — от последнего наземного тика, не от первого воздушного.
 		m_bAir = true;
-		m_vTakeoff = pLocal->m_vecOrigin();
-		m_fTakeSpeed = speed2d;
+		m_vTakeoff = m_vGroundOrigin;
+		m_fTakeSpeed = m_fGroundSpeed;
 		m_fMaxSpeed = speed2d;
 		m_fMaxFall = vel.z;
 		m_fMaxHeight = 0.0f;
@@ -222,6 +228,17 @@ void CFeatures_JumpStats::Draw()
 	const Color clrGood(0, 255, 171, 255);
 	const bool bGood = (m_last.syncPct >= 90 && m_last.strafes > 0);
 	const Color& clrVerdict = bGood ? clrGood : Color(200, 200, 200, 255);
+
+	//Подложка под три строки: без неё текст тонет в яркой карте. Плюс
+	//акцентная риска слева — зелёная на удачном прыжке, серая иначе.
+	{
+		constexpr int nPW = 280, nPH = 58;
+		const int nPX = cx - nPW / 2;
+		G::Draw.Rect(nPX + 2, cy - 6, nPW, nPH, { 0, 0, 0, 110 });
+		G::Draw.Rect(nPX, cy - 8, nPW, nPH, { 10, 12, 11, 190 });
+		G::Draw.OutlinedRect(nPX, cy - 8, nPW, nPH, { 0, 0, 0, 180 });
+		G::Draw.Rect(nPX, cy - 8, 2, nPH, bGood ? clrGood : Color(120, 130, 126, 255));
+	}
 
 	char szMain[64] = { };
 	sprintf_s(szMain, sizeof(szMain), "%.0fu  pre %.0f  max %.0f  fall %.0f",

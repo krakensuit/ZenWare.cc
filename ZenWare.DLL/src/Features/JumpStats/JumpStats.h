@@ -38,6 +38,8 @@ private:
 
 	bool m_bAir = false;
 	Vector m_vTakeoff;
+	Vector m_vGroundOrigin;   // origin последнего наземного тика (точка взлёта)
+	float m_fGroundSpeed = 0.0f; // 2D-скорость последнего наземного тика (престрейф)
 	float m_fTakeSpeed = 0.0f;
 	float m_fMaxSpeed = 0.0f;
 	float m_fMaxFall = 0.0f;

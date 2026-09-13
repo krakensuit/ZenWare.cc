@@ -16,14 +16,21 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 	memset(&m_MoveData, 0, sizeof(CMoveData));
 
+	//Снапшот состояния ДО предикта. История багов: раньше flags/tickbase
+	//откатывались прямо в Start, а origin/velocity вообще не сохранялись —
+	//фичи читали устаревшие флаги земли (бхоп пропускал посадочные тики,
+	//"вообще не прыгает"), а продвинутое на лишний прогон ProcessMovement
+	//origin/velocity рвало тайминг движения (рваные прыжки, мусорная
+	//дистанция в JumpStats, мёртвое окно JumpBug).
 	m_flOldCurTime = I::GlobalVars->curtime;
 	m_flOldFrameTime = I::GlobalVars->frametime;
 	m_nOldTickCount = I::GlobalVars->tickcount;
+	m_vOldOrigin = pLocal->m_vecOrigin();
+	m_vOldVelocity = pLocal->m_vecVelocity();
+	m_nOldTickBase = pLocal->m_nTickBase();
+	m_nOldFlags = pLocal->m_fFlags();
 
-	const int nOldTickBase = pLocal->m_nTickBase();
-	const int nOldFlags = pLocal->m_fFlags();
-
-	const int nTickBase = GetTickBase(nOldTickBase, cmd);
+	const int nTickBase = GetTickBase(m_nOldTickBase, cmd);
 
 	//StartCommand
 	{
@@ -68,8 +75,8 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 	m_nPredictedFlags = pLocal->m_fFlags();
 
-	pLocal->m_nTickBase() = nOldTickBase;
-	pLocal->m_fFlags() = nOldFlags;
+	//Предикченное состояние (flags/origin/velocity) остаётся живым до Finish():
+	//BunnyHop/AutoStrafe/JumpStats читают свежую землю и скорость именно отсюда.
 	m_bInPrediction = true;
 }
 
@@ -89,6 +96,14 @@ void CFeatures_EnginePrediction::Finish(C_BasePlayer* pLocal, CUserCmd* cmd)
 		if (U::Offsets.m_dwSetPredictionRandomSeed)
 			reinterpret_cast<void(*)(CUserCmd*)>(U::Offsets.m_dwSetPredictionRandomSeed)(nullptr);
 	}
+
+	//Откат к до-тиковому состоянию ПОСЛЕ фич: собственный предикт движка
+	//переигрывает эту же cmd с чистого состояния. Без отката origin/velocity
+	//движение симулировалось бы дважды за тик (на кадрах без снапшота).
+	pLocal->m_vecOrigin() = m_vOldOrigin;
+	pLocal->m_vecVelocity() = m_vOldVelocity;
+	pLocal->m_fFlags() = m_nOldFlags;
+	pLocal->m_nTickBase() = m_nOldTickBase;
 
 	if (I::GlobalVars)
 	{
