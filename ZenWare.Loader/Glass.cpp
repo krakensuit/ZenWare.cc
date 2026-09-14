@@ -8,6 +8,10 @@
 
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "msimg32.lib")
+// Подготовка к бэкдропу через DirectComposition (следующий шаг): библиотеки уже подключены.
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "dcomp.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
 
