@@ -15,6 +15,7 @@
 #pragma comment(lib, "msimg32.lib")
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "winmm.lib")
+#include "Glass.h"
 
 // Версия из resource.h в wide-строку для заголовков.
 #define ZW_WIDEN2(x) L##x
@@ -80,6 +81,16 @@ void ApplyDwm(){
  DwmSetWindowAttribute(g_hMain,20,&d,sizeof(d));
  if(FAILED(DwmSetWindowAttribute(g_hMain,20,&d,sizeof(d)))) DwmSetWindowAttribute(g_hMain,19,&d,sizeof(d));
  INT r=2; DwmSetWindowAttribute(g_hMain,33,&r,sizeof(r));
+ Glass::RoundCorners(g_hMain, Glass::kCornerRadius);
+}
+// Liquid glass: когда системный акрил доступен, прозрачность окна меняется
+// через тинт стекла (layered-окно несовместимо с блюром); иначе - как раньше.
+static void SetWinAlpha(HWND h, BYTE a)
+{
+	if (Glass::IsAvailable())
+		Glass::SetAlpha(h, a);
+	else
+		SetLayeredWindowAttributes(h, 0, a, LWA_ALPHA);
 }
 void RefreshTheme(){
  g_theme=MakeTheme(IsSystemDark());
@@ -670,7 +681,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  switch(m){
   case WM_CREATE:{
    g_hMain=h; InitFonts(h); RefreshTheme();
-   SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // старт почти прозрачным для fade-in
+   if(!Glass::Enable(h,Glass::kMint,0)) SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // старт почти прозрачным для fade-in
    g_ullLastTick=GetTickCount64();
     CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ЗАПУСТИТЬ ИГРУ",L"LAUNCH GAME",L"SPIEL STARTEN",L"INICIAR JUEGO",L"INICIAR JOGO",L"URUCHOM GRĘ",L"LANCER LE JEU",L"启动游戏"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,92,580,36,h,(HMENU)IDC_LAUNCH,nullptr,nullptr);
     g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT",g_bExternal?L"EXTERNAL STARTEN":L"INJECT",g_bExternal?L"INICIAR EXTERNAL":L"INYECTAR",g_bExternal?L"INICIAR EXTERNAL":L"INJETAR",g_bExternal?L"URUCHOM EXTERNAL":L"WSTRZYKIJ",g_bExternal?L"LANCER EXTERNAL":L"INJECTER",g_bExternal?L"启动 EXTERNAL":L"注入"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
@@ -702,9 +713,9 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
      }
      if(g_bFading){
       g_flWinAlpha=Approach(g_flWinAlpha,1.0f,dt,10.0f);
-      BYTE a=(BYTE)(g_flWinAlpha*255);
-      SetLayeredWindowAttributes(h,0,a,LWA_ALPHA);
-      if(g_flWinAlpha>0.985f){ g_flWinAlpha=1.0f; g_bFading=false; SetLayeredWindowAttributes(h,0,255,LWA_ALPHA); }
+      BYTE a=(BYTE)(g_flWinAlpha*Glass::kMintAlpha);
+      SetWinAlpha(h,a);
+      if(g_flWinAlpha>0.985f){ g_flWinAlpha=1.0f; g_bFading=false; SetWinAlpha(h,Glass::kMintAlpha); }
       changed=true;
      }
      if(changed){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(h,&all,FALSE); }
@@ -875,7 +886,13 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    SetTextColor(dc,g_bLangHov?Acc():g_theme.dim);
    DrawTextW(dc,LoaderUtil::LangCode(),-1,&lr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
   }
-  BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
+  if(Glass::IsAvailable()){
+    BLENDFUNCTION bf{}; bf.BlendOp=AC_SRC_OVER; bf.SourceConstantAlpha=224; bf.AlphaFormat=0;
+    AlphaBlend(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,bf);
+   } else {
+    BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
+   }
+   { POINT gcp{0,0}; GetCursorPos(&gcp); ScreenToClient(h,&gcp); Glass::PaintGlass(hdc,rc,gcp); }
   SelectObject(mem,oldBmp); DeleteObject(bmp); DeleteDC(mem);
   EndPaint(h,&ps);
   break;
@@ -927,7 +944,7 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  // главное окно открывается ровно там же, где был сплэш — бесшовный переход
  int wx=(GetSystemMetrics(SM_CXSCREEN)-ww)/2, wy=(GetSystemMetrics(SM_CYSCREEN)-wh)/2;
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
- HWND hw=CreateWindowExW(WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
+ HWND hw=CreateWindowExW(Glass::IsAvailable()?0:WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
  ShowWindow(hw,cmd); UpdateWindow(hw);
  //NOTE: no auto-updater by design (source-only project, no binary releases).

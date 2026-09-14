@@ -3,7 +3,38 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.10] - 2026-09-14
+
+### Added / Добавлено
+- Loader liquid glass: the window now blurs the desktop behind it (acrylic via
+  the undocumented `SetWindowCompositionAttribute`) with a mint tint
+  (#73FFCC at 0.85), an animated sheen band, a light edge highlight and a soft
+  glow that follows the cursor. Rounded corners keep using DWM on Windows 11
+  with a window-region fallback on Windows 10.
+  Жидкое стекло в загрузчике: окно размывает рабочий стол под собой (акрил
+  через недокументированный `SetWindowCompositionAttribute`) с мятным тинтом
+  (#73FFCC, 0.85), анимированной полосой отблеска, светлым бликом по кромке и
+  мягким пятном, следующим за курсором. Скругление углов — DWM на Windows 11
+  с фолбэком на регион окна для Windows 10.
+
+### Changed / Изменено
+- The loader fade-in now animates the glass tint alpha instead of a layered
+  window alpha: a layered window cannot show a blurred backdrop. When the
+  system call is unavailable the window falls back to the previous layered
+  behaviour, so nothing is lost on older builds.
+  Появление окна загрузчика теперь анимирует альфу тинта, а не альфу layered-
+  окна: layered-окно не может показывать размытие фона. Если системный вызов
+  недоступен, окно возвращается к прежнему layered-поведению — на старых
+  сборках ничего не теряется.
+- New module `ZenWare.Loader/Glass.h|.cpp` (WinAPI + GDI, no third-party
+  libraries); the frame is composited over the blurred backdrop with a constant
+  alpha so the glass stays readable.
+  Новый модуль `ZenWare.Loader/Glass.h|.cpp` (WinAPI + GDI, без сторонних
+  библиотек); кадр накладывается на размытый фон с постоянной альфой, чтобы
+  стекло оставалось читаемым.
+
+
 ## [3.9.1] - 2026-09-14
 
 ### Fixed / Исправлено

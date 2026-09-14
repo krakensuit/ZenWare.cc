@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
@@ -53,11 +53,13 @@ if exist "$(ProjectDir)..\ZenWare.External\bin\$(Configuration)\ZenWare.External
     <ClCompile Include="ManualMapper.cpp" />
     <ClCompile Include="PEHelper.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="Glass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ManualMapper.h" />
     <ClInclude Include="PEHelper.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="Glass.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
