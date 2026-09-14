@@ -99,8 +99,11 @@ namespace Zen2D
 		bool  m_bComposition = false;
 		bool  m_bEnabled = false;
 		HWND  m_hwnd = nullptr;
-		int   m_w = 0;
-		int   m_h = 0;
+		int   m_w = 0;      // логические пиксели (вёрстка)
+		int   m_h = 0;      // логические пиксели (вёрстка)
+		int   m_wPx = 0;    // физические пиксели (swapchain)
+		int   m_hPx = 0;
+		UINT  m_dpi = 96;
 		Theme_t m_theme = Dark();
 	};
 

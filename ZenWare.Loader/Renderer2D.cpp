@@ -148,8 +148,8 @@ namespace Zen2D
 		}
 
 		DXGI_SWAP_CHAIN_DESC1 desc{};
-		desc.Width = static_cast<UINT>(m_w > 0 ? m_w : 1);
-		desc.Height = static_cast<UINT>(m_h > 0 ? m_h : 1);
+		desc.Width = static_cast<UINT>(m_wPx > 0 ? m_wPx : 1);
+		desc.Height = static_cast<UINT>(m_hPx > 0 ? m_hPx : 1);
 		desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 		desc.Stereo = FALSE;
 		desc.SampleDesc.Count = 1;
@@ -264,7 +264,7 @@ namespace Zen2D
 		const D2D1_BITMAP_PROPERTIES1 props = D2D1::BitmapProperties1(
 			D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
 			D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
-			96.0f, 96.0f);
+			static_cast<FLOAT>(m_dpi), static_cast<FLOAT>(m_dpi));
 
 		const HRESULT hr = m_d2dContext->CreateBitmapFromDxgiSurface(surface, &props, &m_targetBitmap);
 		surface->Release();
@@ -277,13 +277,14 @@ namespace Zen2D
 
 		// SetTarget строго до первого BeginDraw.
 		m_d2dContext->SetTarget(m_targetBitmap);
+		m_d2dContext->SetDpi(static_cast<FLOAT>(m_dpi), static_cast<FLOAT>(m_dpi));
 		return true;
 	}
 
 	bool Renderer2D::CreateLegacyTarget()
 	{
-		const D2D1_SIZE_U size = D2D1::SizeU(static_cast<UINT32>(m_w > 0 ? m_w : 1),
-			static_cast<UINT32>(m_h > 0 ? m_h : 1));
+		const D2D1_SIZE_U size = D2D1::SizeU(static_cast<UINT32>(m_wPx > 0 ? m_wPx : 1),
+			static_cast<UINT32>(m_hPx > 0 ? m_hPx : 1));
 
 		const HRESULT hr = m_factory->CreateHwndRenderTarget(D2D1::RenderTargetProperties(),
 			D2D1::HwndRenderTargetProperties(m_hwnd, size), &m_hwndRT);
@@ -320,8 +321,21 @@ namespace Zen2D
 
 		RECT rc{};
 		GetClientRect(hwnd, &rc);
-		m_w = rc.right > 0 ? rc.right : 620;
-		m_h = rc.bottom > 0 ? rc.bottom : 334;
+		// Swapchain живёт в ФИЗИЧЕСКИХ пикселях, вёрстка - в логических (96 dpi).
+		m_wPx = rc.right > 0 ? rc.right : 620;
+		m_hPx = rc.bottom > 0 ? rc.bottom : 334;
+		m_dpi = 96;
+		{
+			const HMODULE hUserDpi = GetModuleHandleW(L"user32.dll");
+			if (hUserDpi)
+			{
+				typedef UINT(WINAPI* PFN_GetDpiForWindow)(HWND);
+				PFN_GetDpiForWindow pfn = reinterpret_cast<PFN_GetDpiForWindow>(GetProcAddress(hUserDpi, "GetDpiForWindow"));
+				if (pfn) { const UINT d = pfn(hwnd); if (d != 0) m_dpi = d; }
+			}
+		}
+		m_w = static_cast<int>(m_wPx * 96 / static_cast<int>(m_dpi));
+		m_h = static_cast<int>(m_hPx * 96 / static_cast<int>(m_dpi));
 
 		hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
 			reinterpret_cast<IUnknown**>(&m_dwrite));
@@ -369,8 +383,10 @@ namespace Zen2D
 		if (!m_bReady || w <= 0 || h <= 0)
 			return;
 
-		m_w = w;
-		m_h = h;
+		m_wPx = w;
+		m_hPx = h;
+		m_w = static_cast<int>(w * 96 / static_cast<int>(m_dpi));
+		m_h = static_cast<int>(h * 96 / static_cast<int>(m_dpi));
 
 		if (m_bComposition && m_swapChain && m_d2dContext)
 		{
@@ -378,7 +394,7 @@ namespace Zen2D
 
 			if (m_targetBitmap) { m_targetBitmap->Release(); m_targetBitmap = nullptr; }
 
-			if (FAILED(m_swapChain->ResizeBuffers(0, static_cast<UINT>(w), static_cast<UINT>(h),
+			if (FAILED(m_swapChain->ResizeBuffers(0, static_cast<UINT>(m_wPx), static_cast<UINT>(m_hPx),
 				DXGI_FORMAT_UNKNOWN, 0)))
 			{
 				LogDbg(L"ResizeBuffers failed", E_FAIL);
@@ -390,7 +406,7 @@ namespace Zen2D
 		}
 		else if (m_hwndRT)
 		{
-			m_hwndRT->Resize(D2D1::SizeU(static_cast<UINT32>(w), static_cast<UINT32>(h)));
+			m_hwndRT->Resize(D2D1::SizeU(static_cast<UINT32>(m_wPx), static_cast<UINT32>(m_hPx)));
 		}
 	}
 

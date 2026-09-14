@@ -3,7 +3,32 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.13.1] - 2026-09-14
+
+### Fixed / Исправлено
+- DPI mismatch in the composition renderer: the swap chain lives in physical
+  pixels while the D2D target bitmap was created at a fixed 96 DPI, so on 125-150%
+  displays the content was scaled and blurred. The window DPI is now read with
+  `GetDpiForWindow` (resolved through `GetProcAddress`, so older systems still
+  load), the target bitmap is created with that DPI, and the device context gets
+  `SetDpi` right after `SetTarget`. The swap chain keeps physical pixels
+  (`m_wPx`/`m_hPx`) while all layout runs in logical pixels (`m_w`/`m_h`).
+  Несовпадение DPI в рендере композиции: swapchain живёт в физических пикселях,
+  а целевой битмап D2D создавался с фиксированными 96 DPI, поэтому на 125-150%
+  контент масштабировался и мылился. Теперь DPI окна читается через
+  `GetDpiForWindow` (через `GetProcAddress`, чтобы старые системы продолжали
+  загружаться), битмап создаётся с этим DPI, а контексту сразу после `SetTarget`
+  выставляется `SetDpi`. Swapchain по-прежнему в физических пикселях
+  (`m_wPx`/`m_hPx`), вся вёрстка — в логических (`m_w`/`m_h`).
+
+### Note / Примечание
+- There is no test red square in the repository code: if one is visible on
+  screen, a different build is running.
+  В коде репозитория нет тестового красного квадрата: если он виден на экране,
+  запущена другая сборка.
+
+
 ## [3.13] - 2026-09-14
 
 ### Added / Добавлено
