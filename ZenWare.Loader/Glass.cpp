@@ -139,7 +139,7 @@ namespace Glass
 				// РЕШЕНИЕ: ExtendFrameIntoClientArea здесь НЕ вызываем: он отдаёт всю
 				// клиентскую область DWM, и при GDI-отрисовке интерфейс пропадает (только бэкдроп).
 				// Материал и так виден через альфа-композит кадра (AlphaBlend 224).
-				DwmExtendFrameIntoClientArea(hwnd, &margins);
+				// ExtendFrame намеренно не вызываем (см. пояснение выше).
 
 				g_bBackdrop = true;
 				g_bSystemMaterial = true;
