@@ -3,7 +3,39 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.9.1] - 2026-09-14
+
+### Fixed / Исправлено
+- Menu localisation completed for all eight languages: every UI key now exists in
+  EN/RU/DE/ES/PT/PL/FR/ZH (163 keys per language, verified after the build).
+  Локализация меню доведена до всех восьми языков: каждый ключ интерфейса теперь
+  есть в EN/RU/DE/ES/PT/PL/FR/ZH (по 163 ключа на язык, проверено после сборки).
+- The rows added in v3.9 (watermark, accent presets, menu opacity) landed in the
+  wrong table: Chinese showed Russian strings while every other language fell
+  back to English. All eight tables now carry proper translations.
+  Строки, добавленные в v3.9 (водяной знак, пресеты акцента, прозрачность
+  меню), попали не в ту таблицу: по-китайски выводился русский текст, а
+  остальные языки падали в английский. Теперь во всех восьми таблицах
+  корректные переводы.
+- Remaining untranslated entries translated: German (Visuals, Snaplines, Chams,
+  Prestrafe, Aimbot, Hitmarker, Strafes, Sync), Spanish (Witch, Chams,
+  Prestrafe, Aimbot, Killfeed, Hitmarker, Sync), Portuguese (Witch, Chams,
+  Prestrafe, Aimbot, Killfeed, Hitmarker, Revive, Sync), Polish (Edge/Jump bug,
+  Aimbot, Killfeed, Hitmarker), French (Witch, Chams, Edge/Jump bug, Aimbot,
+  Killfeed, Hitmarker), Chinese (Tank).
+  Добиты оставшиеся непереведённые пункты: немецкие (Visuals, Snaplines, Chams,
+  Prestrafe, Aimbot, Hitmarker, Strafes, Sync), испанские (Witch, Chams,
+  Prestrafe, Aimbot, Killfeed, Hitmarker, Sync), португальские (Witch, Chams,
+  Prestrafe, Aimbot, Killfeed, Hitmarker, Revive, Sync), польские (Edge/Jump
+  bug, Aimbot, Killfeed, Hitmarker), французские (Witch, Chams, Edge/Jump bug,
+  Aimbot, Killfeed, Hitmarker), китайский (Tank).
+- Known loanwords are intentionally kept where they are the correct term in that
+  language (Radar, TANK, Bhop/Strafe/Legit/Rage/W-Only, INTERFACE).
+  Устоявшиеся заимствования оставлены осознанно, так как именно так и пишется в
+  этих языках (Radar, TANK, Bhop/Strafe/Legit/Rage/W-Only, INTERFACE).
+
+
 ## [3.9] - 2026-09-14
 
 ### Added / Добавлено
