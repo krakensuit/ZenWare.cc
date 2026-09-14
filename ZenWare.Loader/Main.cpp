@@ -16,6 +16,7 @@
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "winmm.lib")
 #include "Glass.h"
+#include "Renderer2D.h"
 
 // Версия из resource.h в wide-строку для заголовков.
 #define ZW_WIDEN2(x) L##x
@@ -781,6 +782,21 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    return 1;
   case WM_PAINT:{
    PAINTSTRUCT ps; HDC hdc=BeginPaint(h,&ps);
+   if(Zen2D::R().Enabled()){
+    Zen2D::FrameState_t fst{};
+    fst.dt=0.016f;
+    fst.elapsed=(float)(GetTickCount64()%100000)/1000.0f;
+    fst.external=g_bExternal;
+    fst.hoverLaunch=g_flHovLaunch;
+    fst.hoverInject=g_flHovInject;
+    fst.modeT=g_flModeT;
+    fst.dark=g_theme.dark!=0;
+    POINT cpt{0,0}; GetCursorPos(&cpt); ScreenToClient(h,&cpt); fst.cursor=cpt;
+    wchar_t wszStatus2[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszStatus2,127);
+    wchar_t wszVer2[32]={}; swprintf_s(wszVer2,L"v%ls",ZENWARE_VER_WSTR);
+    Zen2D::R().RenderFrame(fst, g_theme.dark?Zen2D::Dark():Zen2D::Light(), wszStatus2, wszVer2, L"");
+    EndPaint(h,&ps); break;
+   }
    RECT rc; GetClientRect(h,&rc);
    const int bw=(rc.right>1?rc.right:1), bh=(rc.bottom>1?rc.bottom:1);
    HDC mem=CreateCompatibleDC(hdc);
@@ -946,6 +962,8 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
  HWND hw=CreateWindowExW(Glass::IsAvailable()?0:WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
+ Zen2D::R().Init(hw);
+
  ShowWindow(hw,cmd); UpdateWindow(hw);
  //NOTE: no auto-updater by design (source-only project, no binary releases).
  MSG m{}; while(GetMessageW(&m,nullptr,0,0)>0){ TranslateMessage(&m); DispatchMessageW(&m);} return (int)m.wParam;

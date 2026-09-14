@@ -3,7 +3,40 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.10.1] - 2026-09-14
+
+### Added / Добавлено
+- Direct2D foundation for the loader UI, compiled in but disabled by default: new
+  files `Theme.h` (final palette + `FrameState_t`) and `Renderer2D.h|.cpp` with
+  D2D1 / DirectWrite / WIC initialization, per-widget draw layers (background,
+  header, logo, mode pill, buttons, progress, status, footer) and proper COM
+  cleanup. The loader keeps the 3.10 look: the D2D path paints an opaque
+  background, so it stays behind a flag (`Renderer2D::SetEnabled`) until the real
+  DWM/DirectComposition backdrop lands.
+  Основа на Direct2D для интерфейса загрузчика — собирается, но выключена по
+  умолчанию: новые файлы `Theme.h` (финальная палитра + `FrameState_t`) и
+  `Renderer2D.h|.cpp` с инициализацией D2D1 / DirectWrite / WIC, послойной
+  отрисовкой (фон, шапка, логотип, пилюля режима, кнопки, прогресс, статус,
+  футер) и корректным освобождением COM. Вид остаётся как в 3.10: D2D-путь
+  рисует непрозрачный фон, поэтому он за флагом (`Renderer2D::SetEnabled`) до
+  появления настоящего backdrop через DWM/DirectComposition.
+- New palette and typography defined for the planned look: near-black base
+  (#0A0E0D), mint accent #7FFFD4 (instead of the acid green), Segoe UI Variable
+  Display with a Segoe UI fallback and 400/500/600 weights.
+  Заданы палитра и типографика нового вида: near-black база (#0A0E0D), мятный
+  акцент #7FFFD4 (вместо кислотного), Segoe UI Variable Display с фолбэком
+  Segoe UI и весами 400/500/600.
+
+### Not done yet / Пока не сделано
+- Frosted backdrop for the D2D path (DWM mica / DirectComposition swapchain with
+  per-pixel alpha), splash rewrite, moving the buttons off `BS_OWNERDRAW`, and
+  removing PARTY MODE / rainbow logo / ESP-corner decorations from `Main.cpp`.
+  Frosted-фон для D2D-пути (mica / DirectComposition со сквозной альфой),
+  переписывание splash, перевод кнопок с `BS_OWNERDRAW` и удаление PARTY MODE /
+  радужного логотипа / ESP-уголков из `Main.cpp`.
+
+
 ## [3.10] - 2026-09-14
 
 ### Added / Добавлено
