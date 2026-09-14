@@ -3,7 +3,29 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.11.2] - 2026-09-14
+
+### Changed / Изменено
+- The Direct2D interface is back behind the flag (off by default): the default look
+  is the previous full interface again. On a real screenshot the D2D frame was
+  functional but incomplete - hardcoded English labels instead of the 8-language
+  strings, missing pills, wide empty gaps and a clipped element at the bottom.
+  Интерфейс Direct2D снова за флагом (выключен по умолчанию): вид по умолчанию —
+  прежний полный интерфейс. На реальном скриншоте D2D-кадр был рабочим, но
+  незавершённым: жёстко английские подписи вместо 8 языков, отсутствующие пилюли,
+  большие пустоты и обрезанный элемент снизу.
+
+### Not done yet / Пока не сделано
+- D2D completion: localized labels through LoaderUtil::SW, language/update pills,
+  footer without the duplicate version, tightened spacing and a higher-contrast
+  secondary text; plus the frosted backdrop (DirectComposition swapchain with
+  per-pixel alpha).
+  Завершение D2D: локализация подписей через LoaderUtil::SW, пилюли языка и
+  обновлений, футер без дубля версии, плотнее раскладка и контрастнее вторичный
+  текст; плюс frosted-фон (swapchain DirectComposition со сквозной альфой).
+
+
 ## [3.11.1] - 2026-09-14
 
 ### Fixed / Исправлено

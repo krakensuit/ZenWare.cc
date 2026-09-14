@@ -973,7 +973,7 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
  HWND hw=CreateWindowExW(Glass::IsAvailable()?0:WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
- Zen2D::R().Init(hw,hi); if(Zen2D::R().Ready()){ Zen2D::R().SetEnabled(true);
+ Zen2D::R().Init(hw,hi); if(Zen2D::R().Ready()){ Zen2D::R().SetEnabled(false);
   HWND hb1=GetDlgItem(hw,IDC_LAUNCH), hb2=GetDlgItem(hw,IDC_INJECT), hs=GetDlgItem(hw,IDC_STATUS);
   if(hb1) ShowWindow(hb1,SW_HIDE);
   if(hb2) ShowWindow(hb2,SW_HIDE);
