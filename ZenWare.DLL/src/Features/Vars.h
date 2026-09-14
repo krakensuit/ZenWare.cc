@@ -167,6 +167,11 @@ namespace Vars
 		inline bool bOpen = false;
 		inline int nKey = VK_INSERT;
 		inline Color clrAccent = { 0, 255, 171, 255 };
+		inline bool bWatermark = true;      // watermark HUD while the menu is closed
+		inline bool bWatermarkFps = true;   // include the fps counter in the watermark
+		inline int nAccentPreset = 0;       // 0..4 preset palette, 5 = custom swatch
+		inline int nPanelAlpha = 244;       // panel opacity, 120..255
+		inline constexpr const char* kVersion = "v3.9"; // header badge + watermark
 		// Язык всего меню: 0 EN, 1 RU, 2 DE... Английский по умолчанию
 		// (до Config.Load), хранится в конфиге, переключается кнопкой и F7.
 		inline int nLang = 0;

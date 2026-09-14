@@ -3,7 +3,32 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.9] - 2026-09-14
+
+### Added / Добавлено
+- Menu look pass: gradient panel with adjustable opacity, version badge in the
+  header, full-width section dividers, gradient slider fill, and the current tab
+  name in the footer hint bar.
+  Видовой апдейт меню: градиентная панель с регулируемой прозрачностью, бейдж
+  версии в шапке, разделители секций на всю ширину, градиентная заливка
+  слайдера, имя текущей вкладки в подсказке футера.
+- Watermark HUD (bottom-right, visible while the menu is closed) with the
+  version and fps, plus separate toggles for the badge and the fps part.
+  Водяной знак (справа снизу, когда меню закрыто): версия и fps, плюс
+  отдельные переключатели для плашки и счётчика кадров.
+- Accent presets: five built-in palettes (Mint / Sunset / Ice / Gold / Violet)
+  cycled by one menu button; the custom swatch row still works.
+  Пресеты акцента: пять встроенных палитр (Мята / Закат / Лёд / Золото /
+  Фиолет) переключаются одной кнопкой; ручные свотчи сохранены.
+- Menu opacity slider (120..255) for the panel background.
+  Слайдер прозрачности панели меню (120..255).
+
+### Changed / Изменено
+- Version strings bumped to 3.9 (loader resource + 8 READMEs).
+  Строки версии подняты до 3.9 (ресурс загрузчика + 8 README).
+
+
 
 ## [3.8.14] - 2026-09-14
 

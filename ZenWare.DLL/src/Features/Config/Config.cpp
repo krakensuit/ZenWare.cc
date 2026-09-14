@@ -164,6 +164,10 @@ namespace
 		{ "menu.accent", &Vars::Menu::clrAccent },
 		{ "menu.key", &Vars::Menu::nKey },
 		{ "menu.lang", &Vars::Menu::nLang },
+			{ "menu.watermark", &Vars::Menu::bWatermark },
+			{ "menu.watermarkfps", &Vars::Menu::bWatermarkFps },
+			{ "menu.accentpreset", &Vars::Menu::nAccentPreset },
+			{ "menu.panelalpha", &Vars::Menu::nPanelAlpha },
 		};
 	}
 }
@@ -338,6 +342,8 @@ void CFeatures_Config::Load()
 	//открытия меню (float правится только из Render).
 	Vars::Menu::nLang = U::Math.Clamp(Vars::Menu::nLang, 0, 7);
 	Vars::Menu::nKey = U::Math.Clamp(Vars::Menu::nKey, 0, 254);
+	Vars::Menu::nAccentPreset = U::Math.Clamp(Vars::Menu::nAccentPreset, 0, 5);
+	Vars::Menu::nPanelAlpha = U::Math.Clamp(Vars::Menu::nPanelAlpha, 120, 255);
 	Vars::Aimbot::nKey = U::Math.Clamp(Vars::Aimbot::nKey, 0, 254);
 	Vars::TriggerBot::nKey = U::Math.Clamp(Vars::TriggerBot::nKey, 0, 254);
 	Vars::ESP::nPanicKey = U::Math.Clamp(Vars::ESP::nPanicKey, 0, 254);

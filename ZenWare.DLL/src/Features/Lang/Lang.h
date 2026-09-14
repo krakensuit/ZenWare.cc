@@ -549,7 +549,12 @@ namespace Lang
 			{"drag header | WASD free | F11 unload | %d fps","拖动标题 | WASD自由 | F11卸载 | %d fps"},
 			{"[press key]","[按键]"}, {"off","关"},
 			{"killed","击杀"}, {"died","死亡"}, {"strafes","摆动"}, {"sync","同步"},
-		};
+					{"INTERFACE","ИНТЕРФЕЙС"}, {"Watermark","Водяной знак"}, {"Watermark fps","Водяной знак: FPS"},
+			{"Accent preset: Mint >","Акцент: Мята >"}, {"Accent preset: Sunset >","Акцент: Закат >"},
+			{"Accent preset: Ice >","Акцент: Лёд >"}, {"Accent preset: Gold >","Акцент: Золото >"},
+			{"Accent preset: Violet >","Акцент: Фиолет >"}, {"Accent preset: Custom >","Акцент: Свой >"},
+			{"Menu opacity","Прозрачность меню"},
+};
 		const auto& tbl = (Cur() == 2) ? tblDe : (Cur() == 3) ? tblEs : (Cur() == 4) ? tblPt : (Cur() == 5) ? tblPl : (Cur() == 6) ? tblFr : (Cur() == 7) ? tblZh : tblRu;
 		auto it = tbl.find(szEn);
 		return it != tbl.end() ? it->second.c_str() : szEn;

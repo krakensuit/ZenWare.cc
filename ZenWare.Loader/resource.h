@@ -7,9 +7,9 @@
 // ЕДИНСТВЕННОЕ место с версией релиза. Меняется тут — подхватывается
 // заголовком окна, сплэшем и VERSIONINFO exe автоматически.
 #define ZENWARE_VER_MAJOR 3
-#define ZENWARE_VER_MINOR 8
-#define ZENWARE_VER_PATCH 13
+#define ZENWARE_VER_MINOR 9
+#define ZENWARE_VER_PATCH 0
 
-#define ZENWARE_VER_STR "3.8.14"
+#define ZENWARE_VER_STR "3.9"
 
 

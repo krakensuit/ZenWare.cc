@@ -253,9 +253,17 @@ void CFeatures_Menu::Render(){
   if(s_alpha < 0.01f){
    ClipCursor(nullptr); // на всякий: отпускаем мышь, пока меню закрыто
   m_szHelpId=nullptr; m_szHelpTitle=nullptr; m_szHelpText=nullptr;
-  if(!Vars::Menu::bOpen && G::Draw.m_nScreenW > 0){
-   const float whue=fmodf((float)GetTickCount64()/38.0f,360.0f);
-   G::Draw.String(EFonts::MENU_TAHOMA,G::Draw.m_nScreenW-178,G::Draw.m_nScreenH-26,HsvToColor(whue,0.7f,1.0f),TXT_DEFAULT,"ZenWare.cc | %d fps",(int)(1.0f/m_flDt));
+  if(!Vars::Menu::bOpen && Vars::Menu::bWatermark && G::Draw.m_nScreenW > 0){
+    char szWm[80]={};
+    if(Vars::Menu::bWatermarkFps) sprintf_s(szWm,sizeof(szWm),"ZenWare.cc %s | %d fps",Vars::Menu::kVersion,(int)(1.0f/m_flDt));
+    else sprintf_s(szWm,sizeof(szWm),"ZenWare.cc %s",Vars::Menu::kVersion);
+    const int nWmW=G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,szWm)+22;
+    const int nWmH=G::Draw.GetFontHeight(EFonts::MENU_TAHOMA)+8;
+    const int nWmX=G::Draw.m_nScreenW-nWmW-12, nWmY=G::Draw.m_nScreenH-nWmH-12;
+    G::Draw.Rect(nWmX+2,nWmY+2,nWmW,nWmH,Color(0,0,0,90));
+    G::Draw.Rect(nWmX,nWmY,nWmW,nWmH,Color(12,15,14,215));
+    G::Draw.Rect(nWmX,nWmY,3,nWmH,Vars::Menu::clrAccent);
+    G::Draw.String(EFonts::MENU_TAHOMA,nWmX+13,nWmY+4,Color(230,245,240,255),TXT_DEFAULT,"%s",szWm);
   }
   return;
  }
@@ -473,7 +481,19 @@ void CFeatures_Menu::Render(){
      static char szKey[32]; sprintf_s(szKey,"Language: %s >",Lang::NameEn(Lang::Cur()));
      const char* szLabel = Lang::T(szKey);
      Button(mouse,szLabel,[](){ Lang::Next(); });
-    SectionLabel("STYLE");
+         SectionLabel("INTERFACE");
+     Checkbox(mouse,"Watermark",&Vars::Menu::bWatermark);
+     if (Vars::Menu::bWatermark)
+      Checkbox(mouse,"Watermark fps",&Vars::Menu::bWatermarkFps);
+     static const char* kAccentNames[]={"Mint","Sunset","Ice","Gold","Violet","Custom"};
+     static char szAccent[40]; sprintf_s(szAccent,"Accent preset: %s >",kAccentNames[U::Math.Clamp(Vars::Menu::nAccentPreset,0,5)]);
+     Button(mouse,szAccent,[](){
+      static Color kPresets[]={ {0,255,171,255},{255,110,64,255},{90,200,255,255},{255,205,80,255},{185,120,255,255} };
+      Vars::Menu::nAccentPreset=(U::Math.Clamp(Vars::Menu::nAccentPreset,0,5)+1)%6;
+      if(Vars::Menu::nAccentPreset<5) Vars::Menu::clrAccent=kPresets[Vars::Menu::nAccentPreset];
+     });
+     SliderInt(mouse,"Menu opacity",&Vars::Menu::nPanelAlpha,120,255);
+     SectionLabel("STYLE");
     ColorSwatches(mouse,"Menu accent",&Vars::Menu::clrAccent);
     ColorSwatches(mouse,"ESP enemy",&Vars::Chams::clrEnemy);
     ColorSwatches(mouse,"ESP ally",&Vars::Chams::clrAlly);
@@ -504,8 +524,11 @@ void CFeatures_Menu::Render(){
   const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
- char szFoot[160]={};
- sprintf_s(szFoot,sizeof(szFoot),Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(1.0f/m_flDt));
+ char szHint[160]={};
+ sprintf_s(szHint,sizeof(szHint),Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(1.0f/m_flDt));
+ static const char* kTabFoot[]={"Visuals","Move","View","Combat","Misc"};
+ char szFoot[200]={};
+ sprintf_s(szFoot,sizeof(szFoot),"%s  |  %s",Lang::T(kTabFoot[U::Math.Clamp(m_nTab,0,4)]),szHint);
  G::Draw.String(EFonts::MENU_CONSOLAS,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"%s",szFoot);
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
  {
@@ -599,6 +622,7 @@ void CFeatures_Menu::SectionLabel(const char* const szLabel){
 	if (RowClipped(m_nItemY, 20)) { m_nItemY += 20; return; }
 	G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+12,m_nItemY+2,CLR_TEXT_OFF,TXT_DEFAULT,"%s",Lang::T(szLabel));
  G::Draw.Rect(m_rc.nX+12,m_nItemY+17,26,2,CLR_ACCENT_SOFT);
+ G::Draw.Rect(m_rc.nX+42,m_nItemY+18,m_rc.nW-56,1,CLR_OUTLINE_SOFT);
  m_nItemY+=20;
 }
 void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const szLabel,Color* pValue){
@@ -631,12 +655,16 @@ void CFeatures_Menu::DrawPanel(){
  //виньетка: тонкие затемнения сверху/снизу панели для глубины
  G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,4,Color(255,255,255,10));
  G::Draw.Rect(m_rc.nX,(m_rc.nY+m_rc.nH)-4,m_rc.nW,4,Color(0,0,0,40));
- G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_BG);
+ {
+		const int nPanelA=U::Math.Clamp(Vars::Menu::nPanelAlpha,120,255);
+		G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(19,22,21,nPanelA),Color(10,12,11,nPanelA),false);
+	}
  //тонкая внутренняя рамка-акцент по периметру (премиальная глубина)
  G::Draw.OutlinedRect(m_rc.nX+2,m_rc.nY+2,m_rc.nW-4,m_rc.nH-4,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),28));
  G::Draw.Rect(m_rc.nX,m_rc.nY,2,m_rc.nH,CLR_ACCENT_SOFT);
  G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,40,CLR_HEADER);
 	DrawRgbLogo(m_rc.nX+16,m_rc.nY+4);
+	G::Draw.String(EFonts::MENU_TAHOMA,m_rc.nX+m_rc.nW-14-G::Draw.GetTextWidth(EFonts::MENU_TAHOMA,Vars::Menu::kVersion),m_rc.nY+15,CLR_ACCENT,TXT_DEFAULT,"%s",Vars::Menu::kVersion);
  {
   int hlw = (int)((m_rc.nW - 2) * m_flAnim);
   int hlx = m_rc.nX + 1 + ((m_rc.nW - 2) - hlw) / 2;
@@ -804,7 +832,10 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
  float flDrag=PressAnim(szLabel,bDrag); // растёт при drag, плавно спадает
  float flFrac=((*pValue-nMin)/static_cast<float>(nMax-nMin)); int nFillW=int(nW*flFrac);
  G::Draw.Rect(nX,m_nItemY,nW,nTrackH,CLR_HEADER);
- G::Draw.Rect(nX,m_nItemY,nFillW,nTrackH,CLR_ACCENT);
+ if(nFillW>0){
+  Color clrFill=CLR_ACCENT; clrFill.SetColor(clrFill.r(),clrFill.g(),clrFill.b(),170);
+  G::Draw.GradientRect(nX,m_nItemY,nX+nFillW,m_nItemY+nTrackH,clrFill,CLR_ACCENT,true);
+ }
  if(nFillW>2) G::Draw.Rect(nX+nFillW-6,m_nItemY,6,nTrackH,Color(200,255,240,255));
  // glow и knob растут при drag
  float flKnobR=nKnobR+1.5f*flDrag;
