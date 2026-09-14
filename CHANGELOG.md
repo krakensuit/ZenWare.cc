@@ -5,6 +5,33 @@ All notable changes to ZenWare.cc are documented here.
 
 ## [Unreleased]
 
+## [3.8.14] - 2026-09-14
+
+### Fixed / Исправлено
+- JumpStats sync and the strafe counter were dead with AutoStrafe on: the side
+  snapshot was taken before AutoStrafe writes `cmd->sidemove`, so every landing
+  read `sync 0%` and `0 strafes`. Sync now measures the strafe that is actually
+  applied this tick (raw mouse X is still used for the direction check).
+  Счётчик стрейфов и sync в JumpStats не работали при включённом AutoStrafe:
+  снимок стороны стрейфа делался до записи `cmd->sidemove`, поэтому каждая
+  посадка показывала `sync 0%` и `0 strafes`. Теперь синк считается по
+  фактически применённому стрейфу (для проверки направления по-прежнему
+  берётся сырой `mousedx`).
+- Audit sweep (commit 92cf318): 22 code fixes plus documentation aligned with
+  the code — null-address guards for StartDrawing/FinishDrawing, m_iAmmo read as
+  an inline int[32], pattern-scan window (BaseOfCode + SizeOfCode), overlay DIB
+  recreated only on resize, loader LogPacket/KeyValues leaks, PE section-table
+  and import-thunk bounds, TriggerBot visible-only wired (default off), docs
+  numbers corrected (121 config keys, 14-gun NoSpread, MOUSE4 = bhop alt key).
+  Аудит-правки (коммит 92cf318): 22 исправления в коде и приведение
+  документации к коду — защита от нулевых адресов StartDrawing/FinishDrawing,
+  m_iAmmo как встроенный int[32], окно pattern-скана, оверлей без пересоздания
+  DIB каждый кадр, утечки LogPacket/KeyValues в загрузчике, границы таблицы
+  секций и импортов, рабочая галка TriggerBot (по умолчанию выключена), цифры
+  в документации (121 ключ конфига, 14 стволов в NoSpread, MOUSE4 = алт-клавиша
+  распрыжки).
+
+
 ## [3.8.13] - 2026-09-13
 
 ### Fixed / Исправлено

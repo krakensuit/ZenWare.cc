@@ -69,11 +69,14 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 		// (m_hGroundEntity, m_flFallVelocity, ducktime не восстанавливались) —
 		// рассинхрон ground-entity с флагами рвал CheckJumpButton, бхоп прыгал
 		// криво или не прыгал вовсе.
-		const float flRawSide = cmd->sidemove;
 		const int nRawMouseX = cmd->mousedx;
 		F::BunnyHop.Run(pLocal, cmd);
 		F::AutoStrafe.Run(pLocal, cmd);
-		F::JumpStats.OnTick(pLocal, cmd, flRawSide, nRawMouseX);
+		//Sync must measure the strafe actually applied this tick (AutoStrafe
+		//writes cmd->sidemove above); the old pre-feature snapshot was always 0
+		//with autostrafe on, so every landing read sync 0% and 0 strafes.
+		const float flAppliedSide = cmd->sidemove;
+		F::JumpStats.OnTick(pLocal, cmd, flAppliedSide, nRawMouseX);
 
 		//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
 		//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.

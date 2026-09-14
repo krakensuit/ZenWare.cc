@@ -8,7 +8,7 @@
 class CFeatures_JumpStats
 {
 public:
-	void OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float flRawSide, int nRawMouseX);
+	void OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float flAppliedSide, int nRawMouseX);
 	void Draw();
 	// Текущий синхрон незавершённого полёта (скользящее окно тиков).
 	// -1 = не в воздухе / нечего считать.

@@ -7,7 +7,7 @@
 #define FL_ONGROUND (1 << 0)
 #endif
 
-void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float flRawSide, int nRawMouseX)
+void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float flAppliedSide, int nRawMouseX)
 {
 	U::Log.Crumb("JumpStats::OnTick");
 	if (!Vars::BunnyHop::bJumpStats || !pLocal || !cmd || !cmd->command_number)
@@ -88,12 +88,13 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 		if (flHeight > m_fMaxHeight)
 			m_fMaxHeight = flHeight;
 
-		//Сырой ввод из снапшота CreateMove (до мутаций AutoStrafe).
+		//Side = the strafe actually applied this tick (AutoStrafe already wrote
+		//cmd->sidemove); raw mousedx below is still the physical mouse input.
 		int side = 0;
 
-		if (flRawSide > 10.0f)
+		if (flAppliedSide > 10.0f)
 			side = 1;
-		else if (flRawSide < -10.0f)
+		else if (flAppliedSide < -10.0f)
 			side = -1;
 
 		if (side)

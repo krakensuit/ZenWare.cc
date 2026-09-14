@@ -10,6 +10,6 @@
 #define ZENWARE_VER_MINOR 8
 #define ZENWARE_VER_PATCH 13
 
-#define ZENWARE_VER_STR "3.8.13"
+#define ZENWARE_VER_STR "3.8.14"
 
 
