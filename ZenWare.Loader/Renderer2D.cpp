@@ -1,19 +1,20 @@
-// ZenWare Loader - Direct2D/DirectWrite/WIC рендерер (реализация).
-// ИЗМЕНЕНО: светлая тема больше не используется (см. Theme.h), добавлены
-// скругления, градиент фона, логотип картинкой; убраны мятные полосы.
+// ZenWare Loader - рендерер: DirectComposition с фолбэком на HwndRenderTarget.
 
 #include "Renderer2D.h"
 #include "resource.h"
 
 #include <math.h>
+#include <stdio.h>   // swprintf_s для лога диагностики
 #include <d2d1helper.h>
-#include <shlwapi.h>
+#include <dcomp.h>
 
 #pragma comment(lib, "d2d1.lib")
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "windowscodecs.lib")
 #pragma comment(lib, "ole32.lib")
-#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "dcomp.lib")
 
 namespace
 {
@@ -26,6 +27,15 @@ namespace
 	{
 		return D2D1::ColorF(rgb, alpha);
 	}
+
+	// Диагностика для отладки: пишем в OutputDebugString, чтобы было видно,
+	// на каком именно шаге падает инициализация (по просьбе из ТЗ).
+	void LogDbg(const wchar_t* wszMsg, HRESULT hr)
+	{
+		wchar_t buf[160]{};
+		swprintf_s(buf, L"[Zen2D] %ls (hr=0x%08X)\n", wszMsg, static_cast<unsigned>(hr));
+		OutputDebugStringW(buf);
+	}
 }
 
 namespace Zen2D
@@ -36,44 +46,39 @@ namespace Zen2D
 		return s_renderer;
 	}
 
-	bool Renderer2D::Init(HWND hwnd, HINSTANCE hInst)
+	bool ProbeComposition()
 	{
-		Shutdown();
+		// Пробуем поднять D3D11 + DComp без окна: от результата зависит стиль окна.
+		ID3D11Device* d3d = nullptr;
+		ID3D11DeviceContext* ctx = nullptr;
+		IDCompositionDevice* dcomp = nullptr;
 
-		m_hwnd = hwnd;
+		const D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
 
-		const HRESULT hrCo = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-		(void)hrCo;
+		HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT, levels, 3, D3D11_SDK_VERSION, &d3d, nullptr, &ctx);
 
-		if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_factory)) || !m_factory)
+		if (FAILED(hr) || !d3d)
 			return false;
 
-		RECT rc{};
-		GetClientRect(hwnd, &rc);
-		m_w = rc.right > 0 ? rc.right : 620;
-		m_h = rc.bottom > 0 ? rc.bottom : 334;
+		IDXGIDevice* dxgiDevice = nullptr;
+		hr = d3d->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice));
 
-		if (FAILED(m_factory->CreateHwndRenderTarget(D2D1::RenderTargetProperties(),
-			D2D1::HwndRenderTargetProperties(hwnd, D2D1::SizeU(static_cast<UINT32>(m_w), static_cast<UINT32>(m_h))),
-			&m_rt)) || !m_rt)
-		{
-			Shutdown();
-			return false;
-		}
+		if (SUCCEEDED(hr) && dxgiDevice)
+			hr = DCompositionCreateDevice(dxgiDevice, __uuidof(IDCompositionDevice), reinterpret_cast<void**>(&dcomp));
 
-		m_rt->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-		m_rt->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+		const bool ok = SUCCEEDED(hr) && dcomp != nullptr;
 
-		if (FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
-			reinterpret_cast<IUnknown**>(&m_dwrite))) || !m_dwrite)
-		{
-			Shutdown();
-			return false;
-		}
+		if (dcomp) dcomp->Release();
+		if (dxgiDevice) dxgiDevice->Release();
+		if (ctx) ctx->Release();
+		if (d3d) d3d->Release();
 
-		// Шрифт: Segoe UI Variable Display (Win11), иначе Segoe UI.
-		// РЕШЕНИЕ: Inter не подключаю - его нет ни в системе, ни в поставке;
-		// Segoe UI Variable даёт ту же сдержанную нейтральность.
+		return ok;
+	}
+
+	bool Renderer2D::CreateTextFormats()
+	{
 		const wchar_t* faces[2] = { L"Segoe UI Variable Display", L"Segoe UI" };
 		const DWRITE_FONT_WEIGHT weights[4] = { DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_FONT_WEIGHT_MEDIUM,
 			DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_WEIGHT_MEDIUM };
@@ -92,7 +97,7 @@ namespace Zen2D
 
 			if (!*slots[i])
 			{
-				Shutdown();
+				LogDbg(L"CreateTextFormat failed", E_FAIL);
 				return false;
 			}
 
@@ -100,40 +105,321 @@ namespace Zen2D
 			(*slots[i])->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
 		}
 
-		if (FAILED(m_rt->CreateSolidColorBrush(ColorOf(m_theme.textPrimary, 1.0f), &m_brush)) || !m_brush)
+		return true;
+	}
+
+	bool Renderer2D::CreateCompositionTarget()
+	{
+		const D3D_FEATURE_LEVEL levels[] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
+
+		HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT, levels, 3, D3D11_SDK_VERSION,
+			&m_d3dDevice, nullptr, &m_d3dContext);
+
+		if (FAILED(hr) || !m_d3dDevice)
 		{
-			Shutdown();
+			LogDbg(L"D3D11CreateDevice failed", hr);
 			return false;
 		}
+
+		IDXGIDevice* dxgiDevice = nullptr;
+		hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice));
+
+		if (FAILED(hr) || !dxgiDevice)
+		{
+			LogDbg(L"QueryInterface(IDXGIDevice) failed", hr);
+			return false;
+		}
+
+		IDXGIAdapter* adapter = nullptr;
+		hr = dxgiDevice->GetAdapter(&adapter);
+
+		IDXGIFactory2* dxgiFactory = nullptr;
+
+		if (SUCCEEDED(hr) && adapter)
+			hr = adapter->GetParent(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&dxgiFactory));
+
+		if (FAILED(hr) || !dxgiFactory)
+		{
+			LogDbg(L"GetParent(IDXGIFactory2) failed", hr);
+			if (adapter) adapter->Release();
+			dxgiDevice->Release();
+			return false;
+		}
+
+		DXGI_SWAP_CHAIN_DESC1 desc{};
+		desc.Width = static_cast<UINT>(m_w > 0 ? m_w : 1);
+		desc.Height = static_cast<UINT>(m_h > 0 ? m_h : 1);
+		desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		desc.Stereo = FALSE;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+		desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		desc.BufferCount = 2;
+		desc.Scaling = DXGI_SCALING_STRETCH;
+		desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+		desc.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
+		desc.Flags = 0;
+
+		hr = dxgiFactory->CreateSwapChainForComposition(m_d3dDevice, &desc, nullptr, &m_swapChain);
+
+		dxgiFactory->Release();
+		if (adapter) adapter->Release();
+
+		if (FAILED(hr) || !m_swapChain)
+		{
+			LogDbg(L"CreateSwapChainForComposition failed", hr);
+			dxgiDevice->Release();
+			return false;
+		}
+
+		// D2D-устройство поверх DXGI.
+		hr = D2D1CreateDevice(dxgiDevice, nullptr, &m_d2dDevice);
+		dxgiDevice->Release();
+
+		if (FAILED(hr) || !m_d2dDevice)
+		{
+			LogDbg(L"D2D1CreateDevice failed", hr);
+			return false;
+		}
+
+		hr = m_d2dDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &m_d2dContext);
+
+		if (FAILED(hr) || !m_d2dContext)
+		{
+			LogDbg(L"CreateDeviceContext failed", hr);
+			return false;
+		}
+
+		m_d2dContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+
+		if (!CreateTargetBitmapFromBackBuffer())
+			return false;
+
+		// Связка с DComp и окном.
+		IDXGIDevice* dxgiDevice2 = nullptr;
+
+		if (FAILED(m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice2))) || !dxgiDevice2)
+		{
+			LogDbg(L"QueryInterface(IDXGIDevice) #2 failed", E_FAIL);
+			return false;
+		}
+
+		hr = DCompositionCreateDevice(dxgiDevice2, __uuidof(IDCompositionDevice), reinterpret_cast<void**>(&m_dcompDevice));
+		dxgiDevice2->Release();
+
+		if (FAILED(hr) || !m_dcompDevice)
+		{
+			LogDbg(L"DCompositionCreateDevice failed", hr);
+			return false;
+		}
+
+		if (FAILED(m_dcompDevice->CreateTargetForHwnd(m_hwnd, TRUE, &m_dcompTarget)) || !m_dcompTarget)
+		{
+			LogDbg(L"CreateTargetForHwnd failed", E_FAIL);
+			return false;
+		}
+
+		if (FAILED(m_dcompDevice->CreateVisual(&m_dcompVisual)) || !m_dcompVisual)
+		{
+			LogDbg(L"CreateVisual failed", E_FAIL);
+			return false;
+		}
+
+		if (FAILED(m_dcompVisual->SetContent(m_swapChain)))
+		{
+			LogDbg(L"Visual::SetContent failed", E_FAIL);
+			return false;
+		}
+
+		if (FAILED(m_dcompTarget->SetRoot(m_dcompVisual)))
+		{
+			LogDbg(L"Target::SetRoot failed", E_FAIL);
+			return false;
+		}
+
+		hr = m_dcompDevice->Commit();
+
+		if (FAILED(hr))
+		{
+			LogDbg(L"DComp Commit failed", hr);
+			return false;
+		}
+
+		m_bComposition = true;
+		return true;
+	}
+
+	bool Renderer2D::CreateTargetBitmapFromBackBuffer()
+	{
+		IDXGISurface* surface = nullptr;
+
+		if (FAILED(m_swapChain->GetBuffer(0, __uuidof(IDXGISurface), reinterpret_cast<void**>(&surface))) || !surface)
+		{
+			LogDbg(L"SwapChain::GetBuffer failed", E_FAIL);
+			return false;
+		}
+
+		const D2D1_BITMAP_PROPERTIES1 props = D2D1::BitmapProperties1(
+			D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+			D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
+			96.0f, 96.0f);
+
+		const HRESULT hr = m_d2dContext->CreateBitmapFromDxgiSurface(surface, &props, &m_targetBitmap);
+		surface->Release();
+
+		if (FAILED(hr) || !m_targetBitmap)
+		{
+			LogDbg(L"CreateBitmapFromDxgiSurface failed", hr);
+			return false;
+		}
+
+		// SetTarget строго до первого BeginDraw.
+		m_d2dContext->SetTarget(m_targetBitmap);
+		return true;
+	}
+
+	bool Renderer2D::CreateLegacyTarget()
+	{
+		const D2D1_SIZE_U size = D2D1::SizeU(static_cast<UINT32>(m_w > 0 ? m_w : 1),
+			static_cast<UINT32>(m_h > 0 ? m_h : 1));
+
+		const HRESULT hr = m_factory->CreateHwndRenderTarget(D2D1::RenderTargetProperties(),
+			D2D1::HwndRenderTargetProperties(m_hwnd, size), &m_hwndRT);
+
+		if (FAILED(hr) || !m_hwndRT)
+		{
+			LogDbg(L"CreateHwndRenderTarget failed", hr);
+			return false;
+		}
+
+		m_hwndRT->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		m_hwndRT->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+		m_bComposition = false;
+
+		return true;
+	}
+
+	bool Renderer2D::Init(HWND hwnd, HINSTANCE hInst)
+	{
+		Shutdown();
+
+		m_hwnd = hwnd;
+
+		CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+		HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1),
+			nullptr, reinterpret_cast<void**>(&m_factory));
+
+		if (FAILED(hr) || !m_factory)
+		{
+			LogDbg(L"D2D1CreateFactory failed", hr);
+			return false;
+		}
+
+		RECT rc{};
+		GetClientRect(hwnd, &rc);
+		m_w = rc.right > 0 ? rc.right : 620;
+		m_h = rc.bottom > 0 ? rc.bottom : 334;
+
+		hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
+			reinterpret_cast<IUnknown**>(&m_dwrite));
+
+		if (FAILED(hr) || !m_dwrite)
+		{
+			LogDbg(L"DWriteCreateFactory failed", hr);
+			return false;
+		}
+
+		if (!CreateTextFormats())
+			return false;
 
 		if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
 			IID_PPV_ARGS(&m_wic))))
 			m_wic = nullptr;
 
-		CreateBackgroundGradient();
+		// Сначала композиция; при любой ошибке - прежний путь (плоский кадр).
+		if (!CreateCompositionTarget())
+		{
+			LogDbg(L"composition path failed, falling back to HwndRenderTarget", E_FAIL);
+			ReleaseComposition();
 
-		// Логотип не критичен: если не загрузился, останется текст.
-		LoadLogoFromResource(hInst);
+			if (!CreateLegacyTarget())
+				return false;
+		}
 
+		m_target = m_bComposition ? static_cast<ID2D1RenderTarget*>(m_d2dContext)
+			: static_cast<ID2D1RenderTarget*>(m_hwndRT);
+
+		if (FAILED(m_target->CreateSolidColorBrush(ColorOf(m_theme.textPrimary, 1.0f), &m_brush)) || !m_brush)
+		{
+			LogDbg(L"CreateSolidColorBrush failed", E_FAIL);
+			return false;
+		}
+
+		LoadLogoFromResource(hInst); // не критично: при неудаче останется текст
+
+		m_bReady = true;
 		return true;
 	}
 
 	void Renderer2D::Resize(int w, int h)
 	{
-		if (!m_rt || w <= 0 || h <= 0)
+		if (!m_bReady || w <= 0 || h <= 0)
 			return;
 
 		m_w = w;
 		m_h = h;
-		m_rt->Resize(D2D1::SizeU(static_cast<UINT32>(w), static_cast<UINT32>(h)));
+
+		if (m_bComposition && m_swapChain && m_d2dContext)
+		{
+			m_d2dContext->SetTarget(nullptr);
+
+			if (m_targetBitmap) { m_targetBitmap->Release(); m_targetBitmap = nullptr; }
+
+			if (FAILED(m_swapChain->ResizeBuffers(0, static_cast<UINT>(w), static_cast<UINT>(h),
+				DXGI_FORMAT_UNKNOWN, 0)))
+			{
+				LogDbg(L"ResizeBuffers failed", E_FAIL);
+				return;
+			}
+
+			if (!CreateTargetBitmapFromBackBuffer())
+				LogDbg(L"recreate target bitmap failed", E_FAIL);
+		}
+		else if (m_hwndRT)
+		{
+			m_hwndRT->Resize(D2D1::SizeU(static_cast<UINT32>(w), static_cast<UINT32>(h)));
+		}
+	}
+
+	void Renderer2D::ReleaseComposition()
+	{
+		if (m_targetBitmap) { m_targetBitmap->Release(); m_targetBitmap = nullptr; }
+		if (m_dcompVisual) { m_dcompVisual->Release(); m_dcompVisual = nullptr; }
+		if (m_dcompTarget) { m_dcompTarget->Release(); m_dcompTarget = nullptr; }
+		if (m_dcompDevice) { m_dcompDevice->Release(); m_dcompDevice = nullptr; }
+		if (m_d2dContext) { m_d2dContext->Release(); m_d2dContext = nullptr; }
+		if (m_d2dDevice) { m_d2dDevice->Release(); m_d2dDevice = nullptr; }
+		if (m_swapChain) { m_swapChain->Release(); m_swapChain = nullptr; }
+		if (m_d3dContext) { m_d3dContext->Release(); m_d3dContext = nullptr; }
+		if (m_d3dDevice) { m_d3dDevice->Release(); m_d3dDevice = nullptr; }
+
+		m_bComposition = false;
+	}
+
+	void Renderer2D::ReleaseLegacy()
+	{
+		if (m_hwndRT) { m_hwndRT->Release(); m_hwndRT = nullptr; }
 	}
 
 	void Renderer2D::Shutdown()
 	{
+		m_bReady = false;
+		m_target = nullptr;
+
 		if (m_logo) { m_logo->Release(); m_logo = nullptr; }
-
-		ReleaseBackgroundGradient();
-
 		if (m_brush) { m_brush->Release(); m_brush = nullptr; }
 
 		IDWriteTextFormat** slots[4] = { &m_fmtTitle, &m_fmtBody, &m_fmtSmall, &m_fmtMicro };
@@ -143,55 +429,22 @@ namespace Zen2D
 			if (*slots[i]) { (*slots[i])->Release(); *slots[i] = nullptr; }
 		}
 
+		ReleaseComposition();
+		ReleaseLegacy();
+
 		if (m_wic) { m_wic->Release(); m_wic = nullptr; }
 		if (m_dwrite) { m_dwrite->Release(); m_dwrite = nullptr; }
-		if (m_rt) { m_rt->Release(); m_rt = nullptr; }
 		if (m_factory) { m_factory->Release(); m_factory = nullptr; }
-	}
-
-	// --------------------------------- градиент и логотип ---------------------------------
-
-	void Renderer2D::ReleaseBackgroundGradient()
-	{
-		if (m_bgGrad) { m_bgGrad->Release(); m_bgGrad = nullptr; }
-	}
-
-	void Renderer2D::CreateBackgroundGradient()
-	{
-		if (!m_rt)
-			return;
-
-		ReleaseBackgroundGradient();
-
-		// Очень слабый вертикальный градиент: surface (0.25) сверху -> background (0) снизу.
-		D2D1_GRADIENT_STOP stops[2]{};
-		stops[0].position = 0.0f;
-		stops[0].color = ColorOf(m_theme.surface, 0.25f);
-		stops[1].position = 1.0f;
-		stops[1].color = ColorOf(m_theme.background, 0.0f);
-
-		ID2D1GradientStopCollection* coll = nullptr;
-
-		if (FAILED(m_rt->CreateGradientStopCollection(stops, 2, &coll)) || !coll)
-			return;
-
-		m_rt->CreateLinearGradientBrush(
-			D2D1::LinearGradientBrushProperties(D2D1::Point2F(0.0f, 0.0f),
-				D2D1::Point2F(0.0f, static_cast<FLOAT>(m_h))),
-			coll, &m_bgGrad);
-
-		coll->Release();
 	}
 
 	void Renderer2D::SetTheme(const Theme_t& th)
 	{
 		m_theme = th;
-		CreateBackgroundGradient();
 	}
 
 	bool Renderer2D::LoadLogoFromResource(HINSTANCE hInst)
 	{
-		if (!m_rt || !m_wic || !hInst)
+		if (!m_target || !m_wic || !hInst)
 			return false;
 
 		const HRSRC hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_LOGO_PNG), RT_RCDATA);
@@ -214,25 +467,17 @@ namespace Zen2D
 		IWICBitmapDecoder* decoder = nullptr;
 		IWICBitmapFrameDecode* frame = nullptr;
 		IWICFormatConverter* converter = nullptr;
-
 		bool ok = false;
 
-		if (SUCCEEDED(m_wic->CreateStream(&stream)) && stream)
+		if (SUCCEEDED(m_wic->CreateStream(&stream)) && stream
+			&& SUCCEEDED(stream->InitializeFromMemory(static_cast<BYTE*>(const_cast<void*>(pData)), dwSize))
+			&& SUCCEEDED(m_wic->CreateDecoderFromStream(stream, nullptr, WICDecodeMetadataCacheOnDemand, &decoder)) && decoder
+			&& SUCCEEDED(decoder->GetFrame(0, &frame)) && frame
+			&& SUCCEEDED(m_wic->CreateFormatConverter(&converter)) && converter
+			&& SUCCEEDED(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone,
+				nullptr, 0.0f, WICBitmapPaletteTypeMedianCut)))
 		{
-			if (SUCCEEDED(stream->InitializeFromMemory(static_cast<BYTE*>(const_cast<void*>(pData)), dwSize)))
-			{
-				if (SUCCEEDED(m_wic->CreateDecoderFromStream(stream, nullptr, WICDecodeMetadataCacheOnDemand, &decoder))
-					&& decoder
-					&& SUCCEEDED(decoder->GetFrame(0, &frame)) && frame)
-				{
-					if (SUCCEEDED(m_wic->CreateFormatConverter(&converter)) && converter
-						&& SUCCEEDED(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA,
-							WICBitmapDitherTypeNone, nullptr, 0.0f, WICBitmapPaletteTypeMedianCut)))
-					{
-						ok = SUCCEEDED(m_rt->CreateBitmapFromWicBitmap(converter, nullptr, &m_logo)) && m_logo != nullptr;
-					}
-				}
-			}
+			ok = SUCCEEDED(m_target->CreateBitmapFromWicBitmap(converter, nullptr, &m_logo)) && m_logo != nullptr;
 		}
 
 		if (converter) converter->Release();
@@ -243,61 +488,49 @@ namespace Zen2D
 		return ok;
 	}
 
-	// --------------------------------- примитивы ---------------------------------
+	// ------------------------------- примитивы -------------------------------
 
 	void Renderer2D::FillRect(const D2D1_RECT_F& rc, DWORD rgb, float alpha)
 	{
-		if (!m_rt || !m_brush)
-			return;
-
+		if (!m_target || !m_brush) return;
 		m_brush->SetColor(ColorOf(rgb, alpha));
-		m_rt->FillRectangle(rc, m_brush);
+		m_target->FillRectangle(rc, m_brush);
 	}
 
 	void Renderer2D::StrokeRect(const D2D1_RECT_F& rc, DWORD rgb, float alpha, float width)
 	{
-		if (!m_rt || !m_brush)
-			return;
-
+		if (!m_target || !m_brush) return;
 		m_brush->SetColor(ColorOf(rgb, alpha));
-		m_rt->DrawRectangle(rc, m_brush, width);
+		m_target->DrawRectangle(rc, m_brush, width);
 	}
 
-	// ИЗМЕНЕНО: скруглённые заливка и обводка (в GDI был RoundRect, в D2D нужен явный радиус).
 	void Renderer2D::FillRound(const D2D1_RECT_F& rc, float radius, DWORD rgb, float alpha)
 	{
-		if (!m_rt || !m_brush)
-			return;
-
+		if (!m_target || !m_brush) return;
 		m_brush->SetColor(ColorOf(rgb, alpha));
-		m_rt->FillRoundedRectangle(D2D1::RoundedRect(rc, radius, radius), m_brush);
+		m_target->FillRoundedRectangle(D2D1::RoundedRect(rc, radius, radius), m_brush);
 	}
 
 	void Renderer2D::StrokeRound(const D2D1_RECT_F& rc, float radius, DWORD rgb, float alpha, float width)
 	{
-		if (!m_rt || !m_brush)
-			return;
-
+		if (!m_target || !m_brush) return;
 		m_brush->SetColor(ColorOf(rgb, alpha));
-		m_rt->DrawRoundedRectangle(D2D1::RoundedRect(rc, radius, radius), m_brush, width);
+		m_target->DrawRoundedRectangle(D2D1::RoundedRect(rc, radius, radius), m_brush, width);
 	}
 
 	void Renderer2D::Line(float x0, float y0, float x1, float y1, DWORD rgb, float alpha, float width)
 	{
-		if (!m_rt || !m_brush)
-			return;
-
+		if (!m_target || !m_brush) return;
 		m_brush->SetColor(ColorOf(rgb, alpha));
-		m_rt->DrawLine(D2D1::Point2F(x0, y0), D2D1::Point2F(x1, y1), m_brush, width);
+		m_target->DrawLine(D2D1::Point2F(x0, y0), D2D1::Point2F(x1, y1), m_brush, width);
 	}
 
-	void Renderer2D::Text(const wchar_t* wsz, const D2D1_RECT_F& rc, DWORD rgb, float size,
+	void Renderer2D::Text(const wchar_t* wsz, const D2D1_RECT_F& rc, DWORD rgb,
 		DWRITE_FONT_WEIGHT weight, DWRITE_TEXT_ALIGNMENT align, float alpha)
 	{
-		(void)size;
 		(void)weight;
 
-		if (!m_rt || !m_brush || !wsz || !wsz[0])
+		if (!m_target || !m_brush || !wsz || !wsz[0])
 			return;
 
 		IDWriteTextFormat* fmt = (rc.bottom - rc.top >= 28.0f) ? m_fmtTitle
@@ -306,7 +539,7 @@ namespace Zen2D
 		fmt->SetTextAlignment(align);
 
 		m_brush->SetColor(ColorOf(rgb, alpha));
-		m_rt->DrawTextW(wsz, static_cast<UINT32>(wcslen(wsz)), fmt, rc, m_brush,
+		m_target->DrawTextW(wsz, static_cast<UINT32>(wcslen(wsz)), fmt, rc, m_brush,
 			D2D1_DRAW_TEXT_OPTIONS_CLIP, DWRITE_MEASURING_MODE_NATURAL);
 	}
 
@@ -315,15 +548,18 @@ namespace Zen2D
 	void Renderer2D::RenderFrame(const FrameState_t& st, const Theme_t& th,
 		const wchar_t* wszStatus, const wchar_t* wszVersion, const wchar_t* wszLang)
 	{
-		if (!m_rt)
+		if (!m_bReady || !m_target)
 			return;
 
 		m_theme = th;
 
-		m_rt->BeginDraw();
+		// Полупрозрачный слой поверх бэкдропа: сквозь него видно Acrylic,
+		// но текст остаётся читаемым. В фолбэке - непрозрачный фон.
+		const float flBgAlpha = m_bComposition ? 0.45f : 1.0f;
 
-		// ИЗМЕНЕНО: явная очистка кадра фоном палитры (иначе поверхность может остаться прежней/светлой).
-		m_rt->Clear(ColorOf(m_theme.background, 1.0f));
+		m_target->BeginDraw();
+		m_target->SetTransform(D2D1::Matrix3x2F::Identity());
+		m_target->Clear(ColorOf(th.background, flBgAlpha));
 
 		DrawBackground(st);
 		DrawHeader(st);
@@ -334,105 +570,102 @@ namespace Zen2D
 		DrawStatus(st, wszStatus);
 		DrawFooter(st, wszVersion, wszLang);
 
-		const HRESULT hr = m_rt->EndDraw();
+		const HRESULT hr = m_target->EndDraw();
 
-		if (hr == D2DERR_RECREATE_TARGET)
+		if (hr == D2DERR_RECREATE_TARGET && !m_bComposition && m_hwndRT)
 		{
-			if (m_rt) { m_rt->Release(); m_rt = nullptr; }
+			// Прежний путь: пересоздаём цель того же типа.
+			ReleaseLegacy();
 
-			m_factory->CreateHwndRenderTarget(D2D1::RenderTargetProperties(),
-				D2D1::HwndRenderTargetProperties(m_hwnd, D2D1::SizeU(static_cast<UINT32>(m_w), static_cast<UINT32>(m_h))),
-				&m_rt);
-
-			if (m_rt)
+			if (CreateLegacyTarget())
 			{
-				m_rt->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-				m_rt->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+				m_target = static_cast<ID2D1RenderTarget*>(m_hwndRT);
 
 				if (m_brush) { m_brush->Release(); m_brush = nullptr; }
 
-				m_rt->CreateSolidColorBrush(ColorOf(m_theme.textPrimary, 1.0f), &m_brush);
-
-				CreateBackgroundGradient();
+				m_target->CreateSolidColorBrush(ColorOf(m_theme.textPrimary, 1.0f), &m_brush);
 			}
+
+			return;
+		}
+
+		if (FAILED(hr))
+		{
+			LogDbg(L"EndDraw failed", hr);
+			return;
+		}
+
+		if (m_bComposition && m_swapChain)
+		{
+			const HRESULT hrPresent = m_swapChain->Present(1, 0);
+
+			if (FAILED(hrPresent))
+				LogDbg(L"Present failed", hrPresent);
 		}
 	}
 
-	// ИЗМЕНЕНО: убраны мятные полосы; остался чистый фон + слабый градиент сверху.
 	void Renderer2D::DrawBackground(const FrameState_t& st)
 	{
 		(void)st;
-
-		const float w = static_cast<float>(m_w);
-		const float h = static_cast<float>(m_h);
-
-		FillRect(RectF(0, 0, w, h), m_theme.background, 1.0f);
-
-		if (m_bgGrad)
-			m_rt->FillRectangle(RectF(0, 0, w, h), m_bgGrad);
+		// Никаких сплошных заливок: фон даёт бэкдроп + Clear с альфой.
 	}
 
 	void Renderer2D::DrawHeader(const FrameState_t& st)
 	{
-		(void)st;
-
 		const float w = static_cast<float>(m_w);
-		const float pulse = 0.30f + 0.20f * (0.5f + 0.5f * sinf(st.elapsed * 1.4f));
 
+		// Шапка - полупрозрачная поверхность: стекло видно через неё.
+		FillRect(RectF(0.0f, 0.0f, w, 66.0f), m_theme.surface, 0.35f);
+
+		const float pulse = 0.30f + 0.20f * (0.5f + 0.5f * sinf(st.elapsed * 1.4f));
 		Line(0.0f, 66.0f, w, 66.0f, m_theme.accent, pulse, 1.0f);
 	}
 
-	// ИЗМЕНЕНО: вместо мятного текста - PNG-логотип + текст рядом.
 	void Renderer2D::DrawLogo(const FrameState_t& st)
 	{
 		(void)st;
-
 		const float pulse = 0.9f + 0.1f * sinf(st.elapsed * 2.094f);
-
 		float textX = 24.0f;
 
 		if (m_logo)
 		{
 			const float size = 40.0f;
-			const D2D1_RECT_F dst = RectF(24.0f, 14.0f, 24.0f + size, 14.0f + size);
-
-			m_rt->DrawBitmap(m_logo, dst, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+			m_target->DrawBitmap(m_logo, RectF(24.0f, 14.0f, 24.0f + size, 14.0f + size), 1.0f,
+				D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
 			textX = 24.0f + size + 10.0f;
 		}
 
 		Text(L"ZenWare.cc", RectF(textX, 14.0f, textX + 300.0f, 54.0f),
-			m_theme.textPrimary, 18.0f, DWRITE_FONT_WEIGHT_SEMI_BOLD,
-			DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
+			m_theme.textPrimary, DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
 	}
 
-	// ИЗМЕНЕНО: скругление 6 px.
 	void Renderer2D::DrawModePill(const FrameState_t& st)
 	{
 		const float w = static_cast<float>(m_w);
 		const D2D1_RECT_F pill = RectF(w - 150.0f, 20.0f, w - 24.0f, 46.0f);
 
-		FillRound(pill, 6.0f, m_theme.surface, 0.9f);
-		StrokeRound(pill, 6.0f, m_theme.accentDim, 0.7f, 1.0f);
+		FillRound(pill, 6.0f, m_theme.surface, 0.55f);
+		StrokeRound(pill, 6.0f, m_theme.accentDim, 0.40f, 1.0f);
 
 		Text(st.external ? L"EXTERNAL" : L"INTERNAL", pill, m_theme.textPrimary,
-			11.0f, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
+			DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
 	}
 
-	// ИЗМЕНЕНО: скругление 8 px.
 	void Renderer2D::DrawButtons(const FrameState_t& st)
 	{
 		const float w = static_cast<float>(m_w);
 
+		// Вторичная кнопка: стекло становится плотнее при наведении.
 		const D2D1_RECT_F b1 = RectF(24.0f, 92.0f, w - 24.0f, 128.0f);
-		FillRound(b1, 8.0f, m_theme.surface, 0.85f + 0.06f * st.hoverLaunch);
-		StrokeRound(b1, 8.0f, m_theme.border, 1.0f, 1.0f);
-		Text(L"LAUNCH GAME", b1, m_theme.textPrimary, 13.0f,
-			DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
+		FillRound(b1, 8.0f, m_theme.surface, 0.55f + 0.15f * st.hoverLaunch);
+		StrokeRound(b1, 8.0f, m_theme.border, 0.40f, 1.0f);
+		Text(L"LAUNCH GAME", b1, m_theme.textPrimary, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
 
+		// Основная кнопка: мятная, текст тёмный - читается и на стекле.
 		const D2D1_RECT_F b2 = RectF(24.0f, 136.0f, w - 24.0f, 188.0f);
-		FillRound(b2, 8.0f, m_theme.surface, 0.85f + 0.06f * st.hoverInject);
-		StrokeRound(b2, 8.0f, m_theme.accent, 0.35f + 0.65f * st.hoverInject, 1.0f);
-		Text(st.external ? L"LAUNCH EXTERNAL" : L"INJECT", b2, m_theme.accent, 13.0f,
+		FillRound(b2, 8.0f, m_theme.accent, 0.85f);
+		StrokeRound(b2, 8.0f, m_theme.accent, 1.0f, 1.0f);
+		Text(st.external ? L"LAUNCH EXTERNAL" : L"INJECT", b2, m_theme.background,
 			DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_CENTER);
 	}
 
@@ -442,7 +675,7 @@ namespace Zen2D
 		const float trackY = 214.0f;
 		const float trackW = w - 48.0f;
 
-		FillRound(RectF(24.0f, trackY, 24.0f + trackW, trackY + 3.0f), 1.5f, m_theme.border, 0.9f);
+		FillRound(RectF(24.0f, trackY, 24.0f + trackW, trackY + 3.0f), 1.5f, m_theme.border, 0.40f);
 
 		if (!st.busy && st.progress <= 0.0f)
 			return;
@@ -469,7 +702,7 @@ namespace Zen2D
 		}
 
 		if (x1 > x0)
-			FillRound(RectF(x0, trackY, x1, trackY + 3.0f), 1.5f, m_theme.accent, 0.95f);
+			FillRound(RectF(x0, trackY, x1, trackY + 3.0f), 1.5f, m_theme.accent, 0.90f);
 	}
 
 	void Renderer2D::DrawStatus(const FrameState_t& st, const wchar_t* wszText)
@@ -480,24 +713,23 @@ namespace Zen2D
 
 		if (wszText && wszText[0])
 			Text(wszText, RectF(44.0f, 238.0f, static_cast<float>(m_w) - 24.0f, 258.0f),
-				m_theme.textPrimary, 13.0f, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_LEADING);
+				m_theme.textPrimary, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_LEADING);
 	}
 
 	void Renderer2D::DrawFooter(const FrameState_t& st, const wchar_t* wszVersion, const wchar_t* wszLang)
 	{
 		(void)st;
-
 		const float w = static_cast<float>(m_w);
 		const float h = static_cast<float>(m_h);
 
-		Line(24.0f, h - 44.0f, w - 24.0f, h - 44.0f, m_theme.border, 1.0f, 1.0f);
+		Line(24.0f, h - 44.0f, w - 24.0f, h - 44.0f, m_theme.border, 0.30f, 1.0f);
 
 		if (wszVersion && wszVersion[0])
 			Text(wszVersion, RectF(24.0f, h - 40.0f, 220.0f, h - 20.0f), m_theme.textSecondary,
-				11.0f, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_LEADING);
+				DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_LEADING, 0.85f);
 
 		if (wszLang && wszLang[0])
 			Text(wszLang, RectF(w - 220.0f, h - 40.0f, w - 24.0f, h - 20.0f), m_theme.textSecondary,
-				11.0f, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_TRAILING);
+				DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_TRAILING, 0.85f);
 	}
 }

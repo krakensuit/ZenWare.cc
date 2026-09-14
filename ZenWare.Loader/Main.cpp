@@ -722,6 +722,14 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
      if(changed){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(h,&all,FALSE); }
     }
      RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(h,&hdr,FALSE);
+     if(Zen2D::R().Enabled()){
+      Zen2D::FrameState_t fst2{}; fst2.dt=0.016f; fst2.elapsed=(float)(GetTickCount64()%100000)/1000.0f;
+      fst2.external=g_bExternal; fst2.hoverLaunch=g_flHovLaunch; fst2.hoverInject=g_flHovInject; fst2.modeT=g_flModeT;
+      wchar_t wszS[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszS,127);
+      wchar_t wszV[32]={}; swprintf_s(wszV,L"v%ls",ZENWARE_VER_WSTR);
+      wchar_t wszL[32]={}; swprintf_s(wszL,L"%ls",LoaderUtil::LangCode());
+      Zen2D::R().RenderFrame(fst2, Zen2D::Dark(), wszS, wszV, wszL);
+     }
     // перерисовка кнопки запуска, чтобы радужная обводка анимировалась вместе с логотипом
     HWND bl=GetDlgItem(h,IDC_LAUNCH); if(bl) InvalidateRect(bl,nullptr,FALSE);
    if(g_busy){ RECT pr={20,262,600,266}; InvalidateRect(h,&pr,FALSE); }
@@ -971,7 +979,7 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  // главное окно открывается ровно там же, где был сплэш — бесшовный переход
  int wx=(GetSystemMetrics(SM_CXSCREEN)-ww)/2, wy=(GetSystemMetrics(SM_CYSCREEN)-wh)/2;
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
- HWND hw=CreateWindowExW(Glass::IsAvailable()?0:WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
+ HWND hw=CreateWindowExW(Zen2D::ProbeComposition()?WS_EX_NOREDIRECTIONBITMAP:(Glass::IsAvailable()?0:WS_EX_LAYERED),wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
  Zen2D::R().Init(hw,hi); if(Zen2D::R().Ready()){ Zen2D::R().SetEnabled(false);
   HWND hb1=GetDlgItem(hw,IDC_LAUNCH), hb2=GetDlgItem(hw,IDC_INJECT), hs=GetDlgItem(hw,IDC_STATUS);

@@ -3,7 +3,58 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.13] - 2026-09-14
+
+### Added / Добавлено
+- The loader now renders through DirectComposition with per-pixel alpha: D3D11
+  device with `BGRA_SUPPORT`, `CreateSwapChainForComposition` (2 buffers,
+  `B8G8R8A8_UNORM`, `PREMULTIPLIED`, flip-sequential), `D2D1CreateDevice` ->
+  `ID2D1DeviceContext`, a target bitmap created from the swap-chain back buffer
+  with `D2D1_ALPHA_MODE_PREMULTIPLIED` and `SetTarget` before the first
+  `BeginDraw`, then `SetContent` / `SetRoot` / `Commit` on the DComp visual, with
+  `Present(1, 0)` after every `EndDraw`.
+  Лоадер теперь рисует через DirectComposition со сквозной альфой: D3D11 с
+  `BGRA_SUPPORT`, `CreateSwapChainForComposition` (2 буфера, `B8G8R8A8_UNORM`,
+  `PREMULTIPLIED`, flip-sequential), `D2D1CreateDevice` → `ID2D1DeviceContext`,
+  целевой битмап из back buffer со `D2D1_ALPHA_MODE_PREMULTIPLIED` и `SetTarget`
+  до первого `BeginDraw`, затем `SetContent` / `SetRoot` / `Commit` у визуала
+  DComp и `Present(1, 0)` после каждого `EndDraw`.
+- Window style: `Zen2D::ProbeComposition()` decides up front whether the window
+  gets `WS_EX_NOREDIRECTIONBITMAP` (needed for a transparent swap chain) or keeps
+  the previous style; rendering moved to the 16 ms timer because such a window
+  receives no `WM_PAINT`.
+  Стиль окна: `Zen2D::ProbeComposition()` заранее решает, получит ли окно
+  `WS_EX_NOREDIRECTIONBITMAP` (нужен для прозрачного swapchain) или прежний
+  стиль; отрисовка переехала в 16-мс таймер, потому что такое окно не получает
+  `WM_PAINT`.
+- Alpha values per the spec: frame clears at 0.45 so the backdrop shows through,
+  header 0.35, buttons 0.55 (hover 0.70), pills 0.55, borders 0.40, the primary
+  INJECT button is mint at 0.85 with dark text, separators 0.30, secondary text
+  0.85.
+  Значения альфы по спецификации: кадр очищается при 0.45, чтобы был виден
+  бэкдроп, шапка 0.35, кнопки 0.55 (hover 0.70), пилюли 0.55, бордеры 0.40,
+  основная кнопка INJECT — мятная 0.85 с тёмным текстом, разделители 0.30,
+  вторичный текст 0.85.
+- Fail-safe: every init step logs an `HRESULT` to `OutputDebugStringW`, and if
+  the composition chain fails at any point the renderer falls back to the previous
+  `ID2D1HwndRenderTarget` path (opaque frame) so the window can never stay black.
+  Отказоустойчивость: каждый шаг инициализации пишет `HRESULT` в
+  `OutputDebugStringW`, а если цепочка композиции падает на любом шаге, рендерер
+  возвращается к прежнему `ID2D1HwndRenderTarget` (непрозрачный кадр), поэтому
+  чёрным окно остаться не может.
+
+### 新增 / Китайский
+- 加载器改为通过 DirectComposition 渲染并支持逐像素透明度：带 `BGRA_SUPPORT` 的
+  D3D11 设备、`CreateSwapChainForComposition`（2 个缓冲、`B8G8R8A8_UNORM`、
+  `PREMULTIPLIED`）、`D2D1CreateDevice` 与 `ID2D1DeviceContext`、由后台缓冲创建
+  的目标位图（`D2D1_ALPHA_MODE_PREMULTIPLIED`），并在首次 `BeginDraw` 之前
+  `SetTarget`，随后 `SetContent`/`SetRoot`/`Commit`，每次 `EndDraw` 后 `Present(1,0)`。
+- 窗口样式由 `Zen2D::ProbeComposition()` 预先决定是否使用
+  `WS_EX_NOREDIRECTIONBITMAP`；由于这类窗口收不到 `WM_PAINT`，渲染改由 16 毫秒定时器驱动。
+- 任何一步失败都会回退到旧的 `ID2D1HwndRenderTarget` 路径，窗口不会变成黑屏。
+
+
 ## [3.12.1] - 2026-09-14
 
 ### Fixed / Исправлено
