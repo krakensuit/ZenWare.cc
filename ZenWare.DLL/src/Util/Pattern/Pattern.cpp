@@ -16,7 +16,7 @@ DWORD CUtil_Pattern::Find(const char* const szModule, const char* const szPatter
     if (!pNTH)
         return 0x0;
 
-    return FindPattern(dwMod + pNTH->OptionalHeader.BaseOfCode, dwMod + pNTH->OptionalHeader.SizeOfCode, szPattern);
+    return FindPattern(dwMod + pNTH->OptionalHeader.BaseOfCode, dwMod + pNTH->OptionalHeader.BaseOfCode + pNTH->OptionalHeader.SizeOfCode, szPattern);
 }
 
 DWORD CUtil_Pattern::FindPattern(const DWORD dwAddress, const DWORD dwLen, const char* const szPattern)

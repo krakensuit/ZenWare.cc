@@ -62,7 +62,7 @@ and grew into three independent tools in one solution (`ZenWare.sln`, `Release |
 | Part | Mode | What it does | Output |
 |---|---|---|---|
 | `ZenWare.DLL` | Internal (injected) | Full cheat: corner ESP, Chams, Aimbot, Movement, in-game menu | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` | GUI launcher, local build only | Manual-map / LoadLibrary injection, themes, 8 languages | local `dist/ZenWare.exe`, never published |
+| `ZenWare.Loader` | GUI launcher, local build only | LoadLibrary injection (manual-map code is present but not wired up), themes, 8 languages | local `dist/ZenWare.exe`, never published |
 | `ZenWare.External` | External (no injection) | RPM reads + GDI overlay + `SendInput` bhop/strafe | `bin/Release/ZenWare.External.exe` |
 
 New to this kind of software? Start with the **External** overlay — it never
@@ -77,15 +77,16 @@ License: [LICENSE](LICENSE) · Runtime wiring: [ARCHITECTURE.md](ARCHITECTURE.md
 the loader lock) and `Entry::Load` runs an ordered, fail-closed init:
 logger → crash recorders → `serverbrowser.dll` wait → pattern scan (with
 `ZenWare.offsets` RVA cache) → interfaces (`VEngineCvar007` probed in
-`vstdlib.dll` first) → netvars → `MinHook` hooks → config load. Any missing
-pattern or interface aborts with a message box instead of crashing.
+`vstdlib.dll` first) → config load → netvar diagnostics → draw manager →
+`MinHook` hooks. Any missing pattern or interface aborts with a message box
+instead of crashing.
 
 Per frame two chains run:
 
-- **Tick** (`ClientMode::CreateMove`) — prediction wrap, then movement
-  (BunnyHop → AutoStrafe → JumpStats → AutoShove), then combat (Aimbot →
-  TriggerBot → AutoPistol → NoSpread). The engine original is called exactly
-  once per tick and its result is reused.
+- **Tick** (`ClientMode::CreateMove`) — movement (BunnyHop → AutoStrafe →
+  JumpStats), then combat (Aimbot → TriggerBot → AutoPistol → NoSpread), then
+  AutoShove. The engine original is called exactly once per tick and its
+  result is reused.
 - **Frame** (`EngineVGui::Paint`, `PAINT_UIPANELS` only) — thirdperson /
   fullbright / hide-hands cvars, then Killfeed tick, Hitmarker tick, ESP,
   Radar, Alerts, Menu, crosshair, grenade preview, overlay, and the animated
@@ -99,8 +100,9 @@ before any virtual call.
 **Loader.** A Win32 GUI app with a splash screen, dark/light system theme,
 8 interface languages and an animated RGB logo. It embeds the DLL, the
 External overlay and the logo as resources, so the build output is a single
-file. Injection is manual-map (relocations, imports, section protection,
-header wipe) with a `LoadLibrary` fallback. No network code, no auto-update.
+file. Injection is remote LoadLibraryW (the manual-map implementation with
+relocations/imports/header-wipe exists in code but is currently not wired to
+the INJECT button). No network code, no auto-update.
 
 **External.** A read-only tool: `ReadProcessMemory` snapshots at 20 Hz, a
 click-through layered GDI overlay draws at 60 Hz, movement uses `SendInput`
@@ -143,7 +145,7 @@ only. Signature + anchor + validation resolver re-finds addresses every run.
 - **Per-weapon tuning** — own FOV / smoothing / hitbox per group (rifles,
   SMGs, shotguns, snipers, pistols)
 - **Helpers** — TriggerBot (fires on the post-aim ray, no 1-tick lag),
-  AutoShove (frees pinned mates), AutoPistol, NoSpread (11-gun whitelist,
+  AutoShove (frees pinned mates), AutoPistol, NoSpread (14-gun whitelist,
   on by default)
 
 </details>
@@ -225,7 +227,7 @@ External-only (no injection): run your local
 | `F11` | Unload |
 | `F7` | Language EN / RU / DE / ES / PT / PL / FR / ZH |
 | `Space` (hold) | BunnyHop (default) |
-| `MOUSE4` (hold) | Aimbot (default) |
+| `MOUSE4` (hold) | BunnyHop (alt key) |
 
 Rebind: `Misc → Menu key / Aimbot key` — click → `[press key]` → press a key, `ESC` = off.
 ESP panic key hides all boxes instantly (bind in `Visuals → ESP`).
@@ -235,7 +237,7 @@ ESP panic key hides all boxes instantly (bind in `Visuals → ESP`).
 
 - Config slots live next to the game DLL path resolution: `ZenWare.cfg`,
   `ZenWare2.cfg`, `ZenWare3.cfg` — plain `key=value`, one value per line
-  (117 keys). Session-only values (JB/EB counters, notify timestamps) are
+  (121 keys). Session-only values (JB/EB counters, notify timestamps) are
   never saved.
 - Runtime log: `<gamedir>/left4dead2/ZenWare.log`. Crash reports look like
   `[!!!] EXCEPTION code=... at module+0x...` followed by the last breadcrumb

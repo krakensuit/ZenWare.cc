@@ -156,7 +156,7 @@ void CFeatures_Chams::ApplyPalette()
 
 	//Палитра применяется только при смене: иначе каждый DrawModel затирал
 	//ручные свотчи (ESP enemy/ally, Chams tank) значениями палитры.
-	static int s_nLastPalette = -1;
+	static int s_nLastPalette = Vars::Chams::nPalette;
 	if (s_nLastPalette == Vars::Chams::nPalette)
 		return;
 	s_nLastPalette = Vars::Chams::nPalette;

@@ -50,7 +50,7 @@ $howto = @(
 	"2. V konsoli igry: map c1m1_hotel (ili lyubaya lokalnaya karta).",
 	"3. V loadere vyberi rezhim (tabletka sverhu): EXTERNAL ili INTERNAL,",
 	"   nazhmi bolshuyu knopku. Vse nuzhnoe raspakuyutsya samo.",
-	"4. Menyu v igre: INSERT. Vygruzka chita: F11. F7 - smena yazyka RU/EN.",
+		"4. Menyu v igre: INSERT. Vygruzka chita: F11. F7 - language switch (8 languages).",
 	"5. EXTERNAL: esli net boksov - sfotkay 3 verhnie stroki overleya i prishli.",
 	"6. Esli v menu/vmesto bukv kvadratiki - nazhmi F7 (smena yazyka)."
 )

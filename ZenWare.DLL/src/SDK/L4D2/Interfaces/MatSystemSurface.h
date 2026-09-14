@@ -36,10 +36,12 @@ public:
 
 public:
 	inline void StartDrawing() {
+		if (!U::Offsets.m_dwStartDrawing) return;
 		reinterpret_cast<void(__thiscall*)(void*)>(U::Offsets.m_dwStartDrawing)(this);
 	}
 
 	inline void FinishDrawing() {
+		if (!U::Offsets.m_dwFinishDrawing) return;
 		reinterpret_cast<void(__thiscall*)(void*)>(U::Offsets.m_dwFinishDrawing)(this);
 	}
 };

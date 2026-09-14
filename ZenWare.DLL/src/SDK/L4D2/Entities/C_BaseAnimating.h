@@ -101,7 +101,11 @@ public:
 		if (!pHdr)
 			return false;
 
-		const mstudiohitboxset* pSet = pHdr->pHitboxSet(this->m_nHitboxSet());
+		const int nSet = this->m_nHitboxSet();
+		if (nSet < 0 || nSet >= pHdr->numhitboxsets)
+			return false;
+
+		const mstudiohitboxset* pSet = pHdr->pHitboxSet(nSet);
 
 		if (!pSet)
 			return false;

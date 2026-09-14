@@ -24,7 +24,7 @@ do trzech narzędzi w jednym rozwiązaniu (`ZenWare.sln`, `Release | Win32`):
 | Część | Tryb | Co robi | Wynik |
 |---|---|---|---|
 | `ZenWare.DLL` | Internal (wstrzykiwany) | Pełny cheat: narożnikowy ESP, chamsy, aimbot, ruch, menu w grze | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` | GUI loader, tylko lokalny build | Inject manual-map / LoadLibrary, skórki, 8 języków | lokalny `dist/ZenWare.exe`, nigdy nie publikowany |
+| `ZenWare.Loader` | GUI loader, tylko lokalny build | Inject LoadLibrary (kod manual-map jest, ale niepodłączony), skórki, 8 języków | lokalny `dist/ZenWare.exe`, nigdy nie publikowany |
 | `ZenWare.External` | External (bez injectu) | Odczyt RPM + nakładka GDI + bhop/strafe przez `SendInput` | `bin/Release/ZenWare.External.exe` |
 
 Nowy w temacie? Zacznij od **External** — nigdy nie zapisuje do pamięci gry,
@@ -38,14 +38,15 @@ Licencja: [LICENSE](LICENSE) · Budowa: [ARCHITECTURE.md](ARCHITECTURE.md).
 nie działa na loader locku), a `Entry::Load` idzie po uporządkowanej ścieżce
 fail-closed: logger → rejestratory crashy → czekanie na `serverbrowser.dll` →
 skan sygnatur (z cache RVA `ZenWare.offsets`) → interfejsy (`VEngineCvar007`
-najpierw z `vstdlib.dll`) → netvary → hooki `MinHook` → wczytanie configu.
-Brak sygnatury lub interfejsu = message box, nie crash.
+najpierw z `vstdlib.dll`) → wczytanie configu → diagnostyka netvarów → menedżer
+rysowania → hooki `MinHook`. Brak sygnatury lub interfejsu = message box, nie
+crash.
 
 Na każdą klatkę działają dwa łańcuchy:
 
-- **Tick** (`ClientMode::CreateMove`) — predykcja, ruch (BunnyHop →
-  AutoStrafe → JumpStats → AutoShove), walka (Aimbot → TriggerBot →
-  AutoPistol → NoSpread). Oryginał silnika wołany jest dokładnie raz na tick.
+- **Tick** (`ClientMode::CreateMove`) — ruch (BunnyHop → AutoStrafe →
+  JumpStats), potem walka (Aimbot → TriggerBot → AutoPistol → NoSpread),
+  potem AutoShove. Oryginał silnika wołany jest dokładnie raz na tick.
 - **Klatka** (`EngineVGui::Paint`, tylko `PAINT_UIPANELS`) — cvary
   thirdperson / fullbright / hide-hands, tick killfeeda i hitmarkera, ESP,
   radar, alerty, menu, celownik, podgląd granatów, nakładka i animowane rysowanie
@@ -57,9 +58,9 @@ czytane są tylko przez netvary ze sprawdzeniem `ClassID` przed wołaniem virtua
 
 **Loader.** GUI Win32 ze splashem, motywem ciemnym/jasnym z systemu, 8
 językami i animowanym logo RGB. DLL, External i logo są wbudowane jako zasoby —
-jeden plik wynikowy. Inject manual-map (relokacje, importy, ochrona sekcji,
-czyszczenie nagłówków) z fallbackiem do `LoadLibrary`. Bez sieci, bez
-auto-aktualizacji.
+jeden plik wynikowy. Inject to zdalny LoadLibraryW (implementacja manual-map z
+relokacjami/importami/ochroną sekcji/czyszczeniem nagłówków istnieje w kodzie,
+ale nie jest podłączona do przycisku INJECT). Bez sieci, bez auto-aktualizacji.
 
 **External.** Tylko odczyt: snapshoty `ReadProcessMemory` 20 Hz, nakładka GDI
 click-through 60 Hz, ruch tylko przez `SendInput`. Resolver (sygnatura +
@@ -101,7 +102,7 @@ kotwica + walidacja) odnajduje adresy przy każdym starcie.
 - **Na broń** — własne FOV / wygładzanie / hitbox na grupę (karabiny, SMG,
   strzelby, snajperki, pistolety)
 - **Pomocnicy** — TriggerBot (strzela na promieniu post-aim, bez laga ticka),
-  AutoShove (uwalnia przypiętych), AutoPistol, NoSpread (whitelista 11 broni,
+  AutoShove (uwalnia przypiętych), AutoPistol, NoSpread (whitelista 14 broni,
   domyślnie włączony)
 
 </details>
@@ -180,7 +181,7 @@ Tylko external (bez injectu): uruchom lokalny
 | `F11` | Wyładuj |
 | `F7` | Język EN / RU / DE / ES / PT / PL / FR / ZH |
 | `Space` (przytrzymaj) | BunnyHop (domyślnie) |
-| `MOUSE4` (przytrzymaj) | Aimbot (domyślnie) |
+| `MOUSE4` (przytrzymaj) | BunnyHop (klawisz alt) |
 
 Przebindowanie: `Misc → Menu key / Aimbot key` — klik → `[press key]` → wciśnij klawisz, `ESC` = off.
 Klawisz paniki chowa boksy natychmiast (`Visuals → ESP`).
@@ -188,7 +189,7 @@ Klawisz paniki chowa boksy natychmiast (`Visuals → ESP`).
 ### Configi i logi
 
 - Sloty obok ścieżki DLL gry: `ZenWare.cfg`, `ZenWare2.cfg`,
-  `ZenWare3.cfg` — zwykłe `key=value`, 117 kluczy. Wartości sesyjne
+  `ZenWare3.cfg` — zwykłe `key=value`, 121 kluczy. Wartości sesyjne
   (liczniki JB/EB) nigdy nie są zapisywane.
 - Log: `<gamedir>/left4dead2/ZenWare.log`. Crash wygląda tak:
   `[!!!] EXCEPTION code=... at module+0x...` + ostatni breadcrumb — ta para

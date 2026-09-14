@@ -218,11 +218,11 @@ void CFeatures_JumpStats::Draw()
 	const int cy = G::Draw.m_nScreenH / 2 + 76;
 
 	//ShowTick 0 = ни разу не файрило: без проверки баннер горит на спавне.
-	if (Vars::BunnyHop::nJbShowTick != 0 && I::GlobalVars->tickcount < Vars::BunnyHop::nJbShowTick + 66)
+	if (Vars::BunnyHop::nJbShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nJbShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nJbShowTick + 66)
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 18, Color(0, 255, 171, 255), TXT_CENTERXY, "JUMPBUG");
-	if (Vars::BunnyHop::nEbShowTick != 0 && I::GlobalVars->tickcount < Vars::BunnyHop::nEbShowTick + 66)
+	if (Vars::BunnyHop::nEbShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nEbShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nEbShowTick + 66)
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 34, Color(255, 220, 0, 255), TXT_CENTERXY, "EDGEBUG");
-	if (Vars::BunnyHop::nEjShowTick != 0 && I::GlobalVars->tickcount < Vars::BunnyHop::nEjShowTick + 66)
+	if (Vars::BunnyHop::nEjShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nEjShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nEjShowTick + 66)
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 50, Color(0, 200, 255, 255), TXT_CENTERXY, "EDGEJUMP");
 
 	const Color clrGood(0, 255, 171, 255);

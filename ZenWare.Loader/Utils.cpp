@@ -53,10 +53,14 @@ namespace
 
 		wcscat_s(pPacket->wszText, L"\r\n");
 
-		if (hwndLog && IsWindow(hwndLog))
-			PostMessageW(hwndLog, LoaderUtil::WM_APP_LOADER, static_cast<WPARAM>(nKind), reinterpret_cast<LPARAM>(pPacket));
-		else
-			delete pPacket; //window already gone: file log keeps the line anyway
+		if (!(hwndLog && IsWindow(hwndLog)))
+		{
+			delete pPacket;
+		}
+		else if (!PostMessageW(hwndLog, LoaderUtil::WM_APP_LOADER, static_cast<WPARAM>(nKind), reinterpret_cast<LPARAM>(pPacket)))
+		{
+			delete pPacket; // queue full or window died between check and post
+		}
 	}
 }
 

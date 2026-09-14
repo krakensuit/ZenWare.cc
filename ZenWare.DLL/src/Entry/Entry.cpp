@@ -218,6 +218,8 @@ void CGlobal_ModuleEntry::Load()
 			szMissing.append("ClientMode/GlobalVars patterns\n");
 		if (!U::Offsets.m_dwMoveHelper)
 			szMissing.append("MoveHelper pattern\n");
+		if (!U::Offsets.m_dwStartDrawing || !U::Offsets.m_dwFinishDrawing)
+			szMissing.append("StartDrawing/FinishDrawing patterns\n");
 
 		if (!szMissing.empty())
 		{

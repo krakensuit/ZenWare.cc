@@ -458,6 +458,7 @@ bool CManualMapper::ResolveImports(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pIma
 	}
 
 	const DWORD dwImageSize = pNt->OptionalHeader.SizeOfImage;
+	const BYTE* const pImageEnd = pImage + dwImageSize;
 	const auto* const pDescEnd = reinterpret_cast<const IMAGE_IMPORT_DESCRIPTOR*>(pImage + dir.VirtualAddress + dir.Size);
 
 	auto* pDesc = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(pImage + dir.VirtualAddress);
@@ -494,8 +495,19 @@ bool CManualMapper::ResolveImports(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pIma
 
 		DWORD dwCount = 0;
 
-		for (; pOrig->u1.AddressOfData != 0; ++pOrig, ++pFirst, ++dwCount, ++dwTotalFuncs)
+		while (true)
 		{
+			//Thunk walk must stay inside the image: a corrupt import would
+			//otherwise read/write past SizeOfImage.
+			if (reinterpret_cast<BYTE*>(pOrig + 1) > pImageEnd || reinterpret_cast<BYTE*>(pFirst + 1) > pImageEnd)
+			{
+				fnLog(hwndLog, "[!] Import thunk out of image bounds.");
+				return false;
+			}
+
+			if (pOrig->u1.AddressOfData == 0)
+				break;
+
 			FARPROC pFunction = nullptr;
 			char szFn[96] = { };
 
@@ -528,6 +540,11 @@ bool CManualMapper::ResolveImports(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pIma
 
 			fnLog(hwndLog, "      %s!%s -> 0x%08X", szModuleName, szFn, reinterpret_cast<DWORD>(pFunction));
 			pFirst->u1.Function = reinterpret_cast<DWORD>(pFunction);
+
+			++pOrig;
+			++pFirst;
+			++dwCount;
+			++dwTotalFuncs;
 		}
 
 		fnLog(hwndLog, "    [%2lu] %-24s : %lu functions", dwTotalModules + 1, szModuleName, dwCount);
@@ -658,8 +675,8 @@ bool CManualMapper::CallEntryAndWipeHeaders(HWND hwndLog, LoaderLog::Fn fnLog, c
 				static_cast<unsigned long>(GetTickCount64() - nThreadStart), dwExit);
 			break;
 		case WAIT_TIMEOUT:
-			fnLog(hwndLog, "[!] Thread still running after 10 s (init thread may still work). exit=%lu", dwExit);
-			break;
+			fnLog(hwndLog, "[!] stub thread timed out; leaking stub to avoid crash");
+			return false; // leak pRemoteStub: the thread may still execute it
 		default:
 			fnLog(hwndLog, "[!] WaitForSingleObject returned 0x%08X.", dwWait);
 			break;
@@ -737,6 +754,7 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 
 	bool bResult = false;
 	LPVOID pRemotePath = nullptr;
+	DWORD dwWait = WAIT_OBJECT_0; // path buffer freed only after the remote thread finishes
 
 	do
 	{
@@ -760,7 +778,7 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 		wchar_t wszCheck[MAX_PATH] = { };
 		//Read-back строго в размер буфера: путь длиннее MAX_PATH-1 символов
 		//иначе переполнял wszCheck (nBytes доходит до 520 при 512-байтном буфере).
-		ReadProcessMemory(hProcess, pRemotePath, wszCheck, (nBytes < sizeof(wszCheck)) ? nBytes : sizeof(wszCheck), nullptr);
+		ReadProcessMemory(hProcess, pRemotePath, wszCheck, (nBytes < sizeof(wszCheck) - sizeof(wchar_t)) ? nBytes : sizeof(wszCheck) - sizeof(wchar_t), nullptr);
 		fnLog(hwndLog, "[+] Path written and read back: %ls", wszCheck);
 
 		fnStatus(hwndLog, LoaderUtil::S("Вызов LoadLibraryW", "Calling LoadLibraryW", "LoadLibraryW aufrufen", "Llamando LoadLibraryW", "Chamando LoadLibraryW", "Wywołanie LoadLibraryW", "Appel LoadLibraryW", "正在调用 LoadLibraryW"));
@@ -782,7 +800,7 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 			break;
 		}
 
-		const DWORD dwWait = WaitForSingleObject(hThread, 10 * 1000);
+		dwWait = WaitForSingleObject(hThread, 10 * 1000);
 		DWORD dwModuleBase = 0;
 		GetExitCodeThread(hThread, &dwModuleBase);
 		CloseHandle(hThread);
@@ -805,7 +823,12 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 	} while (false);
 
 	if (pRemotePath)
-		VirtualFreeEx(hProcess, pRemotePath, 0, MEM_RELEASE);
+	{
+		if (dwWait == WAIT_OBJECT_0)
+			VirtualFreeEx(hProcess, pRemotePath, 0, MEM_RELEASE);
+		else
+			fnLog(hwndLog, "[!] Path buffer leaked: remote LoadLibrary thread may still read it.");
+	}
 
 	CloseHandle(hProcess);
 	return bResult;

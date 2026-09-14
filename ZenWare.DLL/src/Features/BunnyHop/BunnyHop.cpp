@@ -161,12 +161,12 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		ZTRACE_FIRST("BunnyHop:edgejump");
 	}
 
-	s_bWasOnGround = bOnGround;
-
 	//Временная диагностика (v3.8.12): ТОЛЬКО переходы земля/воздух, объём
 	//крошечный. Показывает: приходит ли IN_JUMP в cmd на посадке, какие флаги
 	//видит фича и как далеко друг от друга тики. Убрать после локализации.
-	if (s_bWasOnGround != bOnGround)
+	const bool bPrevGround = s_bWasOnGround;
+	s_bWasOnGround = bOnGround;
+	if (bPrevGround != bOnGround)
 		U::Log.Write("[bh] %s tick=%u cmd=%u flags=0x%02X jump_in_cmd=%d",
 			bOnGround ? "ground" : "air",
 			cmd->tick_count, cmd->command_number,
@@ -176,7 +176,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	//Prestrafe: slight forward boost when on ground to build speed faster.
 	if (Vars::BunnyHop::bPrestrafe && bOnGround && bWantJump)
 	{
-		if (cmd->forwardmove >= 0.0f && cmd->forwardmove < 300.0f)
+		if (cmd->forwardmove > 0.0f && cmd->forwardmove < 300.0f)
 			cmd->forwardmove = 450.0f;
 	}
 

@@ -80,7 +80,7 @@ void Overlay::FollowGame()
 	RECT rc = { };
 	GetWindowRect(game, &rc);
 	int w = rc.right - rc.left, h = rc.bottom - rc.top;
-	if (w != m_w || h != m_h || true)
+	if (w != m_w || h != m_h)
 	{
 		// Пересоздаём бэкбуфер под новый размер
 		if (m_oldBmp) { SelectObject(m_mem, m_oldBmp); m_oldBmp = nullptr; }
@@ -101,8 +101,8 @@ void Overlay::FollowGame()
 			m_oldBmp = (HBITMAP)SelectObject(m_mem, m_bmp);
 			m_oldFont = (HFONT)SelectObject(m_mem, m_font);
 			SetBkMode(m_mem, TRANSPARENT);
+			m_w = w; m_h = h;
 		}
-		m_w = w; m_h = h;
 		// Позиция оверлея = позиция окна игры (рамка в windowed-режиме входит)
 		SetWindowPos(m_hwnd, HWND_TOPMOST, rc.left, rc.top, w, h, SWP_NOACTIVATE | SWP_SHOWWINDOW);
 	}
@@ -157,7 +157,7 @@ void Overlay::Text(int x, int y, COLORREF c, const wchar_t* fmt, ...)
 
 void Overlay::EndFrame()
 {
-	if (!m_hwnd || !m_mem || !m_w || !m_h)
+	if (!m_hwnd || !m_mem || !m_bmp || !m_w || !m_h)
 		return;
 	POINT src = { 0, 0 };
 	SIZE sz = { m_w, m_h };

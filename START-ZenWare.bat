@@ -1,6 +1,6 @@
 @echo off
 setlocal
-REM ZenWare one-file launcher: starts L4D2 (-insecure, windowed) then the External overlay.
+REM ZenWare external launcher: starts L4D2 (-insecure, windowed) then the External overlay.
 REM Just double-click this file.
 
 set STEAM=

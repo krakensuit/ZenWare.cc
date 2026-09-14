@@ -35,9 +35,9 @@ All notable changes to ZenWare.cc are documented here.
 ### Known crashes / Известные вылеты
 - All 7 exceptions recorded in the game log (0x12D09/0x12DF9 ESP::Render,
   0x5AD5 Aimbot commons, 0x12979, 0x1B36D, one inside engine.dll) happened on
-  builds older than 3.8.5-3.8.7 and are covered by those fixes; the eight
+  builds 3.8.7 and earlier and are covered by those fixes; the eight
   sessions on 3.8.8+ contain zero exceptions. Все 7 исключений в логе
-  произошли на сборках старше 3.8.5-3.8.7 и покрыты их фиксами; восемь
+  произошли на сборках 3.8.7 и ранее и покрыты их фиксами; восемь
   сессий на 3.8.8+ — ни одного исключения.
 
 ## [3.8.12] - 2026-09-13

@@ -38,6 +38,12 @@ namespace Lang
 		}
 	}
 
+	inline const char* NameEn(int n)
+	{
+		static const char* const aNames[] = { "English", "Russian", "German", "Spanish", "Portuguese", "Polish", "French", "Chinese" };
+		return (n >= 0 && n < kCount) ? aNames[n] : "English";
+	}
+
 	inline void Next() { Vars::Menu::nLang = (Cur() + 1) % kCount; }
 
 	inline const char* T(const char* szEn)

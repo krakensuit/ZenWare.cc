@@ -18,6 +18,13 @@ bool CPEHelper::ValidateImage(const std::vector<BYTE>& vecFile)
 	if (pNt->Signature != IMAGE_NT_SIGNATURE) //'PE\0\0'
 		return false;
 
+	//Section headers must fit inside the file: a corrupt NumberOfSections would
+	//otherwise read past the buffer in BuildLocalImage/ProtectSections.
+	const size_t nSectionTableEnd = static_cast<size_t>(pDos->e_lfanew) + sizeof(IMAGE_NT_HEADERS)
+		+ static_cast<size_t>(pNt->FileHeader.NumberOfSections) * sizeof(IMAGE_SECTION_HEADER);
+	if (nSectionTableEnd > vecFile.size())
+		return false;
+
 	//This mapper is x86-only: the target game is 32-bit.
 	if (pNt->FileHeader.Machine != IMAGE_FILE_MACHINE_I386)
 		return false;

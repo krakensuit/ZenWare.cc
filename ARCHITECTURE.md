@@ -17,23 +17,26 @@ ZenWare.sln (Release | Win32, x86, /MT, C++17)
 ```text
 DllMain → Entry::Load (Entry/Entry.cpp)
   ├─ Logger::Init (%TEMP%\ZenWare.log → <gamedir>\ZenWare.log)
+  ├─ Crash recorders (VEH + UEF + terminate/abort/purecall/invalid-param)
+  ├─ serverbrowser.dll wait (30 s timeout)
   ├─ Offsets::Init (pattern scan, or ZenWare.offsets cache)
   ├─ Interfaces (client/engine/vguimatsurface, no engine virtuals at startup)
-  ├─ NetVarManager (recv-table offsets)
+  ├─ Config::Load (<gamedir>\ZenWare[2|3].cfg)
+  ├─ NetVarManager (recv-table offsets diagnostics)
+  ├─ Draw manager init (fonts)
   ├─ Hooks::Init (MinHook + VTable)
   │    ├─ ClientMode::CreateMove  → per-tick logic (aim/movement)
   │    ├─ EngineVGui::Paint       → per-frame render (ESP/menu/overlay)
   │    └─ WndProc                 → menu keys, wheel, input block
-  ├─ Config::Load (<gamedir>\ZenWare[2|3].cfg)
-  └─Unload (F11) → unhook → FreeLibrary
+  └─ Unload (F11) → unhook → FreeLibrary
 ```
 
 ## Per-tick (CreateMove) / Каждый тик
 
-`Hooks/ClientMode/ClientMode.cpp` → `EnginePrediction.Start` →
-`BunnyHop / AutoStrafe / JumpStats / AutoShove` (no weapon needed) →
+`Hooks/ClientMode/ClientMode.cpp` →
+`BunnyHop / AutoStrafe / JumpStats` (no weapon needed) →
 `Aimbot / TriggerBot / AutoPistol / NoSpread` (needs `C_TerrorWeapon*`) →
-`EnginePrediction.Finish`. Hitmarker shot counter ticks on `IN_ATTACK` edge.
+`AutoShove` (after combat). Hitmarker shot counter ticks on `IN_ATTACK` edge.
 
 ## Per-frame (Paint) / Каждый кадр
 
@@ -51,7 +54,7 @@ Health polling (killfeed deaths, hitmarker damage, team panel, alerts) all read
   Floats edited via int slider proxies (`nFOVSlider` → `flFOV`, synced in `Menu::Render`).
 - `Features/Config/` — explicit `key=value` table (`ZenWare.cfg` + slots 2/3).
   Missing keys keep defaults; slot is session-only (not persisted).
-- `Features/Lang/` — `Lang::T(en)` EN→RU map; internal IDs stay English.
+- `Features/Lang/` — `Lang::T(en)` EN→{RU,DE,ES,PT,PL,FR,ZH} (8 languages); internal IDs stay English.
 - `Features/Menu/` — immediate-mode custom UI (320x480, tabs, wheel scroll).
 - `Util/Offsets/` — pattern scans + `ZenWare.offsets` cache (module fingerprint).
 - `SDK/` — minimal L4D2 reversing layer (entities, interfaces, math, trace).

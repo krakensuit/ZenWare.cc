@@ -470,8 +470,9 @@ void CFeatures_Menu::Render(){
      Button(mouse,szSlot,[](){ F::Config.SetSlot(F::Config.GetSlot()%3+1); });
      Button(mouse,"Load config",[](){F::Config.Load();});
     BindRow(mouse,"Menu key",&Vars::Menu::nKey);
-     static char szLang[32]; sprintf_s(szLang,"Language: %s >",Lang::Name(Lang::Cur()));
-     Button(mouse,szLang,[](){ Lang::Next(); });
+     static char szKey[32]; sprintf_s(szKey,"Language: %s >",Lang::NameEn(Lang::Cur()));
+     const char* szLabel = Lang::T(szKey);
+     Button(mouse,szLabel,[](){ Lang::Next(); });
     SectionLabel("STYLE");
     ColorSwatches(mouse,"Menu accent",&Vars::Menu::clrAccent);
     ColorSwatches(mouse,"ESP enemy",&Vars::Chams::clrEnemy);

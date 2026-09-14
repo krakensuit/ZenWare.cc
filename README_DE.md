@@ -36,7 +36,7 @@ und ist zu drei Tools in einer Solution gewachsen (`ZenWare.sln`, `Release | Win
 | Teil | Modus | Was es tut | Output |
 |---|---|---|---|
 | `ZenWare.DLL` | Internal (injected) | Voller Cheat: Ecken-ESP, Chams, Aimbot, Movement, Ingame-Menü | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` | GUI-Loader, nur lokaler Build | Manual-map / LoadLibrary-Inject, Themes, 8 Sprachen | lokales `dist/ZenWare.exe`, wird nie veröffentlicht |
+| `ZenWare.Loader` | GUI-Loader, nur lokaler Build | LoadLibrary-Inject (Manual-Map-Code vorhanden, aber nicht verdrahtet), Themes, 8 Sprachen | lokales `dist/ZenWare.exe`, wird nie veröffentlicht |
 | `ZenWare.External` | External (kein Inject) | RPM-Reads + GDI-Overlay + Bhop/Strafe per `SendInput` | `bin/Release/ZenWare.External.exe` |
 
 Neu hier? Starte mit dem **External**-Overlay — es schreibt nie in den
@@ -50,15 +50,14 @@ Lizenz: [LICENSE](LICENSE) · Aufbau: [ARCHITECTURE.md](ARCHITECTURE.md).
 nie auf dem Loader-Lock), `Entry::Load` folgt einer fail-closed Reihenfolge:
 Logger → Crash-Recorder → Warten auf `serverbrowser.dll` → Pattern-Scan
 (mit RVA-Cache `ZenWare.offsets`) → Interfaces (`VEngineCvar007` zuerst in
-`vstdlib.dll`) → Netvars → `MinHook`-Hooks → Config laden. Fehlendes Pattern
-oder Interface = MessageBox statt Crash.
+`vstdlib.dll`) → Config laden → Netvar-Diagnose → Draw-Manager → `MinHook`-
+Hooks. Fehlendes Pattern oder Interface = MessageBox statt Crash.
 
 Pro Frame laufen zwei Ketten:
 
-- **Tick** (`ClientMode::CreateMove`) — Prediction, Movement (BunnyHop →
-  AutoStrafe → JumpStats → AutoShove), Combat (Aimbot → TriggerBot →
-  AutoPistol → NoSpread). Das Engine-Original wird exakt einmal pro Tick
-  aufgerufen.
+- **Tick** (`ClientMode::CreateMove`) — Movement (BunnyHop → AutoStrafe →
+  JumpStats), dann Combat (Aimbot → TriggerBot → AutoPistol → NoSpread), dann
+  AutoShove. Das Engine-Original wird exakt einmal pro Tick aufgerufen.
 - **Frame** (`EngineVGui::Paint`, nur `PAINT_UIPANELS`) — Thirdperson- /
   Fullbright- / Hide-Hands-CVars, Killfeed-Tick, Hitmarker-Tick, ESP, Radar,
   Alerts, Menü, Crosshair, Granaten-Vorschau, Overlay und animierte
@@ -71,8 +70,9 @@ gelesen.
 
 **Loader.** Win32-GUI mit Splash, System-Dark/Light-Theme, 8 Sprachen und
 animiertem RGB-Logo. DLL, External und Logo sind als Ressourcen eingebettet —
-ein Output-File. Inject per Manual-Map (Relocations, Imports, Section-
-Schutz, Header-Wipe) mit `LoadLibrary`-Fallback. Kein Netzwerk, kein
+ein Output-File. Inject ist remote LoadLibraryW (die Manual-Map-Implementierung
+mit Relocations/Imports/Section-Schutz/Header-Wipe existiert im Code, ist aber
+aktuell nicht mit dem INJECT-Button verdrahtet). Kein Netzwerk, kein
 Auto-Update.
 
 **External.** Nur lesend: `ReadProcessMemory`-Snapshots mit 20 Hz,
@@ -115,7 +115,7 @@ Resolver (Signatur + Anker + Validierung) findet Adressen bei jedem Start.
 - **Pro Waffe** — eigene FOV / Smoothing / Hitbox pro Gruppe (Rifles, SMGs,
   Shotguns, Sniper, Pistolen)
 - **Helfer** — TriggerBot (schießt auf dem Post-Aim-Strahl, kein 1-Tick-Lag),
-  AutoShove (befreit gepinnte Mates), AutoPistol, NoSpread (11-Waffen-
+  AutoShove (befreit gepinnte Mates), AutoPistol, NoSpread (14-Waffen-
   Whitelist, standardmäßig an)
 
 </details>
@@ -193,7 +193,7 @@ Nur External (kein Inject): lokales
 | `F11` | Unload |
 | `F7` | Sprache EN / RU / DE / ES / PT / PL / FR / ZH |
 | `Space` (halten) | BunnyHop (Standard) |
-| `MOUSE4` (halten) | Aimbot (Standard) |
+| `MOUSE4` (halten) | BunnyHop (Alt-Taste) |
 
 Umbinden: `Misc → Menu key / Aimbot key` — Klick → `[press key]` → Taste drücken, `ESC` = aus.
 Panic-Key versteckt alle Boxen sofort (`Visuals → ESP`).
@@ -201,7 +201,7 @@ Panic-Key versteckt alle Boxen sofort (`Visuals → ESP`).
 ### Configs & Logs
 
 - Slots neben dem Spiel-DLL-Pfad: `ZenWare.cfg`, `ZenWare2.cfg`,
-  `ZenWare3.cfg` — plain `key=value`, 117 Keys. Session-Werte (JB/EB-
+  `ZenWare3.cfg` — plain `key=value`, 121 Keys. Session-Werte (JB/EB-
   Zähler) werden nie gespeichert.
 - Log: `<gamedir>/left4dead2/ZenWare.log`. Crashs sehen so aus:
   `[!!!] EXCEPTION code=... at module+0x...` + letzte Breadcrumb — das Paar

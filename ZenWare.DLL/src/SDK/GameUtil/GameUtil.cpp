@@ -105,9 +105,15 @@ IMaterial* CGlobal_GameUtil::CreateMaterial(const char* const szVars)
 
 	KeyValues* pKvals = new KeyValues;
 	if (!G::KeyVals.Init(pKvals, (char*)szOut))
+	{
+		delete pKvals;
 		return nullptr;
+	}
 	if (!G::KeyVals.LoadFromBuffer(pKvals, szOut, szMat))
+	{
+		delete pKvals;
 		return nullptr;
+	}
 
 	IMaterial* pMat = I::MaterialSystem->CreateMaterial(szOut, pKvals);
 	if (!IsErrorMaterial(pMat) && pMat)

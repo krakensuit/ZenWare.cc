@@ -61,6 +61,18 @@ if not exist "%GAMEBIN%\client.dll" (
   pause
   exit /b 1
 )
+if not exist "%ROOTBIN%\engine.dll" (
+  echo [Verify] engine.dll not found at "%ROOTBIN%\engine.dll"
+  echo Edit STEAM path at the top of this file if Steam lives elsewhere.
+  pause
+  exit /b 1
+)
+if not exist "%ROOTBIN%\vguimatsurface.dll" (
+  echo [Verify] vguimatsurface.dll not found at "%ROOTBIN%\vguimatsurface.dll"
+  echo Edit STEAM path at the top of this file if Steam lives elsewhere.
+  pause
+  exit /b 1
+)
 
 echo [Verify] Checking patterns against:
 echo [Verify]   %GAMEBIN%\client.dll

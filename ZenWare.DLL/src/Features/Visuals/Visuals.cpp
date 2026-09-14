@@ -303,7 +303,7 @@ void CFeatures_Visuals::DrawCrosshair()
 				const int nType = pActive->m_iPrimaryAmmoType();
 				if (nType >= 0 && nType < 32)
 				{
-					const int* pAmmo = (const int*)pLocal->m_iAmmo();
+					const int* pAmmo = reinterpret_cast<const int*>(&pLocal->m_iAmmo());
 					if (pAmmo && pAmmo[nType] >= 0 && pAmmo[nType] <= 9999)
 						nReserve = pAmmo[nType];
 				}

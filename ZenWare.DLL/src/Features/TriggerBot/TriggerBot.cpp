@@ -49,8 +49,9 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 	C_TerrorPlayer* pTarget = G::Util.IsPlayerEntity(pHit) ? pHit->As<C_TerrorPlayer*>() : nullptr;
 
 	//Видимость уже доказана самим попаданием кроссхейр-трейса: глаз-в-глаза
-	//проверка здесь душила бы огонь при видимой голове и закрытой груди.
-	if (G::Util.IsValidTarget(pLocal, pTarget, false))
+	//проверка здесь душила бы огонь при видимой голове и закрытой груди, поэтому
+	//bVisibleOnly по умолчанию выключен, а строгий глаз-в-глаза включает сам юзер.
+	if (G::Util.IsValidTarget(pLocal, pTarget, Vars::TriggerBot::bVisibleOnly))
 	{
 		cmd->buttons |= IN_ATTACK;
 		return;

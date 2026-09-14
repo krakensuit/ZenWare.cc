@@ -46,7 +46,7 @@ namespace Vars
 	namespace TriggerBot
 	{
 		inline bool bEnabled = false;
-		inline bool bVisibleOnly = true;
+		inline bool bVisibleOnly = false;
 		inline int nKey = 0; //0 = always while crosshair on target
 	}
 

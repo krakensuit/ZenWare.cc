@@ -722,7 +722,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    }
   } break;
  case WM_MOUSEMOVE:{
-  POINT pt{GET_X_LPARAM(l),GET_Y_LPARAM(l)}; ClientToScreen(h,&pt);
+  POINT pt{GET_X_LPARAM(l),GET_Y_LPARAM(l)};
   HWND ch=ChildWindowFromPointEx(h,pt,CWP_SKIPINVISIBLE);
   int id=ch?GetDlgCtrlID(ch):0;
    for(int b:{IDC_LAUNCH,IDC_INJECT}){ HWND bh=GetDlgItem(h,b);

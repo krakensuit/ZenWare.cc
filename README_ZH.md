@@ -23,7 +23,7 @@ VAC，不碰官方服务器，不提供成品二进制。
 | 部分 | 模式 | 功能 | 产物 |
 |---|---|---|---|
 | `ZenWare.DLL` | 内部（注入） | 完整功能：边角 ESP、Chams、自瞄、身法、游戏内菜单 | `bin/Release/ZenWare.dll`（x86，/MT） |
-| `ZenWare.Loader` | GUI 启动器，仅本地构建 | Manual-map / LoadLibrary 注入、主题、8 种语言 | 本地 `dist/ZenWare.exe`，从不发布 |
+| `ZenWare.Loader` | GUI 启动器，仅本地构建 | LoadLibrary 注入（manual-map 代码存在但未接入）、主题、8 种语言 | 本地 `dist/ZenWare.exe`，从不发布 |
 | `ZenWare.External` | 外部（不注入） | RPM 读取 + GDI 覆盖层 + `SendInput` 连跳/压枪 | `bin/Release/ZenWare.External.exe` |
 
 新手？先玩 **External**——它从不写游戏内存，是学习整条管线最安全的方式。
@@ -35,14 +35,14 @@ VAC，不碰官方服务器，不提供成品二进制。
 **内部 DLL。**注入时 `DllMain` 起一个线程（逻辑绝不在 loader 锁上跑），
 `Entry::Load` 按 fail-closed 顺序初始化：日志 → 崩溃记录器 → 等
 `serverbrowser.dll` → 特征码扫描（带 RVA 缓存 `ZenWare.offsets`）→ 接口
-（`VEngineCvar007` 先从 `vstdlib.dll` 拿）→ netvar → `MinHook` 挂钩 →
-加载配置。缺特征码或接口 = 弹窗，而不是崩溃。
+（`VEngineCvar007` 先从 `vstdlib.dll` 拿）→ 加载配置 → netvar 诊断 → 绘制
+管理器 → `MinHook` 挂钩。缺特征码或接口 = 弹窗，而不是崩溃。
 
 每帧跑两条链：
 
-- **Tick**（`ClientMode::CreateMove`）——预测、移动（BunnyHop →
-  AutoStrafe → JumpStats → AutoShove）、战斗（Aimbot → TriggerBot →
-  AutoPistol → NoSpread）。引擎原函数每 tick 只调一次。
+- **Tick**（`ClientMode::CreateMove`）——移动（BunnyHop → AutoStrafe →
+  JumpStats），再战斗（Aimbot → TriggerBot → AutoPistol → NoSpread），再
+  AutoShove。引擎原函数每 tick 只调一次。
 - **帧**（`EngineVGui::Paint`，仅 `PAINT_UIPANELS`）——第三人称 /
   fullbright / 隐藏手臂 cvar、killfeed 与 hitmarker 的 tick、ESP、雷达、
   告警、菜单、准星、手雷预览、覆盖层，以及 killfeed / hitmarker /
@@ -54,8 +54,8 @@ VAC，不碰官方服务器，不提供成品二进制。
 
 **启动器。**Win32 界面，带闪屏、跟随系统深色/浅色主题、8 种语言、动画
 RGB 图标。DLL、External 与图标都以内嵌资源打包——只有一个输出文件。
-Manual-map 注入（重定位、导入表、区段保护、擦头部），失败回退
-`LoadLibrary`。无网络，无自动更新。
+注入为远程 LoadLibraryW（manual-map 实现含重定位/导入表/区段保护/擦头，
+代码中存在，但目前未接入 INJECT 按钮）。无网络，无自动更新。
 
 **外部端。**只读：20 Hz 的 `ReadProcessMemory` 快照、60 Hz 的穿透式 GDI
 覆盖层、移动只用 `SendInput`。解析器（特征 + 锚点 + 校验）每次启动重新
@@ -90,7 +90,7 @@ Manual-map 注入（重定位、导入表、区段保护、擦头部），失败
   普感 + 全部特感 + Tank
 - **按武器**——步枪、冲锋枪、霰弹枪、狙击、手枪分组，各自 FOV / 平滑 / 命中点
 - **帮手**——TriggerBot（沿瞄准后射线开火，无 tick 延迟）、AutoShove（推开
-  被控队友）、AutoPistol、NoSpread（11 把枪白名单，默认开）
+  被控队友）、AutoPistol、NoSpread（14 把枪白名单，默认开）
 
 </details>
 
@@ -166,7 +166,7 @@ map c1m1_hotel
 | `F11` | 卸载 |
 | `F7` | 语言 EN / RU / DE / ES / PT / PL / FR / ZH |
 | `Space`（按住） | 连跳（默认） |
-| `MOUSE4`（按住） | 自瞄（默认） |
+| `MOUSE4`（按住） | 连跳（备用键） |
 
 改键：`Misc → Menu key / Aimbot key`——点击 → `[press key]` → 按下按键，`ESC` = 关。
 Panic 键立即隐藏所有框（`Visuals → ESP`）。
@@ -174,7 +174,7 @@ Panic 键立即隐藏所有框（`Visuals → ESP`）。
 ### 配置与日志
 
 - 槽位在游戏 DLL 路径旁：`ZenWare.cfg`、`ZenWare2.cfg`、
-  `ZenWare3.cfg`——纯 `key=value`，117 个键。当局数值（JB/EB 计数）从不保存。
+  `ZenWare3.cfg`——纯 `key=value`，121 个键。当局数值（JB/EB 计数）从不保存。
 - 日志：`<gamedir>/left4dead2/ZenWare.log`。崩溃长这样：
   `[!!!] EXCEPTION code=... at module+0x...` + 最后一条面包屑——有这一对就够，
   不需要 dump。

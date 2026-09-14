@@ -30,7 +30,7 @@ e virou três ferramentas numa solution (`ZenWare.sln`, `Release | Win32`):
 | Parte | Modo | O que faz | Saída |
 |---|---|---|---|
 | `ZenWare.DLL` | Interna (injetada) | Cheat completo: ESP de cantos, chams, aimbot, movimento, menu no jogo | `bin/Release/ZenWare.dll` (x86, /MT) |
-| `ZenWare.Loader` | GUI loader, só build local | Injeção manual-map / LoadLibrary, temas, 8 idiomas | `dist/ZenWare.exe` local, nunca publicado |
+| `ZenWare.Loader` | GUI loader, só build local | Injeção LoadLibrary (código manual-map presente, não ligado), temas, 8 idiomas | `dist/ZenWare.exe` local, nunca publicado |
 | `ZenWare.External` | Externa (sem injeção) | Leitura RPM + overlay GDI + bhop/strafe com `SendInput` | `bin/Release/ZenWare.External.exe` |
 
 Novo nisso? Comece pelo **External** — nunca escreve na memória do jogo, é
@@ -44,15 +44,16 @@ Licença: [LICENSE](LICENSE) · Estrutura: [ARCHITECTURE.md](ARCHITECTURE.md).
 no loader lock) e o `Entry::Load` segue um init ordenado fail-closed:
 logger → crash recorders → espera do `serverbrowser.dll` → scan de padrões
 (com cache RVA `ZenWare.offsets`) → interfaces (`VEngineCvar007` primeiro
-na `vstdlib.dll`) → netvars → hooks `MinHook` → carrega config. Padrão ou
-interface ausente = message box, não crash.
+na `vstdlib.dll`) → carrega config → diagnóstico de netvars → gestor de
+desenho → hooks `MinHook`. Padrão ou interface ausente = message box, não
+crash.
 
 Cada frame rodam duas cadeias:
 
-- **Tick** (`ClientMode::CreateMove`) — predição, movimento (BunnyHop →
-  AutoStrafe → JumpStats → AutoShove), combate (Aimbot → TriggerBot →
-  AutoPistol → NoSpread). O original da engine é chamado exatamente uma vez
-  por tick.
+- **Tick** (`ClientMode::CreateMove`) — movimento (BunnyHop → AutoStrafe →
+  JumpStats), depois combate (Aimbot → TriggerBot → AutoPistol → NoSpread),
+  depois AutoShove. O original da engine é chamado exatamente uma vez por
+  tick.
 - **Frame** (`EngineVGui::Paint`, só `PAINT_UIPANELS`) — cvars de thirdperson
   / fullbright / hide-hands, tick do killfeed e hitmarker, ESP, radar,
   alertas, menu, mira, preview de granadas, overlay e desenho animado de
@@ -65,9 +66,9 @@ virtuais.
 
 **Loader.** GUI Win32 com splash, tema escuro/claro do sistema, 8 idiomas e
 logo RGB animado. DLL, External e logo vão embutidos como recursos — um
-único arquivo de saída. Injeção manual-map (relocs, imports, proteção de
-seções, limpeza de headers) com fallback para `LoadLibrary`. Sem rede, sem
-auto-update.
+único arquivo de saída. A injeção é LoadLibraryW remota (a implementação
+manual-map com relocs/imports/proteção de seções/limpeza de headers existe no
+código, mas não está ligada ao botão INJECT). Sem rede, sem auto-update.
 
 **External.** Só leitura: snapshots `ReadProcessMemory` a 20 Hz, overlay GDI
 click-through a 60 Hz, movimento só com `SendInput`. O resolver (assinatura
@@ -109,7 +110,7 @@ click-through a 60 Hz, movimento só com `SendInput`. O resolver (assinatura
 - **Por arma** — FOV / suavização / hitbox próprios por grupo (fuzis, SMGs,
   escopetas, snipers, pistolas)
 - **Ajudantes** — TriggerBot (atira no raio pós-aim, sem lag de tick),
-  AutoShove (solta colegas presos), AutoPistol, NoSpread (whitelist de 11
+  AutoShove (solta colegas presos), AutoPistol, NoSpread (whitelist de 14
   armas, ligado por padrão)
 
 </details>
@@ -189,7 +190,7 @@ Só external (sem injeção): rode seu
 | `F11` | Descarregar |
 | `F7` | Idioma EN / RU / DE / ES / PT / PL / FR / ZH |
 | `Space` (segurar) | BunnyHop (padrão) |
-| `MOUSE4` (segurar) | Aimbot (padrão) |
+| `MOUSE4` (segurar) | BunnyHop (tecla alt) |
 
 Reatribuir: `Misc → Menu key / Aimbot key` — clique → `[press key]` → aperte a tecla, `ESC` = off.
 A tecla pânico esconde as caixas na hora (`Visuals → ESP`).
@@ -197,7 +198,7 @@ A tecla pânico esconde as caixas na hora (`Visuals → ESP`).
 ### Configs e logs
 
 - Slots junto ao caminho DLL do jogo: `ZenWare.cfg`, `ZenWare2.cfg`,
-  `ZenWare3.cfg` — `key=value` puro, 117 chaves. Valores de sessão
+  `ZenWare3.cfg` — `key=value` puro, 121 chaves. Valores de sessão
   (contadores JB/EB) nunca são salvos.
 - Log: `<gamedir>/left4dead2/ZenWare.log`. Um crash aparece como
   `[!!!] EXCEPTION code=... at module+0x...` + último breadcrumb — esse par

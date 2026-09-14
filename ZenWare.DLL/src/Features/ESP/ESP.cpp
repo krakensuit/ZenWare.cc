@@ -714,7 +714,13 @@ void CFeatures_ESP::DrawThrowables()
 			s_mSeen.clear();
 		return;
 	}
-	if (!Vars::ESP::bThrowTimers || !I::GlobalVars)
+	if (!Vars::ESP::bThrowTimers)
+	{
+		if (!s_mSeen.empty())
+			s_mSeen.clear();
+		return;
+	}
+	if (!I::GlobalVars)
 		return;
 	std::map<int, float> mNow;
 	const float flNow = I::GlobalVars->curtime;
