@@ -3,7 +3,57 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.13.2] - 2026-09-14
+
+### Fixed / Исправлено
+- The loader window after the splash was empty frosted glass: only the native
+  title bar was visible. The Direct2D renderer was left disabled by the
+  "behind the flag" switch from v3.11.2 (`SetEnabled(false)` in `wWinMain`),
+  while v3.13 hid the GDI child controls and created the window with
+  `WS_EX_NOREDIRECTIONBITMAP` for DirectComposition — the combination shows
+  nothing at all. The renderer is enabled again when `Init` succeeds, and if
+  composition failed to come up the `WS_EX_NOREDIRECTIONBITMAP` style is
+  stripped so the legacy/HwndRenderTarget path (or GDI controls) stays visible.
+  Окно лоадера после сплэша было пустым матовым стеклом: виден только нативный
+  тайтлбар. Рендерер Direct2D остался выключенным переключателем «behind the
+  flag» из v3.11.2 (`SetEnabled(false)` в `wWinMain`), а v3.13 тем временем
+  скрыла GDI-контролы и создала окно с `WS_EX_NOREDIRECTIONBITMAP` под
+  DirectComposition — вместе это даёт полностью пустое окно. Рендерер снова
+  включается после успешного `Init`, а если композиция не поднялась, стиль
+  `WS_EX_NOREDIRECTIONBITMAP` снимается, чтобы legacy/HwndRenderTarget-путь
+  (или GDI-контролы) оставались видимыми.
+- The D2D progress bar never animated during injection: the frame state built
+  in `WM_TIMER` lost `busy` (and `dark`/`cursor`). Frame state assembly moved
+  into one `FillFrameState()` used by both the timer and `WM_PAINT`.
+  Прогресс-бар D2D не анимировался во время инжекта: состояние кадра в
+  `WM_TIMER` теряло `busy` (и `dark`/`cursor`). Сборка состояния вынесена в
+  одну `FillFrameState()`, которую используют и таймер, и `WM_PAINT`.
+- Timer-driven rendering duplicated `WM_PAINT` rendering: per-tick
+  invalidations of the GDI-only regions (header, rainbow button, progress
+  area) are now skipped while the D2D interface is enabled.
+  Рендер по таймеру дублировался с рендером из `WM_PAINT`: ежетиковые
+  инвалидации чисто-GDI областей (шапка, радужная кнопка, прогресс) теперь
+  пропускаются, пока интерфейс рисует D2D.
+- On a device lost (TDR, GPU switch) the composition path froze forever:
+  `EndDraw` failure now rebuilds the composition chain (target bitmap, brush,
+  logo) once, and if composition cannot come back the renderer falls back to
+  `HwndRenderTarget` and strips `WS_EX_NOREDIRECTIONBITMAP` from the window.
+  При потере устройства (TDR, переключение GPU) композиция замирала навсегда:
+  теперь ошибка `EndDraw` пересобирает композиционную цепочку (целевой битмап,
+  кисть, логотип), а если композиция не восстанавливается — рендерер уходит на
+  `HwndRenderTarget` и снимает с окна `WS_EX_NOREDIRECTIONBITMAP`.
+- Without any glass backdrop (old OS) the composition frame cleared at alpha
+  0.45 over nothing, so all content rendered dim. The background alpha now
+  falls back to 0.92 when `Glass::IsAvailable()` is false.
+  Без стеклянного бэкдропа (старая ОС) кадр очищался альфой 0.45 «в никуда»,
+  и весь контент рисовался тусклым: альфа фона теперь откатывается к 0.92,
+  если `Glass::IsAvailable()` ложно.
+- Text in the composition path now uses grayscale antialiasing: ClearType on
+  a premultiplied-alpha swap chain produces color fringes.
+  Текст в композиции теперь с grayscale-сглаживанием: ClearType на
+  premultiplied-альфе swapchain даёт цветные ореолы.
+
 ## [3.13.1] - 2026-09-14
 
 ### Fixed / Исправлено

@@ -59,13 +59,15 @@ namespace Zen2D
 			DWRITE_TEXT_ALIGNMENT align, float alpha = 1.0f);
 		void Line(float x0, float y0, float x1, float y1, DWORD rgb, float alpha, float width);
 
-		bool CreateTextFormats();
-		bool LoadLogoFromResource(HINSTANCE hInst);
-		bool CreateCompositionTarget();
-		bool CreateLegacyTarget();
-		bool CreateTargetBitmapFromBackBuffer();
-		void ReleaseComposition();
-		void ReleaseLegacy();
+	bool CreateTextFormats();
+	bool LoadLogoFromResource(HINSTANCE hInst);
+	bool CreateCompositionTarget();
+	bool CreateLegacyTarget();
+	bool CreateTargetBitmapFromBackBuffer();
+	// Девайс-лост (TDR, смена GPU): пересоздаёт композицию, иначе кадр замирает навсегда.
+	bool RecreateAfterDeviceLost();
+	void ReleaseComposition();
+	void ReleaseLegacy();
 
 		// Общие ресурсы.
 		ID2D1Factory1*        m_factory = nullptr;
@@ -95,10 +97,11 @@ namespace Zen2D
 		// Текущая цель отрисовки (device context либо hwnd RT).
 		ID2D1RenderTarget*     m_target = nullptr;
 
-		bool  m_bReady = false;
-		bool  m_bComposition = false;
-		bool  m_bEnabled = false;
-		HWND  m_hwnd = nullptr;
+	bool  m_bReady = false;
+	bool  m_bComposition = false;
+	bool  m_bEnabled = false;
+	HWND  m_hwnd = nullptr;
+	HINSTANCE m_hInst = nullptr; // для перезагрузки логотипа после пересоздания цели
 		int   m_w = 0;      // логические пиксели (вёрстка)
 		int   m_h = 0;      // логические пиксели (вёрстка)
 		int   m_wPx = 0;    // физические пиксели (swapchain)

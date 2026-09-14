@@ -678,6 +678,19 @@ void RunSplash(HINSTANCE hi){
  Gdiplus::GdiplusShutdown(tok);
 }
 } // namespace
+// Единый источник состояния кадра для таймера и WM_PAINT: раньше таймер терял
+// busy/dark/cursor — прогресс-бар инжекта в D2D не анимировался никогда.
+static void FillFrameState(HWND h,Zen2D::FrameState_t& f){
+ f.dt=0.016f;
+ f.elapsed=(float)(GetTickCount64()%3600000)/1000.0f; // не %100000: пульсы прыгали каждые 100 с
+ f.external=g_bExternal;
+ f.hoverLaunch=g_flHovLaunch;
+ f.hoverInject=g_flHovInject;
+ f.modeT=g_flModeT;
+ f.dark=g_theme.dark!=0;
+ f.busy=g_busy!=0;
+ POINT cpt{0,0}; GetCursorPos(&cpt); ScreenToClient(h,&cpt); f.cursor=cpt;
+}
 LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  switch(m){
   case WM_CREATE:{
@@ -719,20 +732,20 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
       if(g_flWinAlpha>0.985f){ g_flWinAlpha=1.0f; g_bFading=false; SetWinAlpha(h,Glass::kMintAlpha); }
       changed=true;
      }
-     if(changed){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(h,&all,FALSE); }
+     if(changed&&!Zen2D::R().Enabled()){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(h,&all,FALSE); }
     }
-     RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(h,&hdr,FALSE);
+     RECT hdr={0,0,WINDOW_W,76};
+     if(!Zen2D::R().Enabled()) InvalidateRect(h,&hdr,FALSE); // GDI-шапку анимируем сама GDI, у D2D свой таймер
      if(Zen2D::R().Enabled()){
-      Zen2D::FrameState_t fst2{}; fst2.dt=0.016f; fst2.elapsed=(float)(GetTickCount64()%100000)/1000.0f;
-      fst2.external=g_bExternal; fst2.hoverLaunch=g_flHovLaunch; fst2.hoverInject=g_flHovInject; fst2.modeT=g_flModeT;
+      Zen2D::FrameState_t fst2{}; FillFrameState(h,fst2);
       wchar_t wszS[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszS,127);
       wchar_t wszV[32]={}; swprintf_s(wszV,L"v%ls",ZENWARE_VER_WSTR);
       wchar_t wszL[32]={}; swprintf_s(wszL,L"%ls",LoaderUtil::LangCode());
       Zen2D::R().RenderFrame(fst2, Zen2D::Dark(), wszS, wszV, wszL);
      }
     // перерисовка кнопки запуска, чтобы радужная обводка анимировалась вместе с логотипом
-    HWND bl=GetDlgItem(h,IDC_LAUNCH); if(bl) InvalidateRect(bl,nullptr,FALSE);
-   if(g_busy){ RECT pr={20,262,600,266}; InvalidateRect(h,&pr,FALSE); }
+    if(!Zen2D::R().Enabled()){ HWND bl=GetDlgItem(h,IDC_LAUNCH); if(bl) InvalidateRect(bl,nullptr,FALSE); }
+   if(g_busy&&!Zen2D::R().Enabled()){ RECT pr={20,262,600,266}; InvalidateRect(h,&pr,FALSE); }
    // следим, появилась ли игра после кнопки запуска
    static int tick=0;
    if(++tick%10==0){
@@ -802,14 +815,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
      g_rcLang  ={rd.right-220,rd.bottom-40,rd.right-24,rd.bottom-20};
      g_rcUpdate={24,rd.bottom-40,220,rd.bottom-20}; }
     Zen2D::FrameState_t fst{};
-    fst.dt=0.016f;
-    fst.elapsed=(float)(GetTickCount64()%100000)/1000.0f;
-    fst.external=g_bExternal;
-    fst.hoverLaunch=g_flHovLaunch;
-    fst.hoverInject=g_flHovInject;
-    fst.modeT=g_flModeT;
-    fst.dark=g_theme.dark!=0;
-    POINT cpt{0,0}; GetCursorPos(&cpt); ScreenToClient(h,&cpt); fst.cursor=cpt;
+    FillFrameState(h,fst);
     wchar_t wszStatus2[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszStatus2,127);
     wchar_t wszVer2[32]={}; swprintf_s(wszVer2,L"v%ls",ZENWARE_VER_WSTR);
     wchar_t wszLang2[32]={}; swprintf_s(wszLang2,L"%ls",LoaderUtil::LangCode());
@@ -981,11 +987,19 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
  HWND hw=CreateWindowExW(Zen2D::ProbeComposition()?WS_EX_NOREDIRECTIONBITMAP:(Glass::IsAvailable()?0:WS_EX_LAYERED),wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
- Zen2D::R().Init(hw,hi); if(Zen2D::R().Ready()){ Zen2D::R().SetEnabled(false);
+ Zen2D::R().Init(hw,hi); if(Zen2D::R().Ready()){ Zen2D::R().SetEnabled(true);
   HWND hb1=GetDlgItem(hw,IDC_LAUNCH), hb2=GetDlgItem(hw,IDC_INJECT), hs=GetDlgItem(hw,IDC_STATUS);
   if(hb1) ShowWindow(hb1,SW_HIDE);
   if(hb2) ShowWindow(hb2,SW_HIDE);
   if(hs)  ShowWindow(hs,SW_HIDE); } // интерфейс рисует D2D, дочерние окна только дублировали его
+ if(!Zen2D::R().IsUsingComposition()){
+  // Окно могло быть создано с WS_EX_NOREDIRECTIONBITMAP под ProbeComposition,
+  // но композиция не поднялась: без redirection bitmap не видно ни GDI-рисование,
+  // ни ID2D1HwndRenderTarget. Снимаем стиль, иначе окно останется пустым стеклом.
+  LONG_PTR ex=GetWindowLongPtrW(hw,GWL_EXSTYLE);
+  SetWindowLongPtrW(hw,GWL_EXSTYLE,ex&~WS_EX_NOREDIRECTIONBITMAP);
+  SetWindowPos(hw,nullptr,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_FRAMECHANGED);
+ }
 
  ShowWindow(hw,cmd); UpdateWindow(hw);
  //NOTE: no auto-updater by design (source-only project, no binary releases).

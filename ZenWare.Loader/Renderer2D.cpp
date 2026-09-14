@@ -2,6 +2,7 @@
 
 #include "Renderer2D.h"
 #include "resource.h"
+#include "Glass.h"
 
 #include <math.h>
 #include <stdio.h>   // swprintf_s для лога диагностики
@@ -192,7 +193,9 @@ namespace Zen2D
 		}
 
 		m_d2dContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-		m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+		// ClearType рассчитан на непрозрачный фон: на premultiplied-альфе swapchain
+		// даёт цветные ореолы вокруг букв, поэтому в композиции — grayscale.
+		m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
 
 		if (!CreateTargetBitmapFromBackBuffer())
 			return false;
@@ -307,6 +310,7 @@ namespace Zen2D
 		Shutdown();
 
 		m_hwnd = hwnd;
+		m_hInst = hInst;
 
 		CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
@@ -408,6 +412,47 @@ namespace Zen2D
 		{
 			m_hwndRT->Resize(D2D1::SizeU(static_cast<UINT32>(m_wPx), static_cast<UINT32>(m_hPx)));
 		}
+	}
+
+	bool Renderer2D::RecreateAfterDeviceLost()
+	{
+		ReleaseComposition();
+
+		// Логотип принадлежал старой цели — годен только пересоздать.
+		if (m_logo) { m_logo->Release(); m_logo = nullptr; }
+
+		if (CreateCompositionTarget())
+		{
+			m_target = static_cast<ID2D1RenderTarget*>(m_d2dContext);
+
+			if (m_brush) { m_brush->Release(); m_brush = nullptr; }
+
+			m_target->CreateSolidColorBrush(ColorOf(m_theme.textPrimary, 1.0f), &m_brush);
+			LoadLogoFromResource(m_hInst);
+			return m_brush != nullptr;
+		}
+
+		// Композиция больше не поднимается: откат на HwndRenderTarget.
+		ReleaseComposition();
+
+		if (!CreateLegacyTarget())
+		{
+			m_bReady = false;
+			return false;
+		}
+
+		// Без redirection bitmap HwndRenderTarget невидим — снимаем стиль с окна.
+		const LONG_PTR ex = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
+		SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, ex & ~WS_EX_NOREDIRECTIONBITMAP);
+		SetWindowPos(m_hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+		m_target = static_cast<ID2D1RenderTarget*>(m_hwndRT);
+
+		if (m_brush) { m_brush->Release(); m_brush = nullptr; }
+
+		m_target->CreateSolidColorBrush(ColorOf(m_theme.textPrimary, 1.0f), &m_brush);
+		LoadLogoFromResource(m_hInst);
+		return m_brush != nullptr;
 	}
 
 	void Renderer2D::ReleaseComposition()
@@ -570,8 +615,10 @@ namespace Zen2D
 		m_theme = th;
 
 		// Полупрозрачный слой поверх бэкдропа: сквозь него видно Acrylic,
-		// но текст остаётся читаемым. В фолбэке - непрозрачный фон.
-		const float flBgAlpha = m_bComposition ? 0.45f : 1.0f;
+		// но текст остаётся читаемым. Без бэкдропа (старая ОС) под кадром
+		// просто чёрная пустота — там почти непрозрачный фон.
+		// В фолбэке - непрозрачный фон.
+		const float flBgAlpha = m_bComposition ? (Glass::IsAvailable() ? 0.45f : 0.92f) : 1.0f;
 
 		m_target->BeginDraw();
 		m_target->SetTransform(D2D1::Matrix3x2F::Identity());
@@ -608,6 +655,10 @@ namespace Zen2D
 		if (FAILED(hr))
 		{
 			LogDbg(L"EndDraw failed", hr);
+
+			if (m_bComposition)
+				RecreateAfterDeviceLost(); // иначе кадр навсегда замирает после TDR
+
 			return;
 		}
 
