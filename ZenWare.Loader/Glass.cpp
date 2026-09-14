@@ -1,28 +1,26 @@
-// ZenWare Loader - Liquid Glass (реализация)
-// WinAPI + GDI. См. Glass.h.
+// ZenWare Loader - системный бэкдроп (реализация). См. Glass.h.
 
 #include "Glass.h"
-#include <dwmapi.h>
 
-#include <math.h>
+#include <dwmapi.h>   // DwmSetWindowAttribute, DwmExtendFrameIntoClientArea, MARGINS
+#include <uxtheme.h>  // MARGINS (на случай старого SDK)
 
 #pragma comment(lib, "dwmapi.lib")
-#pragma comment(lib, "msimg32.lib")
-// Подготовка к бэкдропу через DirectComposition (следующий шаг): библиотеки уже подключены.
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
+// Подготовлено под DirectComposition (следующий шаг).
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dcomp.lib")
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "gdi32.lib")
 
 namespace
 {
-	// ----------------- undocumented: SetWindowCompositionAttribute -----------------
+	// ------------------- undocumented: SetWindowCompositionAttribute -------------------
 	struct ACCENT_POLICY
 	{
 		DWORD nAccentState;
 		DWORD nFlags;
-		DWORD nColor;      // 0xAABBGGRR
+		DWORD nColor;      // 0xAABBGGRR (ABGR!)
 		DWORD nAnimationId;
 	};
 
@@ -45,21 +43,13 @@ namespace
 
 	PFN_SetWindowCompositionAttribute g_pfnSetWCA = nullptr;
 	bool  g_bProbed = false;
-	bool  g_bGlass = false;         // блюр реально включён
-	DWORD g_nAccentState = 0;       // 4 = acrylic, 3 = blur
+	bool  g_bBackdrop = false;      // бэкдроп реально применён
+	bool  g_bSystemMaterial = false;// применён системный материал Win11 (тинт не управляется)
+	DWORD g_nAccentState = 0;
 	COLORREF g_tint = Glass::kMint;
-	BYTE  g_alpha = Glass::kMintAlpha;
+	BYTE  g_alpha = 0;
 
-	// Кэш GDI: 1x1 DIB для полупрозрачных заливок и радиальный DIB для пятна.
-	HDC     g_hMemDC = nullptr;
-	HBITMAP g_hSolid = nullptr;
-	PVOID   g_pSolidBits = nullptr;
-	HDC     g_hGlowDC = nullptr;
-	HBITMAP g_hGlow = nullptr;
-	PVOID   g_pGlowBits = nullptr;
-	const int kGlowSize = 256;
-
-	void EnsureProbe()
+	void Probe()
 	{
 		if (g_bProbed)
 			return;
@@ -73,101 +63,34 @@ namespace
 				GetProcAddress(hUser, "SetWindowCompositionAttribute"));
 	}
 
-	// Полупрозрачная заливка прямоугольника (GDI без per-pixel alpha).
-	void BlendSolid(HDC hdc, int x, int y, int w, int h, COLORREF color, BYTE alpha)
+	// Применяет accent policy с заданным состоянием и тинтом.
+	bool ApplyAccent(HWND hwnd, DWORD state, DWORD abgr)
 	{
-		if (w <= 0 || h <= 0 || alpha == 0)
-			return;
+		ACCENT_POLICY policy{};
+		policy.nAccentState = state;
+		policy.nFlags = ACCENT_FLAG_DRAW_ALL_BORDERS;
+		policy.nColor = abgr;
 
-		if (!g_hMemDC)
-		{
-			BITMAPINFO bmi{};
-			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-			bmi.bmiHeader.biWidth = 1;
-			bmi.bmiHeader.biHeight = 1;
-			bmi.bmiHeader.biPlanes = 1;
-			bmi.bmiHeader.biBitCount = 32;
-			bmi.bmiHeader.biCompression = BI_RGB;
+		WINDOWCOMPOSITIONATTRIBDATA data{};
+		data.nAttribute = WCA_ACCENT_POLICY;
+		data.pvData = &policy;
+		data.cbData = sizeof(policy);
 
-			g_hMemDC = CreateCompatibleDC(nullptr);
-			g_hSolid = CreateDIBSection(g_hMemDC, &bmi, DIB_RGB_COLORS, &g_pSolidBits, nullptr, 0);
-
-			if (g_hSolid)
-				SelectObject(g_hMemDC, g_hSolid);
-
-			if (g_pSolidBits)
-			{
-				// DIB хранит BGRA; источник 1x1 будет растянут AlphaBlend'ом.
-				DWORD* px = static_cast<DWORD*>(g_pSolidBits);
-				*px = (static_cast<DWORD>(GetBValue(color)) << 16) |
-					(static_cast<DWORD>(GetGValue(color)) << 8) |
-					static_cast<DWORD>(GetRValue(color));
-			}
-		}
-
-		if (!g_hMemDC || !g_hSolid)
-			return;
-
-		BLENDFUNCTION bf{};
-		bf.BlendOp = AC_SRC_OVER;
-		bf.SourceConstantAlpha = alpha;
-		bf.AlphaFormat = 0;
-
-		AlphaBlend(hdc, x, y, w, h, g_hMemDC, 0, 0, 1, 1, bf);
+		return g_pfnSetWCA(hwnd, &data) != FALSE;
 	}
 
-	// Радиальный «мягкий» источник света для пятна под курсором.
-	void BuildGlow()
+	// Тинт в ABGR: 0xAABBGGRR. Для RGB 0x0A0E0D получаем B=0D, G=0E, R=0A.
+	DWORD TintAbgr(COLORREF rgb, BYTE alpha)
 	{
-		if (g_hGlow)
-			return;
-
-		BITMAPINFO bmi{};
-		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-		bmi.bmiHeader.biWidth = kGlowSize;
-		bmi.bmiHeader.biHeight = -kGlowSize; // top-down
-		bmi.bmiHeader.biPlanes = 1;
-		bmi.bmiHeader.biBitCount = 32;
-		bmi.bmiHeader.biCompression = BI_RGB;
-
-		g_hGlowDC = CreateCompatibleDC(nullptr);
-		g_hGlow = CreateDIBSection(g_hGlowDC, &bmi, DIB_RGB_COLORS, &g_pGlowBits, nullptr, 0);
-
-		if (!g_hGlow || !g_pGlowBits)
-			return;
-
-		SelectObject(g_hGlowDC, g_hGlow);
-
-		const float c = (kGlowSize - 1) * 0.5f;
-		BYTE* base = static_cast<BYTE*>(g_pGlowBits);
-
-		for (int y = 0; y < kGlowSize; ++y)
-		{
-			for (int x = 0; x < kGlowSize; ++x)
-			{
-				const float dx = (x - c) / c;
-				const float dy = (y - c) / c;
-				float d = sqrtf(dx * dx + dy * dy);
-
-				if (d > 1.0f)
-					d = 1.0f;
-
-				const float fall = (1.0f - d) * (1.0f - d);
-				const BYTE a = static_cast<BYTE>(fall * 255.0f);
-
-				BYTE* px = base + ((static_cast<size_t>(y) * kGlowSize + x) * 4);
-				px[0] = 255;      // B
-				px[1] = 255;      // G
-				px[2] = 255;      // R
-				px[3] = a;        // A
-			}
-		}
+		return (static_cast<DWORD>(alpha) << 24) |
+			(static_cast<DWORD>(GetBValue(rgb)) << 16) |
+			(static_cast<DWORD>(GetGValue(rgb)) << 8) |
+			static_cast<DWORD>(GetRValue(rgb));
 	}
 }
 
 namespace Glass
 {
-	// -------------------------- системный материал Win11 --------------------------
 	DWORD OsBuild()
 	{
 		// RtlGetVersion не врёт, в отличие от GetVersionEx с манифестом.
@@ -187,105 +110,117 @@ namespace Glass
 		return pfn(&vi) == 0 ? vi.dwBuildNumber : 0;
 	}
 
-	bool EnableSystemBackdrop(HWND hwnd)
-	{
-		if (!hwnd || OsBuild() < 22000)
-			return false;
-
-		// DWMWA_SYSTEMBACKDROP_TYPE = 38, DWMSBT_MAINWINDOW = 2 (Win11 22H2+).
-		INT material = 2;
-
-		if (FAILED(DwmSetWindowAttribute(hwnd, 38, &material, sizeof(material))))
-			return false;
-
-		g_bGlass = true;
-		g_nAccentState = 0xFFFF; // материал, а не акрил: тинт не нужен
-		return true;
-	}
 	bool IsAvailable()
 	{
-		EnsureProbe();
-		return g_pfnSetWCA != nullptr;
+		return g_bBackdrop;
+	}
+
+	bool EnableSystemBackdrop(HWND hwnd)
+	{
+		Probe();
+
+		if (!hwnd || !g_pfnSetWCA)
+			return false;
+
+		const DWORD build = OsBuild();
+
+		// Тёмный near-black тинт в ABGR: 0xCC0D0E0A (A=CC, B=0D, G=0E, R=0A).
+		const DWORD abgrAcrylic = TintAbgr(RGB(0x0A, 0x0E, 0x0D), 0xCC);
+		const DWORD abgrBlur = TintAbgr(RGB(0x0A, 0x0E, 0x0D), 0x99);
+
+		// Windows 11 22H2+: системный Acrylic (полупрозрачнее Mica - лучше для лоадера).
+		if (build >= 22621)
+		{
+			INT backdrop = 3; // DWMSBT_TRANSIENTWINDOW == Acrylic
+
+			if (SUCCEEDED(DwmSetWindowAttribute(hwnd, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, &backdrop, sizeof(backdrop))))
+			{
+				// Рамка DWM должна покрывать всю клиентскую область, иначе материал не виден.
+				MARGINS margins{ -1, -1, -1, -1 };
+				DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+				g_bBackdrop = true;
+				g_bSystemMaterial = true;
+				return true;
+			}
+		}
+
+		// Windows 10 1803+ и Win11 до 22H2: акрил через недокументированный вызов.
+		if (build >= 17134)
+		{
+			if (ApplyAccent(hwnd, ACCENT_ENABLE_ACRYLICBLURBEHIND, abgrAcrylic))
+			{
+				g_nAccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+				g_tint = RGB(0x0A, 0x0E, 0x0D);
+				g_alpha = 0xCC;
+				g_bBackdrop = true;
+				g_bSystemMaterial = false;
+				return true;
+			}
+		}
+
+		// Windows 10 < 1803: простой блюр.
+		if (ApplyAccent(hwnd, ACCENT_ENABLE_BLURBEHIND, abgrBlur))
+		{
+			g_nAccentState = ACCENT_ENABLE_BLURBEHIND;
+			g_tint = RGB(0x0A, 0x0E, 0x0D);
+			g_alpha = 0x99;
+			g_bBackdrop = true;
+			g_bSystemMaterial = false;
+			return true;
+		}
+
+		g_bBackdrop = false;
+		return false;
 	}
 
 	bool Enable(HWND hwnd, COLORREF tint, BYTE alpha)
 	{
-		EnsureProbe();
+		Probe();
 
-		if (!g_pfnSetWCA || !hwnd)
+		if (!hwnd || !g_pfnSetWCA)
 			return false;
 
 		g_tint = tint;
 		g_alpha = alpha;
 
-		// Сначала акрил (Win10 1803+), затем обычный блюр.
-		const DWORD states[2] = { ACCENT_ENABLE_ACRYLICBLURBEHIND, ACCENT_ENABLE_BLURBEHIND };
-
-		for (int i = 0; i < 2; ++i)
+		if (ApplyAccent(hwnd, ACCENT_ENABLE_ACRYLICBLURBEHIND, TintAbgr(tint, alpha)))
 		{
-			ACCENT_POLICY policy{};
-			policy.nAccentState = states[i];
-			policy.nFlags = ACCENT_FLAG_DRAW_ALL_BORDERS;
-			policy.nColor = (static_cast<DWORD>(alpha) << 24) |
-				(static_cast<DWORD>(GetBValue(tint)) << 16) |
-				(static_cast<DWORD>(GetGValue(tint)) << 8) |
-				static_cast<DWORD>(GetRValue(tint));
-
-			WINDOWCOMPOSITIONATTRIBDATA data{};
-			data.nAttribute = WCA_ACCENT_POLICY;
-			data.pvData = &policy;
-			data.cbData = sizeof(policy);
-
-			if (g_pfnSetWCA(hwnd, &data))
-			{
-				g_nAccentState = states[i];
-				g_bGlass = true;
-				return true;
-			}
+			g_nAccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+			g_bBackdrop = true;
+			g_bSystemMaterial = false;
+			return true;
 		}
 
-		g_bGlass = false;
+		if (ApplyAccent(hwnd, ACCENT_ENABLE_BLURBEHIND, TintAbgr(RGB(0x0A, 0x0E, 0x0D), 0x99)))
+		{
+			g_nAccentState = ACCENT_ENABLE_BLURBEHIND;
+			g_bBackdrop = true;
+			g_bSystemMaterial = false;
+			return true;
+		}
+
+		g_bBackdrop = false;
 		return false;
 	}
 
 	void SetAlpha(HWND hwnd, BYTE alpha)
 	{
-		if (!g_pfnSetWCA || !hwnd || !g_bGlass)
+		if (!hwnd || !g_bBackdrop || g_bSystemMaterial || !g_pfnSetWCA)
 			return;
 
 		g_alpha = alpha;
-
-		ACCENT_POLICY policy{};
-		policy.nAccentState = g_nAccentState;
-		policy.nFlags = ACCENT_FLAG_DRAW_ALL_BORDERS;
-		policy.nColor = (static_cast<DWORD>(alpha) << 24) |
-			(static_cast<DWORD>(GetBValue(g_tint)) << 16) |
-			(static_cast<DWORD>(GetGValue(g_tint)) << 8) |
-			static_cast<DWORD>(GetRValue(g_tint));
-
-		WINDOWCOMPOSITIONATTRIBDATA data{};
-		data.nAttribute = WCA_ACCENT_POLICY;
-		data.pvData = &policy;
-		data.cbData = sizeof(policy);
-
-		g_pfnSetWCA(hwnd, &data);
+		ApplyAccent(hwnd, g_nAccentState, TintAbgr(g_tint, alpha));
 	}
 
 	void Disable(HWND hwnd)
 	{
-		if (!g_pfnSetWCA || !hwnd)
+		if (!hwnd || !g_pfnSetWCA)
 			return;
 
-		ACCENT_POLICY policy{};
-		policy.nAccentState = 0; // ACCENT_DISABLED
-
-		WINDOWCOMPOSITIONATTRIBDATA data{};
-		data.nAttribute = WCA_ACCENT_POLICY;
-		data.pvData = &policy;
-		data.cbData = sizeof(policy);
-
-		g_pfnSetWCA(hwnd, &data);
-		g_bGlass = false;
+		ApplyAccent(hwnd, 0 /*ACCENT_DISABLED*/, 0);
+		g_bBackdrop = false;
+		g_bSystemMaterial = false;
 	}
 
 	void RoundCorners(HWND hwnd, int radius)
@@ -312,101 +247,12 @@ namespace Glass
 		HRGN rgn = CreateRoundRectRgn(0, 0, w + 1, h + 1, radius * 2, radius * 2);
 
 		if (rgn)
-			SetWindowRgn(hwnd, rgn, TRUE); // владение регионом переходит окну
-	}
-
-	void PaintGlass(HDC hdc, const RECT& rc, POINT mouse)
-	{
-		if (!hdc)
-			return;
-
-		const int w = rc.right - rc.left;
-		const int h = rc.bottom - rc.top;
-
-		if (w <= 2 || h <= 2)
-			return;
-
-		const ULONGLONG ms = GetTickCount64();
-		const float t = static_cast<float>(ms % 100000) / 1000.0f;
-
-		// 1) Анимированный отблеск: диагональная полоса, идущая справа налево.
-		{
-			const int band = w / 5;
-			if (band > 8)
-			{
-				const float period = 4.2f;
-				const float phase = fmodf(t, period) / period;
-				const int cx = static_cast<int>((w + band) - phase * (w + band * 2));
-
-				for (int i = 0; i < band; i += 2)
-				{
-					const int x = cx + i;
-					if (x < 0 || x >= w)
-						continue;
-
-					const float k = 1.0f - fabsf((i - band * 0.5f) / (band * 0.5f));
-					const BYTE a = static_cast<BYTE>(k * k * 26.0f);
-
-					BlendSolid(hdc, x, 0, 2, h, RGB(255, 255, 255), a);
-				}
-			}
-		}
-
-		// 2) Мягкое пятно под курсором (реакция на мышь).
-		{
-			BuildGlow();
-
-			if (g_hGlow && g_hGlowDC)
-			{
-				const int size = 260;
-				const int gx = mouse.x - size / 2;
-				const int gy = mouse.y - size / 2;
-
-				if (mouse.x > -size && mouse.y > -size && mouse.x < w + size && mouse.y < h + size)
-				{
-					BLENDFUNCTION bf{};
-					bf.BlendOp = AC_SRC_OVER;
-					bf.SourceConstantAlpha = 38;
-					bf.AlphaFormat = AC_SRC_ALPHA;
-
-					AlphaBlend(hdc, gx, gy, size, size, g_hGlowDC, 0, 0, kGlowSize, kGlowSize, bf);
-				}
-			}
-		}
-
-		// 3) Блик по краям окна: светлая кромка сверху/слева, тёмная снизу/справа.
-		BlendSolid(hdc, 0, 0, w, 1, RGB(255, 255, 255), 34);
-		BlendSolid(hdc, 0, 0, 1, h, RGB(255, 255, 255), 26);
-		BlendSolid(hdc, 0, h - 1, w, 1, RGB(0, 0, 0), 30);
-		BlendSolid(hdc, w - 1, 0, 1, h, RGB(0, 0, 0), 22);
+			SetWindowRgn(hwnd, rgn, TRUE);
 	}
 
 	void Shutdown()
 	{
-		if (g_hGlow)
-		{
-			DeleteObject(g_hGlow);
-			g_hGlow = nullptr;
-			g_pGlowBits = nullptr;
-		}
-
-		if (g_hGlowDC)
-		{
-			DeleteDC(g_hGlowDC);
-			g_hGlowDC = nullptr;
-		}
-
-		if (g_hSolid)
-		{
-			DeleteObject(g_hSolid);
-			g_hSolid = nullptr;
-			g_pSolidBits = nullptr;
-		}
-
-		if (g_hMemDC)
-		{
-			DeleteDC(g_hMemDC);
-			g_hMemDC = nullptr;
-		}
+		g_bBackdrop = false;
+		g_bSystemMaterial = false;
 	}
 }

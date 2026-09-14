@@ -3,7 +3,44 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.12] - 2026-09-14
+
+### Changed / Изменено
+- The window backdrop module was rewritten to the spec: Windows 11 22H2+ now uses
+  the system Acrylic material (`DWMWA_SYSTEMBACKDROP_TYPE` = `DWMSBT_TRANSIENTWINDOW`,
+  with `DwmExtendFrameIntoClientArea{-1,-1,-1,-1}` so the material covers the whole
+  client area), Windows 10 1803+ falls back to the undocumented acrylic accent
+  policy with an ABGR tint (`0xCC0D0E0A`), older builds get the plain blur
+  (`0x990D0E0A`), and if nothing applies the loader keeps the plain dark frame.
+  Модуль бэкдропа окна переписан по спецификации: Windows 11 22H2+ использует
+  системный материал Acrylic (`DWMWA_SYSTEMBACKDROP_TYPE` = `DWMSBT_TRANSIENTWINDOW`
+  вместе с `DwmExtendFrameIntoClientArea{-1,-1,-1,-1}`, чтобы материал покрывал всю
+  клиентскую область), Windows 10 1803+ переходит на недокументированный
+  акриловый accent policy с тинтом в ABGR (`0xCC0D0E0A`), более старые сборки
+  получают простой блюр (`0x990D0E0A`), а если не применилось ничего — лоадер
+  остаётся с обычной тёмной рамкой.
+- `Glass::IsAvailable` now returns true only when a backdrop was actually applied,
+  and the OS build is read through `RtlGetVersion` (`GetVersionEx` lies under a
+  manifest). The legacy `Glass::PaintGlass` (software overlay) is removed.
+  `Glass::IsAvailable` теперь возвращает true, только если бэкдроп реально
+  применён, а номер сборки ОС читается через `RtlGetVersion` (`GetVersionEx` врёт
+  при манифесте). Прежний `Glass::PaintGlass` (программный оверлей) удалён.
+- Libraries for the DirectComposition step are linked ahead of time
+  (`d3d11`, `dxgi`, `dcomp`).
+  Библиотеки под шаг DirectComposition подключены заранее (`d3d11`, `dxgi`, `dcomp`).
+
+### Not done yet / Пока не сделано
+- Per-pixel alpha rendering (D3D11 + `CreateSwapChainForComposition` with
+  `PREMULTIPLIED`, window with `WS_EX_NOREDIRECTIONBITMAP`, D2D on an
+  `ID2D1DeviceContext`) and the D2D interface completion (localised labels, pills,
+  layout, contrast) described earlier.
+  Отрисовка со сквозной альфой (D3D11 + `CreateSwapChainForComposition` с
+  `PREMULTIPLIED`, окно с `WS_EX_NOREDIRECTIONBITMAP`, D2D на `ID2D1DeviceContext`)
+  и ранее описанное завершение D2D-интерфейса (локализация, пилюли, раскладка,
+  контраст).
+
+
 ## [3.11.2] - 2026-09-14
 
 ### Changed / Изменено

@@ -919,7 +919,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    } else {
     BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
    }
-   { POINT gcp{0,0}; GetCursorPos(&gcp); ScreenToClient(h,&gcp); Glass::PaintGlass(hdc,rc,gcp); }
+   // ИЗМЕНЕНО: PaintGlass удалён - бэкдроп теперь системный (Glass::EnableSystemBackdrop).
   SelectObject(mem,oldBmp); DeleteObject(bmp); DeleteDC(mem);
   EndPaint(h,&ps);
   break;
