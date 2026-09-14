@@ -136,7 +136,9 @@ namespace Glass
 			if (SUCCEEDED(DwmSetWindowAttribute(hwnd, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, &backdrop, sizeof(backdrop))))
 			{
 				// Рамка DWM должна покрывать всю клиентскую область, иначе материал не виден.
-				MARGINS margins{ -1, -1, -1, -1 };
+				// РЕШЕНИЕ: ExtendFrameIntoClientArea здесь НЕ вызываем: он отдаёт всю
+				// клиентскую область DWM, и при GDI-отрисовке интерфейс пропадает (только бэкдроп).
+				// Материал и так виден через альфа-композит кадра (AlphaBlend 224).
 				DwmExtendFrameIntoClientArea(hwnd, &margins);
 
 				g_bBackdrop = true;

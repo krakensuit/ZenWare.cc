@@ -3,7 +3,25 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.12.1] - 2026-09-14
+
+### Fixed / Исправлено
+- Removed DwmExtendFrameIntoClientArea from the backdrop path: it handed the whole
+  client area to DWM, so with GDI painting the interface disappeared and only the
+  blurred backdrop remained. The material stays visible through the frame alpha
+  composite (AlphaBlend 224).
+  Убран DwmExtendFrameIntoClientArea из бэкдропа: он отдавал всю клиентскую
+  область DWM, из-за чего при GDI-отрисовке интерфейс пропадал и оставался только
+  размытый фон. Материал виден через альфа-композит кадра (AlphaBlend 224).
+
+### Note / Примечание
+- DirectComposition rendering is still not implemented: there is no swapchain,
+  Present or SetTarget in the loader (the renderer is ID2D1HwndRenderTarget).
+  Отрисовка через DirectComposition пока не реализована: в лоадере нет ни
+  swapchain, ни Present, ни SetTarget (рендер — ID2D1HwndRenderTarget).
+
+
 ## [3.12] - 2026-09-14
 
 ### Changed / Изменено
