@@ -2,8 +2,8 @@
 #include <windows.h>
 #include <string>
 
-// Прозрачный click-through оверлей поверх окна игры (GDI, без DX-зависимостей).
-// Рисует только наш процесс; в игру ничего не пишется и не инжектится.
+// Transparent click-through overlay on top of the game window (GDI, no DX dependencies).
+// Only our process draws; nothing is written to or injected into the game.
 class Overlay
 {
 public:
@@ -11,7 +11,7 @@ public:
 	void Destroy();
 	bool IsAlive() const { return m_hwnd != nullptr; }
 
-	// Подогнать оверлей под окно игры (вызывать ~раз в 500мс)
+	// Fit the overlay to the game window (call ~every 500ms)
 	void FollowGame();
 
 	void BeginFrame();

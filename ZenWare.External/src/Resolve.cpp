@@ -9,16 +9,16 @@ namespace
 	struct DosHdr { uint16_t e_magic; uint16_t e_rest[29]; int32_t e_lfanew; };
 	struct CoffHdr { uint32_t sig; uint16_t mach, nsec; uint32_t ts, sym, nsym; uint16_t optsz, chars; };
 	struct Opt32 { uint16_t magic; uint8_t rest[26]; uint32_t imageBase; };
-	// Точная копия IMAGE_SECTION_HEADER (40 байт): PointerToRelocations и
-	// PointerToLinenumbers — WORD, как и NumberOfRelocations/NumberOfLinenumbers.
-	// uint32_t на всех четырёх давал 44 байта: итерация секций уезжала на +4
-	// за шаг, ".data" не находилась никогда и runtime-резолв молча падал
-	// на хардкод из Offsets.h.
+	// Exact copy of IMAGE_SECTION_HEADER (40 bytes): PointerToRelocations and
+	// PointerToLinenumbers are WORD, just like NumberOfRelocations/NumberOfLinenumbers.
+	// uint32_t on all four made it 44 bytes: section iteration drifted +4 per
+	// step, ".data" was never found and the runtime resolve silently fell back
+	// to the hardcode from Offsets.h.
 	struct SecHdr { char name[8]; uint32_t vsize, vaddr, rawsize, rawptr, reloc, line; uint16_t nreloc, nline; uint32_t chars; };
 	static_assert(sizeof(SecHdr) == 40, "SecHdr must match IMAGE_SECTION_HEADER");
 #pragma pack(pop)
 
-	// Диапазон секции загруженного модуля: [base+rva, base+rva+vsize).
+	// Range of a section of the loaded module: [base+rva, base+rva+vsize).
 	bool SectionRange(const uint8_t* img, size_t len, const char* name, uintptr_t base, uintptr_t& outBase, uint32_t& outSize)
 	{
 		if (len < sizeof(DosHdr))
@@ -51,7 +51,7 @@ namespace
 		return false;
 	}
 
-	// Сканер по буферу (копия Memory::Scan, но с отчетом всех совпадений).
+	// Buffer scanner (a copy of Memory::Scan, but reporting all matches).
 	int FindAll(const uint8_t* data, size_t len, const std::vector<uint8_t>& b, const std::vector<bool>& m, int* out, int cap)
 	{
 		int n = 0;
@@ -82,8 +82,8 @@ namespace
 		return !b.empty();
 	}
 
-	// Чтение модуля кусками по коммитнутым регионам: один RPM на весь
-	// SizeOfImage падает из-за незакоммиченных дыр, мелкие чтения работают.
+	// Read the module in chunks of committed regions: a single RPM over the
+	// whole SizeOfImage fails on uncommitted holes, small reads work.
 	bool ReadModule(const Memory& mem, uintptr_t base, uint32_t size, std::vector<uint8_t>& out, int* dbgKB = nullptr)
 	{
 		out.assign(size, 0);
@@ -104,7 +104,7 @@ namespace
 			}
 			else if (want > 0x1000)
 			{
-				want = 0x1000; // битый кусок — пробуем мелкими шагами, дыры оставляем нулями
+				want = 0x1000; // bad chunk - retry in smaller steps, holes are left as zeros
 				if (mem.ReadRaw(cur, p, want)) { any = true; got += (int)want; cur += want; }
 				else { cur += want; }
 			}
@@ -126,7 +126,7 @@ namespace
 
 	float Det4(const float* m)
 	{
-		// Определитель 4x4 через разложение (вырожденная матрица = мусор).
+		// 4x4 determinant via cofactor expansion (a singular matrix = garbage).
 		float a2323 = m[10] * m[15] - m[11] * m[14];
 		float a1323 = m[9] * m[15] - m[11] * m[13];
 		float a1223 = m[9] * m[14] - m[10] * m[13];
@@ -171,9 +171,9 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		return false;
 	if (cli.size() >= 4) memcpy(&out.dbgCliHead, cli.data(), 4);
 
-	uintptr_t anchor = 0; // валидный указатель локального игрока
+	uintptr_t anchor = 0; // valid local player pointer
 
-	// --- 1. LocalPlayer по сигнатуре (уникальна, проверено на нашем билде) ---
+	// --- 1. LocalPlayer by signature (unique, verified on our build) ---
 	{
 		std::vector<uint8_t> b; std::vector<bool> m;
 		ParseSig("8B 0D ? ? ? ? 85 C9 74 ? 8B 01 8B 50 08 FF D2 8B 00 89 86 84 16 00 00", b, m);
@@ -181,20 +181,20 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		out.dbgLpHits = FindAll(cli.data(), cli.size(), b, m, hits, 4);
 		if (out.dbgLpHits == 1)
 		{
-			// imm32 в живой памяти уже перебазирован (фактический VA): сверяем
-			// с фактической базой модуля. Preferred ImageBase из заголовка при
-			// релокации не меняется — на ASLR-билдах проверка молча врала и
-			// сигнатурная ветка никогда не срабатывала.
+			// The imm32 in live memory is already rebased (actual VA): compare it
+			// against the actual module base. The preferred ImageBase from the header
+			// does not change on relocation - on ASLR builds this check silently lied
+			// and the signature branch never fired.
 			uint32_t disp;
 			memcpy(&disp, cli.data() + hits[0] + 2, 4);
 			if (disp >= client && disp - client < (uint32_t)clientSize)
 			{
 				uintptr_t ent = 0;
-				const uintptr_t addr = disp; // disp — уже живой VA процесса
+				const uintptr_t addr = disp; // disp is already a live process VA
 				EntCheck e;
 				if (mem.Read(addr, ent) && ent && ReadEnt(mem, ent, e))
 				{
-					// origin тоже валидируем, как Snapshot
+					// validate the origin too, like Snapshot
 					float org[3] = { };
 					bool okOrg = mem.ReadRaw(ent + Off::offOrigin, org, sizeof(org));
 					bool fin = okOrg;
@@ -224,7 +224,7 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		}
 	}
 
-	// --- 2. ViewMatrix: перебор thunk'ов B9 imm32 / E9 rel32, imm обязан лежать в .data ---
+	// --- 2. ViewMatrix: enumerate B9 imm32 / E9 rel32 thunks, the imm must lie in .data ---
 	if (haveEng && engDataSize > 0)
 	{
 		std::vector<uint8_t> b; std::vector<bool> m;
@@ -237,14 +237,14 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		{
 			uint32_t imm;
 			memcpy(&imm, eng.data() + hits[k] + 1, 4);
-			uintptr_t obj = (uintptr_t)imm; // в файле/памяти адрес уже rebased
+			uintptr_t obj = (uintptr_t)imm; // the address is already rebased in memory
 			if (obj < engData || obj >= engData + engDataSize)
 				continue;
 			uintptr_t ptr = 0;
 			if (!mem.Read(obj, ptr) || !ptr)
 				continue;
 			if (ptr >= engine && ptr < engine + engineSize)
-				continue; // указатель в код/модуль — не куча рендера
+				continue; // pointer into code/module - not the render heap
 			if (ptr >= client && ptr < client + clientSize)
 				continue;
 			float f[16] = { };
@@ -255,7 +255,7 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 			passed++;
 			if (!out.mat || !strcmp(out.srcMat, "hard"))
 			{
-				// первый прошедший — кандидат; дальше только считаем для диагностики
+				// the first pass is the candidate; afterwards we only count for diagnostics
 				out.mat = obj - engine;
 				strcpy_s(out.srcMat, "sig");
 			}
@@ -268,7 +268,7 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 		}
 	}
 
-	// --- 3. EntityList: якорный скан .data по значению anchor ---
+	// --- 3. EntityList: anchor scan of .data for the anchor value ---
 	if (anchor)
 	{
 		uintptr_t cliData = 0; uint32_t cliDataSize = 0;
@@ -279,7 +279,7 @@ bool ResolveOffsets(const Memory& mem, uintptr_t client, uint32_t clientSize,
 			{
 				int best = -1, bestScore = 0;
 				uintptr_t bestBase = 0;
-				// слоты: локальный игрок обычно в первых десятках
+				// slots: the local player is usually within the first few dozen
 				for (size_t o = dOff; o + 4 <= dEnd; o += 4)
 				{
 					uint32_t v;

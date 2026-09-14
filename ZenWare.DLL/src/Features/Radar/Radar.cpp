@@ -10,9 +10,9 @@
 
 namespace
 {
-	constexpr int kTeamSpectator = 1; // в дампе только SURVIVOR=2/INFECTED=3
+	constexpr int kTeamSpectator = 1; // the dump only has SURVIVOR=2/INFECTED=3
 
-	// Мир -> экран радара. Возвращает false если точка совпадает с нами.
+	// World -> radar screen. Returns false if the point coincides with us.
 	bool ToRadar(const Vector& vLocal, float flYawRad, const Vector& vEnt, float flScale, int& sx, int& sy, int nCX, int nCY, int nR)
 	{
 		const float dx = vEnt.x - vLocal.x;
@@ -20,8 +20,8 @@ namespace
 		if (dx == 0.0f && dy == 0.0f)
 			return false;
 		const float s = sinf(flYawRad), c = cosf(flYawRad);
-		const float fwd = dx * c + dy * s;   // вперёд
-		const float rgt = dx * s - dy * c;   // вправо
+		const float fwd = dx * c + dy * s;   // forward
+		const float rgt = dx * s - dy * c;   // right
 		float px = rgt * flScale, py = -fwd * flScale;
 		const float len = sqrtf(px * px + py * py);
 		if (len > (float)nR)
@@ -61,7 +61,7 @@ void CFeatures_Radar::Render()
 
 	if (Vars::Radar::bEnabled)
 	{
-		// Фон + рамка + перекрестие в стиле меню.
+		// Background + outline + crosshair in the menu style.
 		G::Draw.Rect(kX, kY, kSize, kSize, Color(10, 12, 11, 210));
 		G::Draw.OutlinedRect(kX, kY, kSize, kSize, Color(40, 48, 44, 255));
 		G::Draw.OutlinedRect(kX + 1, kY + 1, kSize - 2, kSize - 2, Color(0, 255, 171, 28));
@@ -90,7 +90,7 @@ void CFeatures_Radar::Render()
 			C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
 			if (!pPl || pPl->deadflag() || pPl->m_lifeState() != 0 || pPl->GetHealth() <= 0)
 				continue;
-			//Госта чамсы и IsValidTarget режут, а радар рисовал.
+			//Chams and IsValidTarget cut ghosts, but the radar drew them.
 			if (pPl->m_isGhost())
 				continue;
 				const int nTeam = pPl->GetTeamNumber();
@@ -109,8 +109,8 @@ void CFeatures_Radar::Render()
 				clr = (nTeam == nLocalTeam) ? Vars::Chams::clrAlly : Vars::Chams::clrEnemy;
 				bWant = true;
 			}
-		//Ведьма везде (ESP.DrawBoss, Hitmarker) — C_Infected через
-		//IsInfectedAlive, а не C_BasePlayer с чужими оффсетами.
+		//The witch everywhere (ESP.DrawBoss, Hitmarker) — C_Infected via
+		//IsInfectedAlive, not C_BasePlayer with foreign offsets.
 		else if (nID == Infected || nID == Witch)
 		{
 				C_Infected* pInf = pEntity->As<C_Infected*>();
@@ -132,7 +132,7 @@ void CFeatures_Radar::Render()
 			G::Draw.OutlinedRect(sx - 2, sy - 2, 5, 5, Color(0, 0, 0, 180));
 		}
 
-		// Мы — треугольник-стрелка вверх (вперёд).
+		// Us — an up-pointing triangle (forward).
 		G::Draw.Line(nCX, nCY - 6, nCX - 4, nCY + 4, Color(245, 255, 250, 255));
 		G::Draw.Line(nCX, nCY - 6, nCX + 4, nCY + 4, Color(245, 255, 250, 255));
 		G::Draw.Line(nCX - 4, nCY + 4, nCX + 4, nCY + 4, Color(245, 255, 250, 255));
@@ -140,7 +140,7 @@ void CFeatures_Radar::Render()
 
 	if (Vars::Radar::bSpectators)
 	{
-		// Кто смотрит за нами: наблюдатель (мёртвый/спектатор) с таргетом на нас.
+		// Who is watching us: an observer (dead/spectator) targeting us.
 		char aNames[8][32] = { };
 		int nCount = 0;
 		const int nMax = I::ClientEntityList ? I::ClientEntityList->GetMaxEntities() : 0;
@@ -151,17 +151,17 @@ void CFeatures_Radar::Render()
 		IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
 		if (!pEntity || pEntity->IsDormant())
 			continue;
-		// Без проверки класса As<> отдаёт любой объект за игрока, а дальше
-		// deadflag()/m_lifeState() читают чужой/полу-созданный объект
-		// (краш при загрузке карты и на переходных сущностях в игре).
+		// Without the class check As<> hands out any object as a player, and then
+		// deadflag()/m_lifeState() read a foreign/half-created object
+		// (crash on map load and on transitional entities in game).
 		if (!G::Util.IsPlayerEntity(pEntity))
 			continue;
 	C_TerrorPlayer* pPl = pEntity->As<C_TerrorPlayer*>();
 	if (!pPl)
 		continue;
-		// Сначала дешёвые нетвары, GetPlayerInfo — последним и только для
-		// реальных кандидатов: раньше дёргали движок по всем слотам каждый кадр.
-		// Только те, кто реально не играет (спектаторы и мёртвые).
+		// Cheap netvars first, GetPlayerInfo last and only for real candidates:
+		// the engine used to be hit on all slots every frame.
+		// Only those not actually playing (spectators and the dead).
 		const bool bOut = pPl->deadflag() || pPl->m_lifeState() != 0;
 		const int nTeam = pPl->GetTeamNumber();
 		if (!bOut && nTeam != kTeamSpectator)
@@ -171,8 +171,8 @@ void CFeatures_Radar::Render()
 		if (pPl->m_hObserverTarget().GetEntryIndex() != nLocalIdx)
 			continue;
 		player_info_t pi = {};
-		//GetPlayerInfo ждёт клиент-слот: индексы выше maxclients не подаём
-		//(ботовые СИ живут на сущностных индексах выше слотов).
+		//GetPlayerInfo expects a client slot: do not pass indices above maxclients
+		//(bot SIs live on entity indices above the slots).
 		if (n > I::EngineClient->GetMaxClients() || !I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 			continue;
 		pi.name[31] = '\0';
@@ -180,7 +180,7 @@ void CFeatures_Radar::Render()
 		nCount++;
 		}
 		const int nY0 = Vars::Radar::bEnabled ? (kY + kSize + 6) : 16;
-		//Формат — литерал: перевод с потерянным %d иначе читает стек.
+		//Format is a literal: a translation losing %d would otherwise read the stack.
 		G::Draw.String(EFonts::ESP, 16, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, "%s (%d)", Lang::T("Spectators"), nCount);
 		for (int i = 0; i < nCount; i++)
 			G::Draw.String(EFonts::ESP, 16, nY0 + 14 + i * 13, Color(235, 245, 240, 255), TXT_DEFAULT, "%s", aNames[i]);

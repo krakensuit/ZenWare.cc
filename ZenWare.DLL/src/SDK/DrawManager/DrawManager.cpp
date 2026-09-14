@@ -1,8 +1,8 @@
 #include "DrawManager.h"
 
 namespace {
-	// Наши литералы — валидный UTF-8 (/utf-8). Ники из движка — ANSI.
-	// Пробуем UTF-8 строго, иначе откатываемся на системную кодовую страницу.
+	// Our literals are valid UTF-8 (/utf-8). Nicknames from the engine are ANSI.
+	// Try strict UTF-8 first, otherwise fall back to the system code page.
 	void ToWide(const char* src, wchar_t* dst, int dstLen)
 	{
 		if (!src || !src[0]) { if (dstLen > 0) dst[0] = L'\0'; return; }
@@ -32,7 +32,7 @@ void CGlobal_DrawManager::Init()
 
 void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& clr, const short align, const char* const str, ...)
 {
-	//Lang::T отдаёт nullptr на nullptr-входе: vsprintf_s(0) роняет детур.
+	//Lang::T returns nullptr on a nullptr input: vsprintf_s(0) crashes the detour.
 	if (!str)
 		return;
 	va_list va_alist;
@@ -43,11 +43,11 @@ void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& 
 	vsprintf_s(cbuffer, str, va_alist);
 	va_end(va_alist);
 
-	// Литералы в исходниках — UTF-8 (/utf-8), конвертим явно: не зависит от локали Windows.
+	// Source literals are UTF-8 (/utf-8); convert explicitly: does not depend on the Windows locale.
 	ToWide(cbuffer, wstr, 1024);
 
-	//find вместо operator[]: плохой enum иначе вставит HFont 0 в мапу
-	//и дальше полетит зов с нулевым шрифтом.
+	//find instead of operator[]: a bad enum would otherwise insert HFont 0 into the map
+	//and later calls would fly with a null font.
 	const auto itF = m_Fonts.find(font);
 	if (itF == m_Fonts.end() || !I::MatSystemSurface)
 		return;
@@ -152,7 +152,7 @@ void CGlobal_DrawManager::OutlinedCircle(const int x, const int y, const int r, 
 
 void CGlobal_DrawManager::Circle(const int x, const int y, const int r, const int s, const Color clr)
 {
-	//s==0: деление на ноль в flStep, DrawTexturedPolygon(0, ...).
+	//s==0: division by zero in flStep, DrawTexturedPolygon(0, ...).
 	if (s <= 0)
 		return;
 	static int s_nTexture = I::MatSystemSurface->CreateNewTextureID(true);
@@ -174,7 +174,7 @@ void CGlobal_DrawManager::Circle(const int x, const int y, const int r, const in
 
 int CGlobal_DrawManager::GetFontHeight(const EFonts& font) const
 {
-	//at() бросает std::out_of_range через границу детура — fail-closed.
+	//at() throws std::out_of_range across the detour boundary — fail-closed.
 	const auto it = m_Fonts.find(font);
 	return (it == m_Fonts.end()) ? 0 : it->second.m_nTall;
 }

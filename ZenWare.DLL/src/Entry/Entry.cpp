@@ -9,7 +9,7 @@
 
 namespace
 {
-	//Одна запись на процесс: вложенные хендлеры/потоки не дублируют след.
+	//One record per process: nested handlers/threads must not duplicate the trail.
 	static volatile LONG s_bRecorded = 0;
 
 	static void RecordCrash(const char* szVia, DWORD dwCode, DWORD dwAddr)
@@ -63,8 +63,8 @@ namespace
 		return EXCEPTION_CONTINUE_SEARCH;
 	}
 
-	//Вторая сеть: VEH не видит terminate/purecall/abort/invalid-parameter
-	//(это не SEH-исключения, а тихий выход CRT). Все ведут в тот же след.
+	//Second net: VEH does not see terminate/purecall/abort/invalid-parameter
+	//(these are not SEH exceptions but a silent CRT exit). All route to the same trail.
 	LONG WINAPI CrashUEF(PEXCEPTION_POINTERS pInfo)
 	{
 		if (pInfo && pInfo->ExceptionRecord && pInfo->ExceptionRecord->ExceptionCode >= 0x80000000u)
@@ -99,10 +99,10 @@ namespace
 
 	DWORD WINAPI UnloadThread(LPVOID)
 	{
-		// РИСК: другие игровые потоки могут всё ещё выполнять код через хуки.
-		// Безопаснее: убедиться, что все игровые потоки остановлены (например,
-		// через SuspendThread/ResumeThread или FreeLibraryAndExitThread).
-		// Здесь — минимальный фикс: фиксированная задержка + комментарий.
+		// RISK: other game threads may still be running code through the hooks.
+		// Safer: make sure all game threads are stopped (e.g. via
+		// SuspendThread/ResumeThread or FreeLibraryAndExitThread).
+		// Minimal fix here: a fixed delay + this comment.
 		//Let in-flight frames drain through the passivating detours first.
 		Sleep(300);
 
@@ -172,9 +172,9 @@ void CGlobal_ModuleEntry::Load()
 		I::MatSystemSurface = U::Interface.Get<IMatSystemSurface*>("vguimatsurface.dll", "VGUI_Surface031");
 
 		I::MaterialSystem   = U::Interface.Get<IMaterialSystem*>("materialsystem.dll", "VMaterialSystem080");
-		// Фабрика VEngineCvar007 зарегистрирована в vstdlib (там живёт cvar-система);
-		// engine пробуем запасным. Молча: без кваров просто не работает третье
-		// лицо (UpdateThirdPerson fail-closed), остальное грузится как обычно.
+		// The VEngineCvar007 factory is registered in vstdlib (that is where the cvar system lives);
+		// engine is tried as a fallback. Silent: without cvars third person
+		// (UpdateThirdPerson, fail-closed) simply does not work, the rest loads as usual.
 		I::Cvar = U::Interface.TryGet<ICvar*>("vstdlib.dll", "VEngineCvar007");
 		if (!I::Cvar)
 			I::Cvar = U::Interface.TryGet<ICvar*>("engine.dll", "VEngineCvar007");
@@ -182,9 +182,9 @@ void CGlobal_ModuleEntry::Load()
 
 		U::Log.Write("[+] Interfaces fetched (see XASSERT popups for any failures).");
 
-		// Fail-closed: дальше идут прямые разыменования указателей и хуки.
-		// На чужом билде игры лучше честный MessageBox и тихий выход,
-		// чем вылет процесса без объяснений.
+		// Fail-closed: direct pointer dereferences and hooks follow.
+		// On a foreign game build, an honest MessageBox and a silent exit
+		// beat crashing the process without explanation.
 		struct Need_t { const char* m_szName; const void* m_pPtr; };
 		const Need_t aNeed[] = {
 			{ "VClient016", I::BaseClient },
@@ -267,10 +267,10 @@ void CGlobal_ModuleEntry::Load()
 		F::Config.Load();
 		U::Log.Write("[*] Config loaded from \"%s\".", F::Config.FilePath());
 
-		//Диагностика нетваров: нулевой оффсет = имя таблицы/поля не найдено,
-		//все чтения по нему бьют в vtable (баги типа "бхоп не работает").
-		//Третий аргумент = sizeof(объявленного типа): менеджер сверит с
-		//реальным размером пропа и пометит несовпадения в логе.
+		//Netvar diagnostics: a zero offset = table/prop name not found,
+		//every read through it hits the vtable (bugs like "bhop does not work").
+		//Third argument = sizeof(declared type): the manager compares it with
+		//the real prop size and flags mismatches in the log.
 		U::Log.Write("[*] netvar CBaseEntity.m_vecOrigin=0x%X m_iTeamNum=0x%X m_vecMaxs=0x%X",
 			U::NetVar.Get("CBaseEntity", "m_vecOrigin", sizeof(Vector)), U::NetVar.Get("CBaseEntity", "m_iTeamNum", sizeof(int)), U::NetVar.Get("CBaseEntity", "m_vecMaxs", sizeof(Vector)));
 		U::Log.Write("[*] netvar CBasePlayer.deadflag=0x%X m_lifeState=0x%X m_fFlags=0x%X m_nWaterLevel=0x%X",

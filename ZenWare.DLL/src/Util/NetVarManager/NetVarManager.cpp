@@ -6,7 +6,7 @@
 
 namespace
 {
-	// Ищем проп по имени; возвращает сам проп и накопленный оффсет.
+	// Find a prop by name; returns the prop itself and the accumulated offset.
 	RecvProp* FindPropInternal(RecvTable* pTable, const char* const szVar, int& nOutOffset)
 	{
 		for (int n = 0; n < pTable->GetNumProps(); n++)
@@ -33,7 +33,7 @@ namespace
 			if (RecvProp* pFound = FindPropInternal(pDataTable, szVar, nOutOffset))
 				return pFound;
 
-			nOutOffset = nBase; // не нашлось во вложенной таблице — откат базы
+			nOutOffset = nBase; // not found in the nested table — roll back the base
 		}
 
 		return nullptr;
@@ -59,10 +59,10 @@ int CUtil_NetVarManager::Get(const char* const szClass, const char* const szVar,
 			if (!pProp)
 				return 0;
 
-			//RECVINFO кладёт sizeof(поля) в m_StringBufferSize для ВСЕХ типов
-			//пропов. Расхождение с объявленным типом = мусорное чтение соседних
-			//полей: так байт-проп m_nWaterLevel, объявленный int-ом, рандомно
-			//убивал бхоп (мусорный гейт). Лог — чтобы править заголовок.
+			//RECVINFO stores sizeof(field) in m_StringBufferSize for ALL prop
+			//types. A mismatch with the declared type = garbage reads of
+			//neighboring fields: that is how the byte prop m_nWaterLevel, declared
+			//as an int, randomly killed bhop (garbage gate). Logged so the header gets fixed.
 			if (nExpectSize > 0 && pProp->m_StringBufferSize > 0
 				&& pProp->m_StringBufferSize != nExpectSize)
 			{

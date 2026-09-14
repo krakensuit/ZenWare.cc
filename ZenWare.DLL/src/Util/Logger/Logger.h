@@ -22,15 +22,15 @@ public:
 
 	void Write(const char* const szFormat, ...);
 
-	//Вариант без критической секции для пути падения: если падающий поток
-	//застал лок занятым (или CRT в негодном состоянии), обычный Write
-	//повиснет/упадёт и следа не останется. Сначала строка уходит в
-	//OutputDebugStringA, потом best-effort в файл. Рваные строки допустимы.
+	//Variant without the critical section for the crash path: if the crashing
+	//thread finds the lock held (or the CRT in a bad state), the regular Write
+	//would hang/crash and no trail would remain. The line goes to
+	//OutputDebugStringA first, then best-effort to the file. Torn lines are acceptable.
 	void WriteNoLock(const char* const szFormat, ...);
 
-	// Хлебные крошки для диагностики вылетов: короткий след последнего места.
-	// Без аллокаций и без лока — безопасно звать из любого потока и читать
-	// из CrashRecorder на падающем потоке (строка может быть рваной, это ок).
+	// Breadcrumbs for crash diagnostics: a short trail of the last place.
+	// No allocations and no lock — safe to call from any thread and to read
+	// from CrashRecorder on the crashing thread (the line may be torn, that is fine).
 	void Crumb(const char* szStage);
 	const char* LastCrumb() const { return m_szCrumb; }
 

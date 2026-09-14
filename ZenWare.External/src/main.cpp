@@ -6,12 +6,12 @@
 #include "Resolve.h"
 #include <vector>
 
-// ZenWare.External: отдельный процесс, только чтение памяти (RPM) +
-// прозрачный оверлей + эмуляция ввода (SendInput). В игру ничего не
-// пишется, не инжектится и не хукается.
+// ZenWare.External: a separate process, memory read-only (RPM) +
+// a transparent overlay + input emulation (SendInput). Nothing is
+// written to, injected into or hooked in the game.
 //
-// Управление: INS = ESP вкл/выкл, F7 = язык RU/EN, F8 = bhop, F10 = strafe assist,
-// F9 = панель статистики, END = выход.
+// Controls: INS = ESP on/off, F7 = RU/EN language, F8 = bhop, F10 = strafe assist,
+// F9 = stats panel, END = quit.
 
 static bool KeyPressed(int vk)
 {
@@ -45,11 +45,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 	bool bEsp = true;
 	int staleFrames = 0;
 	bool bWasInGame = false;
-	bool bRu = (PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_RUSSIAN); // F7 переключает
+	bool bRu = (PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_RUSSIAN); // F7 toggles it
 
 	for (;;)
 	{
-		// --- ждём игру ---
+		// --- waiting for the game ---
 		while (!mem.Attach(Off::kProc)) { Pump(); Sleep(500); }
 
 		uintptr_t client = 0, engine = 0;
@@ -61,7 +61,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 			continue;
 		}
 
-		// Оффсеты под конкретный билд игры: сигнатуры/якорь, иначе хардкод.
+		// Offsets for the specific game build: signatures/anchor, otherwise hardcode.
 		Resolved_t res;
 		ResolveOffsets(mem, client, cb, engine, eb, res);
 		Off::dwLocalPlayer = res.local;
@@ -75,7 +75,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 		int followTick = 0;
 		ESP::Snap snap;
 
-		// --- главный цикл, пока живо окно игры ---
+		// --- main loop, while the game window is alive ---
 		bWasInGame = true;
 		while (FindWindowW(L"Valve001", nullptr))
 		{
@@ -95,7 +95,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 
 			float speed = mv.OnLogic(mem, localAddr);
 
-			// Снапшот сущностей ~20 раз/сек (полный обход списка дорогой).
+			// Entity snapshot ~20 times/sec (a full list walk is expensive).
 			if (now - lastSnap >= 50)
 			{
 				lastSnap = now;
@@ -127,7 +127,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 					bRu ? L"RU" : L"EN", bRu ? L"выход" : L"exit");
 				o.Text(10, 8, RGB(0, 255, 171), L"%s", st);
 
-				// Диагностика резолва: какие оффсеты откуда (sig/anchor/hard).
+				// Resolve diagnostics: which offsets came from where (sig/anchor/hard).
 				{
 					wchar_t dg[160];
 					swprintf_s(dg, L"LP:%05X(%hs) ENT:%05X(%hs) MAT:%05X(%hs mc=%d) stale=%d",
@@ -166,12 +166,12 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 			Sleep(2);
 		}
 
-		// Игра закрылась: отпустить все зажатые нами клавиши.
+		// The game closed: release every key we are holding down.
 		mv.Reset();
 		drawList.clear();
 		staleFrames = 0;
 		mem.Close();
-		// Была игра и пропала — выходим вслед за ней (с паузой на переходные состояния).
+		// The game was here and disappeared - exit after it (with a pause for transitional states).
 		if (bWasInGame)
 		{
 			Sleep(1500);

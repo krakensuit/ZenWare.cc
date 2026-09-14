@@ -26,7 +26,7 @@ public:
 	//while the menu is open (blocks game mouse/keyboard input).
 	bool ShouldBlockInput(unsigned int uMsg);
 
-	// Колесо мыши для прокрутки вкладок (вызывается из WndProc).
+	// Mouse wheel for tab scrolling (called from WndProc).
 	void OnWheel(int nDelta);
 
 private:
@@ -71,10 +71,10 @@ private:
 	int m_nDragOffX = 0;
 	int m_nDragOffY = 0;
 
-	//BindRow ловит клавишу: PollMenuKey в это время не тогглит меню.
+	//BindRow is capturing a key: PollMenuKey does not toggle the menu meanwhile.
 	static bool s_bKeyCapture;
 
-	// Прокрутка контента вкладок (Combat не влезает в 480px).
+	// Tab content scrolling (Combat does not fit into 480px).
 	int m_nScroll[5] = { };
 	int m_nContentH[5] = { };
 	void ClampScroll();

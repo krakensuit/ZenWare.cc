@@ -29,14 +29,14 @@ void CFeatures_Killfeed::Draw() {
     for (int i = (int)m_aEntries.size() - 1; i >= 0; --i) {
         auto &e = m_aEntries[i];
         float age = now - e.t;
-        //Отрицательный возраст (отмотка curtime при смене карты) иначе даёт
-        //alpha 0 навсегда и вечно занимает слот из 6.
+        //Negative age (curtime rollback on map change) would otherwise give
+        //alpha 0 forever and occupy one of the 6 slots permanently.
         if (age > 3.0f || age < -0.5f) { m_aEntries.erase(m_aEntries.begin() + i); continue; }
         float appear = Anim::EaseOutCubic(std::clamp(age / 0.25f, 0.0f, 1.0f));
         float vanish = age > 2.5f ? 1.0f - std::clamp((age - 2.5f) / 0.5f, 0.0f, 1.0f) : 1.0f;
         float alpha = appear * vanish;
         if (alpha <= 0.01f) continue;
-        // Карточка под текст: ширина по замерам, прижата к правому краю.
+        // Card behind the text: width from measurements, pinned to the right edge.
         const bool bKill = !e.killer.empty();
         const char* szWord = Lang::T(bKill ? "killed" : "died");
         const int wKill = bKill ? G::Draw.GetTextWidth(EFonts::ESP_NAME, e.killer.c_str()) : 0;
@@ -52,7 +52,7 @@ void CFeatures_Killfeed::Draw() {
         int ix = (int)e.curX;
         int iy = (int)(y + yOff);
         const int nA = (int)(255 * alpha);
-        // Тень + градиентное тело + рамка + акцентная полоса слева.
+        // Shadow + gradient body + outline + accent bar on the left.
         G::Draw.Rect(ix + 2, iy + 2, w, h, Color(0, 0, 0, (int)(110 * alpha)));
         G::Draw.GradientRect(ix, iy, ix + w, iy + h, Color(22, 24, 23, (int)(215 * alpha)), Color(10, 11, 10, (int)(215 * alpha)), false);
         G::Draw.OutlinedRect(ix, iy, w, h, Color(0, 0, 0, (int)(200 * alpha)));
@@ -78,7 +78,7 @@ bool CFeatures_Killfeed::PinKillerName(C_TerrorPlayer* pVictim, char* szOut, siz
 {
     if (!pVictim || !szOut || !nOut) return false;
     szOut[0] = '\0';
-    // Кто держит жертву пином — тот почти наверняка и добил.
+    // Whoever holds the victim in a pin almost certainly landed the kill.
     const EHANDLE hPins[] = {
         pVictim->m_tongueOwner(), pVictim->m_pounceAttacker(),
         pVictim->m_jockeyAttacker(), pVictim->m_carryAttacker(), pVictim->m_pummelAttacker()
@@ -87,8 +87,9 @@ bool CFeatures_Killfeed::PinKillerName(C_TerrorPlayer* pVictim, char* szOut, siz
     {
         if (!h.IsValid()) continue;
         IClientEntity* pEnt = I::ClientEntityList->GetClientEntityFromHandle(h);
-        //Хендл из нетвара при nOff=0 читает vtable и может стать «валидным»
-        //мусором на оружие/проп — без ClassID-гейта дальше виртуалки по чужому типу.
+        //A handle from a netvar with nOff=0 reads the vtable and can become
+        //"valid" garbage pointing at a weapon/prop — without the ClassID gate
+        //this goes on to virtual calls on a foreign type.
         if (!pEnt || !G::Util.IsPlayerEntity(pEnt)) continue;
         player_info_t pi = {};
         if (I::EngineClient->GetPlayerInfo(h.GetEntryIndex(), &pi) && pi.name[0])
@@ -115,20 +116,20 @@ void CFeatures_Killfeed::OnTick()
     {
         IClientEntity* pEntity = I::ClientEntityList->GetClientEntity(n);
         if (!pEntity || pEntity->IsDormant()) continue;
-        // Сначала дешёвый фильтр по классу: GetPlayerInfo по всем 2k слотам
-        // каждый кадр — лишний шторм вызовов движка. Имя нужно только в
-        // момент смерти (для строки киллфида), живые храним по индексу.
+        // Cheap class filter first: GetPlayerInfo over all 2k slots every frame
+        // is an unnecessary storm of engine calls. The name is only needed at
+        // the moment of death (for the killfeed line); the living are tracked by index.
         ClientClass* pCC = pEntity->GetClientClass();
         if (!pCC) continue;
         const int nID = pCC->m_ClassID;
-        //Смерти СИ тоже в ленту: классы особых + бумер по имени (ID нет в дампе).
-        //GetPlayerInfo для ботов-СИ вернёт false — такие строки тихо пропускаются.
+        //SI deaths go into the feed too: special classes + boomer by name (no ID in the dump).
+        //GetPlayerInfo returns false for bot SIs — such lines are silently skipped.
         if (nID != CTerrorPlayer && nID != SurvivorBot && nID != Tank
             && nID != Hunter && nID != Smoker && nID != Jockey && nID != Spitter
             && nID != Charger && nID != Witch && !G::Util.IsSpecialByName(pCC->m_pNetworkName))
             continue;
-        //СИ — сиблинги C_TerrorPlayer: только нетвары C_BasePlayer/C_BaseEntity,
-        //никаких виртуалок GetHealth на чужих объектах.
+        //SIs are C_TerrorPlayer siblings: only C_BasePlayer/C_BaseEntity netvars,
+        //no GetHealth virtual calls on foreign objects.
         const bool bIsSI = (nID == Hunter || nID == Smoker || nID == Jockey
             || nID == Spitter || nID == Charger || nID == Witch
             || G::Util.IsSpecialByName(pCC->m_pNetworkName));
@@ -153,8 +154,8 @@ void CFeatures_Killfeed::OnTick()
         }
         if (m_alive.count(n))
         {
-            //GetPlayerInfo ждёт клиент-слот: ботовые СИ живут на индексах
-            //выше maxclients. Имя — только для игроков, остальным имя класса.
+            //GetPlayerInfo expects a client slot: bot SIs live on indices above
+            //maxclients. Name for players only, class name for everyone else.
             char szVictim[64] = { };
             const int nMaxClients = I::EngineClient->GetMaxClients();
             player_info_t pi = {};

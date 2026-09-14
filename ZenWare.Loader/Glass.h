@@ -1,42 +1,42 @@
 #pragma once
 
-// ZenWare Loader - системный бэкдроп окна (frosted glass).
-// Реализация по спецификации: Win11 22H2+ -> Acrylic (DWMSBT_TRANSIENTWINDOW),
+// ZenWare Loader - system window backdrop (frosted glass).
+// Implemented per the spec: Win11 22H2+ -> Acrylic (DWMSBT_TRANSIENTWINDOW),
 // Win10 1803+ -> SetWindowCompositionAttribute + ACCENT_ENABLE_ACRYLICBLURBEHIND,
-// Win10 < 1803 -> ACCENT_ENABLE_BLURBEHIND. Если ничего не применилось —
-// возвращаем false, и лоадер рисует обычный тёмный фон.
+// Win10 < 1803 -> ACCENT_ENABLE_BLURBEHIND. If nothing applies we return
+// false and the loader draws its usual dark background.
 
 #include <windows.h>
 
 namespace Glass
 {
-	// Мятный акцент (совпадает с палитрой Zen2D).
+	// Mint accent (matches the Zen2D palette).
 	constexpr COLORREF kMint = RGB(0x6E, 0xE7, 0xB7);
 	constexpr BYTE     kMintAlpha = 0xCC;
 	constexpr int      kCornerRadius = 10;
 
-	// Номер сборки Windows через RtlGetVersion (ntdll). GetVersionEx врёт при манифесте.
+	// Windows build number via RtlGetVersion (ntdll). GetVersionEx lies under a manifest.
 	DWORD OsBuild();
 
-	// Главный вход: поднимает бэкдроп и растягивает рамку DWM на клиентскую область.
-	// true = бэкдроп реально применён (Win11 Acrylic или Win10 acrylic/blur).
+	// Main entry: enables the backdrop and extends the DWM frame into the client area.
+	// true = the backdrop was really applied (Win11 Acrylic or Win10 acrylic/blur).
 	bool EnableSystemBackdrop(HWND hwnd);
 
-	// Фолбэк-совместимость с прежним вызовом лоадера.
+	// Fallback compatibility with the loader's previous call.
 	bool Enable(HWND hwnd, COLORREF tint = kMint, BYTE alpha = 0);
 
-	// true, если бэкдроп применён (окно НЕ должно быть layered).
+	// true if the backdrop is applied (the window must NOT be layered).
 	bool IsAvailable();
 
-	// Прозрачность тинта (для fade-in; на системном материале — no-op).
+	// Tint opacity (for fade-in; a no-op on the system material).
 	void SetAlpha(HWND hwnd, BYTE alpha);
 
-	// Снять бэкдроп (перед уничтожением окна).
+	// Remove the backdrop (before destroying the window).
 	void Disable(HWND hwnd);
 
-	// Скругление углов: DWM на Win11, регион окна на Win10.
+	// Rounded corners: DWM on Win11, window region on Win10.
 	void RoundCorners(HWND hwnd, int radius = kCornerRadius);
 
-	// Освобождение внутренних ресурсов.
+	// Release internal resources.
 	void Shutdown();
 }

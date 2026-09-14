@@ -1,10 +1,10 @@
 #pragma once
 #include <imgui.h>
 
-// Применяет палитру ZenWare ко всему ImGui стилю
+// Applies the ZenWare palette to the entire ImGui style
 void ApplyZenWareStyle();
 
-// Рисует логотип ZenWare с градиентом и свечением
+// Draws the ZenWare logo with a gradient and glow
 void DrawZenWareLogo(ImDrawList* drawList, ImVec2 pos, float scale = 1.0f);
 
 namespace ZenWare {

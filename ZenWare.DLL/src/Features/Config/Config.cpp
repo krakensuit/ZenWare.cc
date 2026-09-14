@@ -178,7 +178,7 @@ const char* CFeatures_Config::SlotName(int nSlot)
 	{
 		case 2: return "ZenWare2.cfg";
 		case 3: return "ZenWare3.cfg";
-		default: return "ZenWare.cfg"; // слот 1 = старый файл, совместимость
+		default: return "ZenWare.cfg"; // slot 1 = legacy file, compatibility
 	}
 }
 
@@ -312,9 +312,10 @@ void CFeatures_Config::Load()
 		}
 	}
 
-	//Слайдеры — источник правды для меню: Render каждый кадр затирает float
-	//значениями слайдеров, поэтому после загрузки (включая авто-Load при старте)
-	//подтягиваем слайдеры из float. +0.5f = округление вместо усечения (5.05 -> 51 -> 5.1).
+	//Sliders are the source of truth for the menu: Render overwrites the floats
+	//with slider values every frame, so after a load (including the auto-Load at
+	//startup) we pull the sliders from the floats. +0.5f = rounding instead of
+	//truncation (5.05 -> 51 -> 5.1).
 	Vars::Aimbot::nFOVSlider = U::Math.Clamp((int)(Vars::Aimbot::flFOV * 10.0f + 0.5f), 5, 300);
 	Vars::Aimbot::nSmoothSlider = U::Math.Clamp((int)(Vars::Aimbot::flSmoothing + 0.5f), 0, 60);
 	Vars::Visuals::nViewFOVSlider = U::Math.Clamp((int)(Vars::Visuals::flViewFOV * 100.0f + 0.5f), 50, 300);
@@ -324,7 +325,7 @@ void CFeatures_Config::Load()
 	Vars::AimbotWpn::nShotgunFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flShotgunFov * 10.0f + 0.5f), 5, 300);
 	Vars::AimbotWpn::nSniperFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flSniperFov * 10.0f + 0.5f), 5, 300);
 	Vars::AimbotWpn::nPistolFovS = U::Math.Clamp((int)(Vars::AimbotWpn::flPistolFov * 10.0f + 0.5f), 5, 300);
-	//Кривой cfg не должен выводить селекторы за диапазон: меню прикрыто Clamp, логика — нет.
+	//A corrupt cfg must not push selectors out of range: the menu is clamped, the logic is not.
 	Vars::BunnyHop::nBhopStyle = U::Math.Clamp(Vars::BunnyHop::nBhopStyle, 0, 1);
 	Vars::BunnyHop::nAutoStrafeMode = U::Math.Clamp(Vars::BunnyHop::nAutoStrafeMode, 0, 3);
 	Vars::Chams::nPalette = U::Math.Clamp(Vars::Chams::nPalette, 0, 4);
@@ -338,8 +339,8 @@ void CFeatures_Config::Load()
 	Vars::Visuals::nThirdPersonDist = U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200);
 	Vars::BunnyHop::nJumpDelayTicks = U::Math.Clamp(Vars::BunnyHop::nJumpDelayTicks, 0, 20);
 	Vars::Visuals::nEspMaxDistS = U::Math.Clamp((int)(Vars::Visuals::flEspMaxDist + 0.5f), 0, 200);
-	//Кривой cfg = fail-open без этих клампов: мусор жил бы до первого
-	//открытия меню (float правится только из Render).
+	//A corrupt cfg = fail-open without these clamps: garbage would live until the
+	//first menu open (the float is only edited from Render).
 	Vars::Menu::nLang = U::Math.Clamp(Vars::Menu::nLang, 0, 7);
 	Vars::Menu::nKey = U::Math.Clamp(Vars::Menu::nKey, 0, 254);
 	Vars::Menu::nAccentPreset = U::Math.Clamp(Vars::Menu::nAccentPreset, 0, 5);

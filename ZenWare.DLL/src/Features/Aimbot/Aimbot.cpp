@@ -8,7 +8,7 @@
 
 namespace
 {
-	// ID нет в дампе (бумер!) или чужой билд: опознаём СИ по имени класса.
+	// ID not in the dump (boomer!) or a different build: identify the SI by class name.
 	bool IsSpecialByName(const char* szNet)
 	{
 		if (!szNet || !szNet[0])
@@ -25,9 +25,9 @@ namespace
 		return false;
 	}
 
-	// Точка прицеливания лежит ВНУТРИ тела цели (голова/грудь), поэтому
-	// строгий !DidHit() всегда false: луч честно упирается в саму цель.
-	// Засчитываем видимость, если трейс закончился на нашей цели.
+	// The aim point lies INSIDE the target body (head/chest), so a strict
+	// !DidHit() is always false: the ray legitimately hits the target itself.
+	// Treat it visible if the trace ends on our target.
 	bool IsPointVisible(C_TerrorPlayer* pLocal, const Vector& vEyePos, const Vector& vAimPoint, C_BaseEntity* pTarget)
 	{
 		trace_t tr{};
@@ -40,7 +40,7 @@ namespace
 	struct WpnCfg_t { float flFOV; float flSmooth; int nHitbox; int nPrio; };
 	WpnCfg_t s_wpn = { 5.0f, 0.0f, 0, 0 };
 
-	// -1 = прочие (global defaults), иначе 0..4 индекс группы Vars::AimbotWpn.
+	// -1 = other (global defaults), otherwise 0..4 index into the Vars::AimbotWpn group.
 	int WpnGroupFor(int nID)
 	{
 		switch (nID)
@@ -74,14 +74,14 @@ namespace
 			case 4: s_wpn = { Vars::AimbotWpn::flPistolFov, (float)Vars::AimbotWpn::nPistolSmooth, Vars::AimbotWpn::nPistolHitbox, s_wpn.nPrio }; break;
 			default: break;
 		}
-		//Битый конфиг (NaN/мусор) иначе дает лок на 360 градусов: сравнение
-		//flFov > NaN всегда false и FOV-фильтр молча отключается.
+		//Corrupt config (NaN/garbage) would otherwise yield a 360-degree lock:
+		//flFov > NaN is always false and the FOV filter silently turns off.
 		if (!isfinite(s_wpn.flFOV) || s_wpn.flFOV <= 0.0f || s_wpn.flFOV > 180.0f)
 			s_wpn.flFOV = 5.0f;
 		if (!isfinite(s_wpn.flSmooth) || s_wpn.flSmooth < 0.0f || s_wpn.flSmooth > 64.0f)
 			s_wpn.flSmooth = 0.0f;
-		//Битый hitbox/prio из конфига: GetAimPoint вернул бы false всегда
-		//и аим молча никогда не лочился бы.
+		//Corrupt hitbox/prio from the config: GetAimPoint would always return
+		//false and the aim would never lock, silently.
 		if (s_wpn.nHitbox < 0 || s_wpn.nHitbox > 1)
 			s_wpn.nHitbox = 0;
 		if (s_wpn.nPrio < 0 || s_wpn.nPrio > 1)
@@ -111,14 +111,14 @@ namespace
 			if (nID != Infected && nID != Witch)
 				continue;
 
-			// Commons/Infected — только нетвары, никаких виртуалок.
+			// Commons/Infected — netvars only, no virtual calls.
 		C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
 		C_Infected* pInf = pEntity->As<C_Infected*>();
 
 		if (!pEnt || !pInf)
 			continue;
 
-		// Защита от краша Aimbot:common (0x5AD5): проверяем, что класс — действительно Infected
+		// Crash guard for Aimbot:common (0x5AD5): verify the class really is Infected
 		ClientClass* pCC2 = pEntity->GetClientClass();
 		if (!pCC2 || pCC2->m_ClassID != Infected)
 			continue;
@@ -186,7 +186,7 @@ namespace
 			if ((nTeam != TEAM_SURVIVOR && nTeam != TEAM_INFECTED) || nTeam == nLocalTeam)
 				continue;
 
-			// Alive check: только нетвары, никаких виртуалок.
+			// Alive check: netvars only, no virtual calls.
 			C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
 			if (!pPl || pPl->m_lifeState() != 0)
 				continue;
@@ -288,8 +288,8 @@ void CFeatures_Aimbot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CUse
 
 	Vector vAngleTo = U::Math.GetAngleToPosition(vEyePos, vAimPoint);
 
-	//Смус считаем всегда (и для сайлента — серверу едет сглаженный угол),
-	//на экран углы выводим только без сайлента (ниже).
+	//Compute smoothing always (for silent too — the server receives the smoothed angle),
+	//only show the angles on screen without silent (below).
 	if (s_wpn.flSmooth > 0.0f)
 	{
 		const float flSmooth = U::Math.Clamp(s_wpn.flSmooth, 1.0f, 64.0f);
@@ -338,8 +338,8 @@ C_TerrorPlayer* CFeatures_Aimbot::FindTarget(C_TerrorPlayer* pLocal, const Vecto
 		if ((vAimPoint - vEyePos).LenghtSqr() < 1.0f)
 			continue;
 
-		//Видимость к точке аима, а не глаз-в-глаза: голова за крышкой при видимой
-		//груди (и наоборот) раньше давала неверное решение.
+		//Visibility to the aim point, not eye-to-eye: a head behind a roof with the
+		//chest visible (and vice versa) used to give a wrong decision.
 		if (Vars::Aimbot::bVisibleOnly && !IsPointVisible(pLocal, vEyePos, vAimPoint, pPlayer))
 			continue;
 
@@ -419,7 +419,7 @@ bool CFeatures_Aimbot::ShouldRun(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon
 	if (!G::Util.IsValidTeam(pLocal->GetTeamNumber()))
 		return false;
 
-	//Только primary: автострельба жмёт IN_ATTACK, а снап углов на тике
-	//готового шова (secondary) стрелять всё равно не даст.
+	//Primary only: autoshoot presses IN_ATTACK, and snapping angles on the tick of
+	//a ready shove (secondary) would not fire anyway.
 	return pWeapon->CanPrimaryAttack();
 }

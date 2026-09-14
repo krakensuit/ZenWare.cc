@@ -16,7 +16,7 @@ public:
 	M_NETVAR(m_flStartTime, float, "Infected", "m_flStartTime");
 	M_NETVAR(m_bLooping, bool, "Infected", "m_bLooping");
 	M_NETVAR(m_fFlags, int, "Infected", "m_fFlags");
-	//Однобайтовый проп (как у CBasePlayer): int-чтение тащило соседние байты.
+	//One-byte prop (like CBasePlayer): an int read dragged in neighboring bytes.
 	M_NETVAR(m_nWaterLevel, unsigned char, "Infected", "m_nWaterLevel");
 	M_NETVAR(m_sequenceStartTime, float, "Infected", "m_sequenceStartTime");
 	M_NETVAR(m_clientLookatTarget, EHANDLE, "Infected", "m_clientLookatTarget");

@@ -6,8 +6,8 @@
 namespace
 {
 	//Ray straight down the crosshair; returns the entity it ends on.
-	//Триггер по углам cmd после аима, а не по прошлому кадру из движка:
-	//иначе при включённом аиме выстрел отстаёт на тик.
+	//Trace against the cmd viewangles after aimbot, not the engine's previous frame:
+	//otherwise with aimbot on the shot lags a tick behind.
 	C_BaseEntity* TraceCrosshair(C_TerrorPlayer* pLocal, const Vector& vView)
 	{
 		const Vector vEye = G::Util.GetEyePosition(pLocal);
@@ -32,7 +32,7 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 	if (Vars::TriggerBot::nKey && !(GetAsyncKeyState(Vars::TriggerBot::nKey) & 0x8000))
 		return;
 
-	//Как в Aimbot::ShouldRun: не файрим в инкапе/висе/госте/мёртвым.
+	//Like Aimbot::ShouldRun: no firing while incapped/hanging/ghost/dead.
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost()
 		|| pLocal->m_isIncapacitated() || !G::Util.IsValidTeam(pLocal->GetTeamNumber()))
 		return;
@@ -45,12 +45,12 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 	if (!pHit || pHit->IsDormant())
 		return;
 
-	//tr.m_pEnt — любой объект (проп/оружие/стена): As<> до гейта = чужая таблица.
+	//tr.m_pEnt can be any object (prop/weapon/wall): As<> before the gate = wrong vtable.
 	C_TerrorPlayer* pTarget = G::Util.IsPlayerEntity(pHit) ? pHit->As<C_TerrorPlayer*>() : nullptr;
 
-	//Видимость уже доказана самим попаданием кроссхейр-трейса: глаз-в-глаза
-	//проверка здесь душила бы огонь при видимой голове и закрытой груди, поэтому
-	//bVisibleOnly по умолчанию выключен, а строгий глаз-в-глаза включает сам юзер.
+	//Visibility is already proven by the crosshair trace hit itself: an eye-to-eye
+	//check here would choke fire when the head is visible but the chest is covered, so
+	//bVisibleOnly defaults to off, and the user opts into the strict eye-to-eye check.
 	if (G::Util.IsValidTarget(pLocal, pTarget, Vars::TriggerBot::bVisibleOnly))
 	{
 		cmd->buttons |= IN_ATTACK;
@@ -92,8 +92,8 @@ void CFeatures_TriggerBot::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, 
 			}
 			else if (G::Util.IsSpecialByName(pCC->m_pNetworkName))
 			{
-				//Бумер и классы со сдвинутыми ID: точного типа не знаем — виртуалок
-				//не дёргаем, только нетвар команды C_BaseEntity. Для триггера хватает.
+				//Boomer and classes with shifted IDs: exact type unknown — no virtual
+				//calls, only the C_BaseEntity team netvar. Good enough for the trigger.
 				const int nTeam = pHit->m_iTeamNum();
 
 				if ((nTeam == TEAM_SURVIVOR || nTeam == TEAM_INFECTED) && pLocal && nTeam != pLocal->GetTeamNumber())

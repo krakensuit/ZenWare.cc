@@ -10,7 +10,7 @@
 
 namespace
 {
-	// Бумера нет в дампе ID: опознаём по имени класса, как Aimbot/ESP.
+	// The boomer is not in the ID dump: identify by class name, like Aimbot/ESP.
 	bool IsBoomerByName(const char* szNet)
 	{
 		if (!szNet || !szNet[0])
@@ -22,8 +22,9 @@ namespace
 		szLower[i] = '\0';
 		return strstr(szLower, "boomer") != nullptr;
 	}
-	// Best-effort опознание shootable-врага, зеркалит классификацию Aimbot:
-	// игроки чужой команды, особые, обычные + ведьма. Возвращает HP и якорь.
+	// Best-effort identification of a shootable enemy, mirrors the Aimbot
+	// classification: foreign team players, specials, commons + witch.
+	// Returns HP and an anchor.
 	bool GetEnemyHp(IClientEntity* pEntity, C_TerrorPlayer* pLocal, int& nHpOut, Vector& vAnchorOut)
 	{
 		ClientClass* pCC = pEntity->GetClientClass();
@@ -32,7 +33,7 @@ namespace
 
 		const int nID = pCC->m_ClassID;
 
-		// Выжившие/боты чужой команды (+танк за игроков).
+		// Foreign-team survivors/bots (+tank counted as players).
 		if (nID == CTerrorPlayer || nID == SurvivorBot || nID == Tank)
 		{
 			C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
@@ -43,7 +44,7 @@ namespace
 			return nHpOut >= 0;
 		}
 
-		// Особые заражённые (+бумер по имени: его ID нет в дампе).
+		// Specials (+boomer by name: its ID is not in the dump).
 		if (nID == Hunter || nID == Smoker || nID == Jockey || nID == Spitter || nID == Charger || IsBoomerByName(pCC->m_pNetworkName))
 		{
 			C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
@@ -58,15 +59,15 @@ namespace
 			return nHpOut >= 0;
 		}
 
-		// Обычные + ведьма.
+		// Commons + witch.
 		if (nID == Infected || nID == Witch)
 		{
 		C_BaseEntity* pEnt = pEntity->As<C_BaseEntity*>();
 		C_Infected* pInf = pEntity->As<C_Infected*>();
 		if (!pEnt || !pInf)
 			return false;
-		//У обычных/ведьмы нет таблицы CBasePlayer: m_lifeState читал бы мусор.
-		//Авторитетная проверка живости — IsInfectedAlive, её достаточно.
+		//Commons/witch have no CBasePlayer table: m_lifeState would read garbage.
+		//The authoritative aliveness check is IsInfectedAlive, that is enough.
 		if (!G::Util.IsInfectedAlive(pInf->m_usSolidFlags(), pInf->m_nSequence()))
 			return false;
 			nHpOut = pEnt->GetHealth();
@@ -91,7 +92,7 @@ void CFeatures_Hitmarker::PlayHit(bool bKill)
 	if (!Vars::Hitmarker::bSound)
 		return;
 
-	// Антиспам: дробовики/ очередь бьют каждый кадр.
+	// Anti-spam: shotguns/burst fire hit every frame.
 	const unsigned long long ullNow = GetTickCount64();
 	if (ullNow - m_ullLastSnd < 40)
 		return;
@@ -99,11 +100,11 @@ void CFeatures_Hitmarker::PlayHit(bool bKill)
 
 	const int nPitch = U::Math.Clamp(Vars::Hitmarker::nPitch, 200, 2000);
 	const int nFreq = bKill ? (nPitch * 3 / 2) : nPitch;
-	// Beep синхронный — уводим в фон, кадр не ждёт.
+	// Beep is synchronous — move it to a background thread, the frame must not wait.
 	std::thread([nFreq, bKill]() { Beep(nFreq, bKill ? 120 : 60); }).detach();
 }
 
-//Короткое имя класса сущности для лога урона (без префикса C, игроки = Survivor).
+//Short entity class name for the damage log (no C prefix, players = Survivor).
 static const char* ClassShort(IClientEntity* pEntity)
 {
 	if (!pEntity)
@@ -142,7 +143,7 @@ void CFeatures_Hitmarker::OnTick()
 	if (!pLocal || pLocal->deadflag() || pLocal->m_lifeState() != 0)
 		return;
 
-	// Урон по нам: просадка HP локального между кадрами.
+	// Damage taken: local HP drop between frames.
 	bool bJustDamaged = false;
 	int nIncoming = 0;
 	{
@@ -158,7 +159,7 @@ void CFeatures_Hitmarker::OnTick()
 
 	const Vector vEye = G::Util.GetEyePosition(pLocal);
 
-	// Зачёт только пока жмём огонь (мышь или клавиша аима): иначе это урон союзников.
+	// Count only while firing (mouse or aim key): otherwise it is allies' damage.
 	const bool bFiring = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0
 		|| (Vars::Aimbot::nKey && (GetAsyncKeyState(Vars::Aimbot::nKey) & 0x8000) != 0);
 
@@ -183,10 +184,10 @@ void CFeatures_Hitmarker::OnTick()
 		const int nPrev = (it == m_mHp.end()) ? nHp : it->second;
 		const int nDmg = nPrev - nHp;
 
-		// Скачок вверх = хил/респавн, огромный скачок вниз = телепорт сущности.
+		// An upward jump = heal/respawn, a huge downward jump = entity teleport.
 		if (nDmg <= 0 || nDmg > 2000)
 			continue;
-		// Порог: мелкий урон не засчитываем (добивание — всегда).
+		// Threshold: small damage is not counted (killing blows always).
 		if (nHp > 0 && nDmg < Vars::Hitmarker::nMinDmg)
 			continue;
 		if (!bFiring)
@@ -225,8 +226,8 @@ void CFeatures_Hitmarker::OnTick()
 
 	m_mHp.swap(mSeen);
 
-	// Откуда прилетело: в кадр урона ищем ближайшего видимого врага.
-	// Дорогой скан (трейсы) — только по факту просадки HP, не каждый кадр.
+	// Where it came from: on the damage frame, find the nearest visible enemy.
+	// The expensive scan (traces) runs only on an actual HP drop, not every frame.
 	if (bJustDamaged && (Vars::Hitmarker::bDmgArrow || Vars::Hitmarker::bDmgLog))
 	{
 		float flBest = 2000.0f * 2000.0f;
@@ -306,7 +307,7 @@ void CFeatures_Hitmarker::Draw()
 		G::Draw.String(EFonts::ESP_NAME, (int)vS.x, nY, clr, TXT_CENTERXY, "%s", sz);
 	}
 
-	// Красная вспышка по краям при уроне по нам (направления нет: ивентов в движке нет).
+	// Red edge flash on damage taken (no direction: no engine events).
 	if (Vars::Hitmarker::bDmgFlash)
 	{
 		const float flDmgAge = flNow - m_flLastDmgT;
@@ -315,7 +316,7 @@ void CFeatures_Hitmarker::Draw()
 			const int nA = (int)(110.0f * (1.0f - flDmgAge / 0.6f));
 			const Color clrF(255, 40, 40, nA);
 			const int W = G::Draw.m_nScreenW, H = G::Draw.m_nScreenH;
-			const int nT = 26; // толщина рамки
+			const int nT = 26; // frame thickness
 			G::Draw.Rect(0, 0, W, nT, clrF);
 			G::Draw.Rect(0, H - nT, W, nT, clrF);
 			G::Draw.Rect(0, 0, nT, H, clrF);
@@ -323,8 +324,8 @@ void CFeatures_Hitmarker::Draw()
 		}
 	}
 
-	// Стрелка на последнего атакующего: направление из углов обзора,
-	// не W2S — враг часто за спиной, проекции там нет.
+	// Arrow to the last attacker: direction from view angles,
+	// not W2S — the enemy is often behind us, there is no projection there.
 	if (Vars::Hitmarker::bDmgArrow && m_bHasAttacker && I::EngineClient && I::ClientEntityList)
 	{
 		const float flAtkAge = flNow - m_flAttackerT;
@@ -366,8 +367,8 @@ void CFeatures_Hitmarker::Draw()
 		}
 	}
 
-	// Стата сессии: попадания / выстрелы / точность / добивания.
-	// Справа внизу, над вотермарком: с киллфидом сверху не пересекается.
+	// Session stats: hits / shots / accuracy / kills.
+	// Bottom right, above the watermark: does not collide with the killfeed on top.
 	if (Vars::Hitmarker::bStats)
 	{
 		const int nAcc = (m_nShots > 0) ? (m_nHits * 100 / m_nShots) : 0;
@@ -378,7 +379,7 @@ void CFeatures_Hitmarker::Draw()
 		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0 + 32, Color(0, 255, 171, 255), TXT_DEFAULT, "acc %d%%  kills %d", nAcc, m_nKills);
 	}
 
-	// Лог урона: справа внизу над сессионной статой, записи живут 4 c.
+	// Damage log: bottom right above the session stats, entries live 4 s.
 	if (Vars::Hitmarker::bDmgLog && !m_aLog.empty())
 	{
 		for (int i = (int)m_aLog.size() - 1; i >= 0; --i)

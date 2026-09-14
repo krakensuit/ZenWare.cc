@@ -21,16 +21,16 @@ public:
 	Vector GetEyePosition(C_BaseEntity* pEntity);
 	bool IsValidTarget(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, bool bCheckVisible = false);
 	bool IsTargetVisible(C_TerrorPlayer* pLocal, C_TerrorPlayer* pTarget, const Vector& vEyePos);
-	//ClassID гейты перед даункастом: As<T> это static_cast и тип не проверяет,
-	//виртуалка C_TerrorWeapon на viewmodel/руках = краш.
+	//ClassID gates before downcast: As<T> is a static_cast and does not check the type;
+	//a C_TerrorWeapon vfunc on a viewmodel/arms = crash.
 	bool IsPlayerEntity(IClientEntity* pEntity);
 	bool IsWeaponEntity(IClientEntity* pEntity);
-	//Только стволы с раскладкой C_TerrorWeapon: меле/пила/гренник — сиблинги
-	//C_BaseCombatWeapon, static_cast на них + виртуалка = чужой слот vtable.
+	//Only guns with the C_TerrorWeapon layout: melee/chainsaw/grenade launcher are
+	//C_BaseCombatWeapon siblings; static_cast on them + a vfunc = foreign vtable slot.
 	bool IsGunEntity(IClientEntity* pEntity);
-	//Бумер и сдвинутые ID чужих билдов: опознаём СИ по имени класса.
+	//Boomer and shifted IDs of foreign builds: identify specials by class name.
 	bool IsSpecialByName(const char* szNet);
-	//Фиксированная палитра классов СИ (ESP + чамсы), fallback для неизвестных.
+	//Fixed palette of special-infected classes (ESP + chams), fallback for unknowns.
 	Color SIClassColor(const int nClassID, const Color& clrFallback);
 };
 

@@ -2,7 +2,7 @@
 
 #include "../SDK/SDK.h"
 
-// Без windows.h (ломает byte в SDK-заголовках): только нужное из kernel32.
+// No windows.h (it breaks byte in SDK headers): only the kernel32 bits we need.
 extern "C" __declspec(dllimport) unsigned short __stdcall GetUserDefaultUILanguage(void);
 
 namespace Vars
@@ -10,7 +10,7 @@ namespace Vars
 	namespace Aimbot
 	{
 		inline bool bEnabled = false;
-		inline bool bSilent = false; //видимый лок: как у space, silent включается отдельно
+		inline bool bSilent = false; //visible lock: like space, silent aim is enabled separately
 		inline bool bAutoShoot = false;
 		inline bool bVisibleOnly = true;
 		inline bool bIgnoreIncapped = false;
@@ -122,10 +122,10 @@ namespace Vars
 	namespace Visuals
 	{
 		inline bool bNoFog = false;
-		inline bool bFullbright = false; //mat_fullbright через ICvar (как у space)
-		inline float flViewFOV = 1.0f; //мир (камера), старый visuals.viewfov
+		inline bool bFullbright = false; //mat_fullbright via ICvar (like space)
+		inline float flViewFOV = 1.0f; //world (camera), old visuals.viewfov
 		inline int nViewFOVSlider = 100; //x100 proxy
-		inline float flVmFOV = 1.0f; //руки/viewmodel отдельно
+		inline float flVmFOV = 1.0f; //hands/viewmodel separately
 		inline int nVmFOVSlider = 100; //x100 proxy
 		inline bool bCrosshair = false;
 		inline int nCrosshairSize = 6;
@@ -146,20 +146,20 @@ namespace Vars
 
 	namespace Radar
 	{
-		inline bool bEnabled = true;    // 2D-радар сверху слева
-		inline bool bSpectators = true; // список наблюдателей под радаром
+		inline bool bEnabled = true;    // 2D radar, top-left
+		inline bool bSpectators = true; // spectator list under the radar
 	}
 
 	namespace Alerts
 	{
-		inline bool bEnabled = true; // баннеры угроз
-		inline bool bTank = true;    // танк + дистанция
-		inline bool bWitch = true;   // ведьма + дистанция
-		inline bool bSIList = true;  // список особых рядом (слева)
-		inline bool bPinned = true;  // тебя взяли в пин (хантер/жокей/...)
-		inline bool bRevive = true;  // союзник в инкапе — реанимируй
-		inline bool bTankHp = true;  // полоса HP танка под баннером
-		inline bool bSpitAlert = true; // стоишь в блевотине — MOVE!
+		inline bool bEnabled = true; // threat banners
+		inline bool bTank = true;    // tank + distance
+		inline bool bWitch = true;   // witch + distance
+		inline bool bSIList = true;  // list of nearby specials (left)
+		inline bool bPinned = true;  // you got pinned (hunter/jockey/...)
+		inline bool bRevive = true;  // ally incapped — go revive
+		inline bool bTankHp = true;  // tank HP bar under the banner
+		inline bool bSpitAlert = true; // standing in spit — MOVE!
 	}
 
 	namespace Menu
@@ -171,9 +171,9 @@ namespace Vars
 		inline bool bWatermarkFps = true;   // include the fps counter in the watermark
 		inline int nAccentPreset = 0;       // 0..4 preset palette, 5 = custom swatch
 		inline int nPanelAlpha = 244;       // panel opacity, 120..255
-		inline constexpr const char* kVersion = "v3.13.1"; // header badge + watermark
-		// Язык всего меню: 0 EN, 1 RU, 2 DE... Английский по умолчанию
-		// (до Config.Load), хранится в конфиге, переключается кнопкой и F7.
+		inline constexpr const char* kVersion = "v3.13.3"; // header badge + watermark
+		// Menu language: 0 EN, 1 RU, 2 DE... English by default
+		// (before Config.Load), stored in the config, switched by button and F7.
 		inline int nLang = 0;
 	}
 
@@ -192,14 +192,14 @@ namespace Vars
 		inline bool bEnabled = false;
 		inline bool bSound = true;
 		inline bool bNumbers = true;
-		inline bool bXMark = true;     // крест на прицеле в момент попадания
-		inline bool bStats = false;    // панель статистики сессии
-		inline bool bDmgFlash = true;  // красная вспышка при уроне по тебе
-		inline bool bDmgArrow = true;  // стрелка на последнего атакующего
-		inline bool bDmgLog = false;   // панель лога урона (нанесённый + по тебе)
+		inline bool bXMark = true;     // X mark on the crosshair on hit
+		inline bool bStats = false;    // session stats panel
+		inline bool bDmgFlash = true;  // red flash on incoming damage
+		inline bool bDmgArrow = true;  // arrow toward the last attacker
+		inline bool bDmgLog = false;   // damage log panel (dealt + taken)
 		inline int nPitch = 1000;      // Hz, menu 200..2000
 		inline int nDurationMs = 1200; // ms, menu 400..3000
-		inline int nMinDmg = 0;        // скрывать цифры урона меньше N, 0 = все
+		inline int nMinDmg = 0;        // hide damage numbers below N, 0 = show all
 	}
 
 	namespace VisualRecoil

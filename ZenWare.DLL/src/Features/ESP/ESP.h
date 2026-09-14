@@ -15,11 +15,11 @@ private:
 	void DrawCommon(C_BaseEntity* pEntity);
 	void DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const int nClassID);
 	void DrawBoss(C_BaseEntity* pEntity);
-	// Fallback по имени класса (m_pNetworkName): ловит бумера (ID нет в дампе)
-	// и вообще все классы при смене ID на чужом билде. Только чтение, без новых вызовов.
+	// Fallback by class name (m_pNetworkName): catches the boomer (no ID in the dump)
+	// and any class at all if IDs shift on a foreign build. Read-only, no new calls.
 	void DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, const char* szNetworkName);
-	void DrawTeam(C_TerrorPlayer* pLocal); // панель HP команды слева
-	void DrawThrowables(); // таймеры брошенных гранат (пайп/молотов/желчь)
+	void DrawTeam(C_TerrorPlayer* pLocal); // team HP panel on the left
+	void DrawThrowables(); // thrown grenade timers (pipe/molotov/bile)
 };
 
 namespace F { inline CFeatures_ESP ESP; }

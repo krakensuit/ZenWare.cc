@@ -5,9 +5,9 @@
 
 struct Vec3 { float x = 0, y = 0, z = 0; };
 
-// ESP только чтением памяти: боксы + HP + дистанция + цвет команды.
-// Имена игроков external получить не может (GetPlayerInfo — вызов движка),
-// поэтому их нет осознанно.
+// ESP via memory reads only: boxes + HP + distance + team color.
+// Player names are intentionally absent: external cannot get them
+// (GetPlayerInfo is an engine call).
 class ESP
 {
 public:
@@ -27,14 +27,14 @@ public:
 		bool matOk = false;
 	};
 
-	// Читает local + матрицу, проверяет их sanity. false = данные битые
-	// (оффсеты устарели) — рисовать по ним нельзя.
+	// Reads local + matrix, sanity-checks them. false = the data is corrupt
+	// (offsets are stale) - nothing may be drawn from it.
 	bool Snapshot(const Memory& mem, uintptr_t client, uintptr_t engine, Snap& out);
 
-	// Собирает сырые данные видимых сущностей (мировые координаты).
+	// Collects raw data of visible entities (world coordinates).
 	void Collect(const Memory& mem, uintptr_t client, const Snap& snap, std::vector<RawEnt>& out);
 
-	// Проецирует и рисует.
+	// Projects and draws.
 	void Draw(Overlay& o, const Snap& snap, const std::vector<RawEnt>& ents);
 
 private:

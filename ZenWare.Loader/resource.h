@@ -4,12 +4,12 @@
 #define IDR_ZENWARE_EXTERNAL 103
 #define IDR_LOGO_PNG 104
 
-// ЕДИНСТВЕННОЕ место с версией релиза. Меняется тут — подхватывается
-// заголовком окна, сплэшем и VERSIONINFO exe автоматически.
+// THE single place holding the release version. Change it here and it is picked up
+// automatically by the window title, the splash and the exe VERSIONINFO.
 #define ZENWARE_VER_MAJOR 3
 #define ZENWARE_VER_MINOR 13
-#define ZENWARE_VER_PATCH 2
+#define ZENWARE_VER_PATCH 3
 
-#define ZENWARE_VER_STR "3.13.2"
+#define ZENWARE_VER_STR "3.13.3"
 
 

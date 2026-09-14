@@ -245,15 +245,15 @@ public:
 	M_NETVAR(m_iObserverMode, int, "CBasePlayer", "m_iObserverMode");
 	M_NETVAR(m_hObserverTarget, EHANDLE, "CBasePlayer", "m_hObserverTarget");
 	M_NETVAR(m_hViewModel, EHANDLE, "CBasePlayer", "m_hViewModel[0]");
-	//m_szLastPlaceName убран: это char-массив в игре, а не указатель —
-	//объявление const char* читало первые 4 символа как адрес. Не используется.
+	//m_szLastPlaceName removed: it is a char array in the game, not a pointer —
+	//declaring const char* read the first 4 characters as an address. Not used.
 	M_NETVAR(m_vecLadderNormal, Vector, "CBasePlayer", "m_vecLadderNormal");
 	M_NETVAR(m_ladderSurfaceProps, int, "CBasePlayer", "m_ladderSurfaceProps");
-	//ub-префикс = unsigned byte: чтение int-ом давало мусор соседних байтов.
+	//ub prefix = unsigned byte: an int read produced garbage from neighboring bytes.
 	M_NETVAR(m_ubEFNoInterpParity, unsigned char, "CBasePlayer", "m_ubEFNoInterpParity");
-	// Однобайтовый проп: в реальной таблице за ним сразу идёт m_lifeState
-	// (0x147). Чтение int с 0x146 тащило соседние байты как мусор
-	// (значения вида 0x777B0080), и гейт "water > 1" рандомно убивал бхоп.
+	// One-byte prop: in the real table it is immediately followed by m_lifeState
+	// (0x147). Reading an int at 0x146 dragged in neighboring bytes as garbage
+	// (values like 0x777B0080), and the "water > 1" gate randomly killed bhop.
 	M_NETVAR(m_nWaterLevel, unsigned char, "CBasePlayer", "m_nWaterLevel");
 	M_NETVAR(m_hPostProcessCtrl, int, "CBasePlayer", "m_hPostProcessCtrl");
 	M_NETVAR(m_hColorCorrectionCtrl, EHANDLE, "CBasePlayer", "m_hColorCorrectionCtrl");

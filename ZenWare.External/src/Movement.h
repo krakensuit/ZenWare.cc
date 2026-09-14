@@ -5,9 +5,9 @@
 
 struct Vec3m { float x = 0, y = 0, z = 0; };
 
-// Только ввод (SendInput) + чтение флагов/скорости. Никаких записей в игру.
-// Внешний стрейф слабее internal по построению: mousedx недоступен снаружи,
-// поэтому доступен только таймерный режим (помечен experimental).
+// Input only (SendInput) + reading flags/speed. Nothing is written to the game.
+// External strafe is weaker than internal by design: mousedx is unavailable
+// from outside, so only the timer mode is possible (marked experimental).
 class Movement
 {
 public:
@@ -15,10 +15,10 @@ public:
 	bool bStrafe = false;
 	bool bStats = true;
 
-	// Вызывать ~каждые 2мс. Возвращает текущую скорость для оверлея.
+	// Call ~every 2ms. Returns the current speed for the overlay.
 	float OnLogic(const Memory& mem, uintptr_t localAddr);
 	void DrawStats(Overlay& o);
-	// Отпустить все удерживаемые клавиши (при выходе/смерти игры).
+	// Release every held key (on exit/game death).
 	void Reset();
 
 private:
@@ -38,7 +38,7 @@ private:
 	// Strafe timer
 	bool m_side = false;
 	uint64_t m_nextFlip = 0;
-	// EdgeJump: держим эмулированный пробел чтобы тик игры увидел нажатие
+	// EdgeJump: hold the emulated space so a game tick sees the press
 	uint64_t m_holdSpaceUntil = 0;
 };
 

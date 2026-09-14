@@ -40,7 +40,7 @@ powershell -ExecutionPolicy Bypass -File Build-SingleFile.ps1  # всё + dist\Z
 
 ## 3. Правила работы с C++
 
-- Табы, Allman, `.editorconfig` + `.clang-format`; русский в комментах ок.
+- Табы, Allman, `.editorconfig` + `.clang-format`; комментарии в коде — только на английском (с 3.13.3).
 - Стиль: короткие функции, ранний `return`, без глубокой вложенности; магические числа — в именованные константы.
 - Ошибки — fail-closed: отсутствующий паттерн/интерфейс/указатель = ранний `return`/`false`, никаких исключений через границы детуров. Образец — таблица `aNeed` + abort в `Entry.cpp`, `Init(nullptr) → false` в `Hook.h`.
 - Указатели: объекты движка — сырые невладеющие указатели + проверка `nullptr` и `GetClientClass()->m_ClassID` перед виртуалкой/нетваром (падали на таблетках: ветка `CWeaponSpawn`-only обязательна). Виртуалки `C_TerrorWeapon` (`GetWeaponID()`, `GetCurrentSpread()`) — только за `IsGunEntity()`, меле/пила/гренник — сиблинги с чужой таблицей. Своя память — `std::unique_ptr`/RAII, голого `new/delete` избегать.

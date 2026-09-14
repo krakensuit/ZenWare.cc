@@ -22,9 +22,9 @@ void __fastcall BasePlayer::CalcPlayerView::Detour(C_BasePlayer* pThis, void* ed
 		Func.Original<FN>()(pThis, edx, eyeOrigin, eyeAngles, fov);
 	}
 
-	//FOV мира: множитель из меню (90 * 1.0 = дефолт). Только локальному
-	//выжившему: интерфейсы и класс проверяем, в переходных тиках слоты
-	//бывают полу-созданные — виртуалки по чужой таблице роняли игру.
+	//World FOV: multiplier from the menu (90 * 1.0 = default). Local survivor
+	//only: interfaces and class are checked, during transitional ticks slots
+	//can be half-created — vfuncs through a foreign table crashed the game.
 	if (Vars::Visuals::flViewFOV > 0.01f && pThis && !pThis->deadflag() && I::EngineClient && I::ClientEntityList)
 	{
 		const int nLocalIdx = I::EngineClient->GetLocalPlayer();

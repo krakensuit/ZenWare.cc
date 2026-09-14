@@ -6,7 +6,7 @@
 
 void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 {
-	//Fail-closed: дохлый паттерн/интерфейс = пропуск предикта, а не зов по нулю.
+	//Fail-closed: a dead pattern/interface = skip prediction, not a call through null.
 	if (!pLocal || !cmd)
 		return;
 	if (!I::GlobalVars || !I::MoveHelper || !I::GameMovement || !I::Prediction || !I::ClientEntityList)
@@ -16,12 +16,12 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 	memset(&m_MoveData, 0, sizeof(CMoveData));
 
-	//Снапшот состояния ДО предикта. История багов: раньше flags/tickbase
-	//откатывались прямо в Start, а origin/velocity вообще не сохранялись —
-	//фичи читали устаревшие флаги земли (бхоп пропускал посадочные тики,
-	//"вообще не прыгает"), а продвинутое на лишний прогон ProcessMovement
-	//origin/velocity рвало тайминг движения (рваные прыжки, мусорная
-	//дистанция в JumpStats, мёртвое окно JumpBug).
+	//Snapshot of the state BEFORE prediction. Bug history: flags/tickbase used
+	//to be rolled back right in Start, and origin/velocity were not saved at all —
+	//features read stale ground flags (bhop missed landing ticks, "does not jump
+	//at all"), while origin/velocity advanced by an extra ProcessMovement run
+	//broke movement timing (jerky jumps, garbage distance in JumpStats,
+	//a dead JumpBug window).
 	m_flOldCurTime = I::GlobalVars->curtime;
 	m_flOldFrameTime = I::GlobalVars->frametime;
 	m_nOldTickCount = I::GlobalVars->tickcount;
@@ -51,7 +51,7 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 	if (cmd->weaponselect != 0)
 	{
-		//Stale-индекс мог указывать на игрока/проп: виртуалка по чужой таблице.
+		//A stale index could point to a player/prop: a virtual call through a foreign vtable.
 		C_BaseCombatWeapon* pWeapon = nullptr;
 		if (IClientEntity* pWepEnt = I::ClientEntityList->GetClientEntity(cmd->weaponselect))
 		{
@@ -75,8 +75,8 @@ void CFeatures_EnginePrediction::Start(C_BasePlayer* pLocal, CUserCmd* cmd)
 
 	m_nPredictedFlags = pLocal->m_fFlags();
 
-	//Предикченное состояние (flags/origin/velocity) остаётся живым до Finish():
-	//BunnyHop/AutoStrafe/JumpStats читают свежую землю и скорость именно отсюда.
+	//The predicted state (flags/origin/velocity) stays alive until Finish():
+	//BunnyHop/AutoStrafe/JumpStats read fresh ground and velocity from here.
 	m_bInPrediction = true;
 }
 
@@ -97,9 +97,10 @@ void CFeatures_EnginePrediction::Finish(C_BasePlayer* pLocal, CUserCmd* cmd)
 			reinterpret_cast<void(*)(CUserCmd*)>(U::Offsets.m_dwSetPredictionRandomSeed)(nullptr);
 	}
 
-	//Откат к до-тиковому состоянию ПОСЛЕ фич: собственный предикт движка
-	//переигрывает эту же cmd с чистого состояния. Без отката origin/velocity
-	//движение симулировалось бы дважды за тик (на кадрах без снапшота).
+	//Roll back to the pre-tick state AFTER the features: the engine's own
+	//prediction replays this same cmd from a clean state. Without rolling back
+	//origin/velocity, movement would be simulated twice per tick (on frames
+	//without a snapshot).
 	pLocal->m_vecOrigin() = m_vOldOrigin;
 	pLocal->m_vecVelocity() = m_vOldVelocity;
 	pLocal->m_fFlags() = m_nOldFlags;
@@ -119,8 +120,8 @@ int CFeatures_EnginePrediction::GetPredictedFlags() const
 }
 
 //CasualHacker I believe posted this.
-//Ключ по command_number, а не по указателю на переиспользуемый буфер CInput:
-//после рестарта/смены карты счётчик ресинкается, а не улетает в hugely-будущее.
+//Keyed by command_number, not by a pointer into the reused CInput buffer:
+//after a restart/map change the counter resyncs instead of flying into the far future.
 int CFeatures_EnginePrediction::GetTickBase(const int nCurrent, CUserCmd* cmd)
 {
 	static int s_nTick = 0;

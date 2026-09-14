@@ -8,10 +8,10 @@ using namespace Hooks;
 void __cdecl CL_Main::CL_Move::Detour(float accumulated_extra_samples, bool bFinalTick)
 {
 	ZTRACE_FIRST("CL_Main::CL_Move");
-	//Оригинал вызывается ровно один раз. Бывший XBUTTON1-цикл (ещё 5 вызовов
-	//подряд, пока зажата боковая кнопка мыши = клавиша бхопа) крутил симуляцию
-	//движения и предикт 6 раз за кадр: рваные пакеты, вложенный предикт,
-	//непредсказуемые смерти движка. Даблтеп так не делается.
+	//The original is called exactly once. The old XBUTTON1 loop (5 more calls
+	//in a row while the side mouse button = bhop key is held) ran the movement
+	//simulation and prediction 6 times per frame: ragged packets, nested
+	//prediction, unpredictable engine deaths. That is not how doubletap works.
 	Func.Original<FN>()(accumulated_extra_samples, bFinalTick);
 }
 

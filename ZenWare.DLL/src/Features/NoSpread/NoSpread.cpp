@@ -20,8 +20,8 @@ void CFeatures_NoSpread::Run(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeapon, CU
 		pWeapon->UpdateSpread();
 		const float flSpread = pWeapon->GetCurrentSpread();
 
-		//Мусор из UpdateSpread после обновы игры: SharedRandomFloat(min>max)
-		//с NaN/отрицательным разбросом — пропускаем тик вместо порчи углов.
+		//Garbage out of UpdateSpread after a game update: SharedRandomFloat(min>max)
+		//with NaN/negative spread — skip the tick instead of corrupting the angles.
 		if (!isfinite(flSpread) || flSpread < 0.0f || flSpread > 0.6f)
 		{
 			pWeapon->GetCurrentSpread() = flOldSpread;
@@ -50,11 +50,11 @@ bool CFeatures_NoSpread::ShouldRun(C_TerrorPlayer* pLocal, C_TerrorWeapon* pWeap
 	if (!Vars::NoSpread::bEnabled || !pLocal || !pWeapon || !cmd || !cmd->command_number)
 		return false;
 
-	//Компенсация только реального выстрела: на кд/релоде уводило прицел.
+	//Compensate only a real shot: on cooldown/reload the aim used to drift.
 	if (!pWeapon->CanPrimaryAttack())
 		return false;
 
-	// Паттерны могли не найтись (обнова игры): зов виртуалок по нулю = вылет.
+	// Patterns may fail to resolve (game update): calling virtuals on null = crash.
 	if (!U::Offsets.m_dwSharedRandomFloat || !U::Offsets.m_dwUpdateSpread)
 		return false;
 

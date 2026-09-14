@@ -139,8 +139,8 @@ float CUtil_Math::GetFovBetween(const Vector vSrc, const Vector vDst)
 	Vector v_dst = { };
 	AngleVectors(vDst, &v_dst);
 
-	// Оба вектора единичные: угол = acos(dot). Косинус клампим,
-	// иначе fp-мусор >1.0 даёт NaN -> FLT_MAX -> цель никогда не лочится.
+	// Both vectors are unit length: angle = acos(dot). Clamp the cosine,
+	// otherwise fp garbage >1.0 gives NaN -> FLT_MAX -> the target never locks.
 	const float flDot = U::Math.Clamp(v_dst.Dot(v_src), -1.0f, 1.0f);
 	float result = RAD2DEG(acos(flDot));
 
@@ -161,12 +161,12 @@ float CUtil_Math::NormalizeAngle(const float ang)
 Vector CUtil_Math::GetAngleToPosition(const Vector vFrom, const Vector vTo)
 {
 	const Vector vDelta = (vFrom - vTo);
-	//Вырожденный случай (цель в нас): 0/0 = NaN-углы в cmd.
+	//Degenerate case (target on top of us): 0/0 = NaN angles in cmd.
 	if (vDelta.LenghtSqr() < 1.0f)
 		return Vector(0.0f, 0.0f, 0.0f);
 	const float flHyp = ::sqrtf((vDelta.x * vDelta.x) + (vDelta.y * vDelta.y));
-	//Строго вертикальная цель (x==y==0): atan(y/x) = NaN, выживало только
-	//за счёт downstream ClampAngles. Явный yaw=0 вместо NaN.
+	//Strictly vertical target (x==y==0): atan(y/x) = NaN, which only survived
+	//thanks to the downstream ClampAngles. Explicit yaw=0 instead of NaN.
 	if (flHyp < 0.001f)
 		return { (::atanf(vDelta.z / 0.001f) * M_RADPI), 0.0f, 0.0f };
 

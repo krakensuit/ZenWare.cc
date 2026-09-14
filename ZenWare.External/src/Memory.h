@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-// Только чтение чужой памяти (RPM). Никаких записей в игру, хуков и инжекта.
+// Read-only access to another process's memory (RPM). No writes to the game, no hooks, no injection.
 class Memory
 {
 public:
@@ -25,7 +25,7 @@ public:
 
 	bool ReadRaw(uintptr_t addr, void* buf, size_t len) const;
 
-	// IDA-стиль "AA BB ? ? CC" по уже прочитанному буферу модуля.
+	// IDA-style "AA BB ? ? CC" over an already-read module buffer.
 	static intptr_t Scan(const uint8_t* data, size_t len, const char* pattern);
 
 private:

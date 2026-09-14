@@ -132,8 +132,8 @@ Vector CGlobal_GameUtil::GetEyePosition(C_BaseEntity* pEntity)
 	if (!pEntity)
 		return Vector(0.0f, 0.0f, 0.0f);
 
-	// Только игроки: нетвары origin+viewOffset. Пpопсы/оружие/СИ не имеют
-	// валидного viewOffset — каст к C_BasePlayer на них даст мусор.
+	// Players only: origin+viewOffset netvars. Props/weapons/special infected
+	// have no valid viewOffset — casting them to C_BasePlayer yields garbage.
 	ClientClass* pCC = pEntity->GetClientClass();
 	if (!pCC || !(U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot, Tank)))
 		return pEntity->m_vecOrigin();
@@ -147,11 +147,11 @@ Vector CGlobal_GameUtil::GetEyePosition(C_BaseEntity* pEntity)
 
 bool CGlobal_GameUtil::IsValidTarget(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, bool bCheckVisible)
 {
-	//As<> на non-null никогда не null: мёртвая проверка маскировала гейт.
+	//As<> on non-null is never null: the dead check masked the gate.
 	if (!pPlayer)
 		return false;
 
-	//Непроверенный локал ронял «безопасный» фильтр изнутри (Hitmarker-кейс).
+	//An unchecked local crashed the "safe" filter from inside (Hitmarker case).
 	if (pLocal && !IsPlayerEntity(pLocal))
 		return false;
 
@@ -214,8 +214,8 @@ bool CGlobal_GameUtil::IsWeaponEntity(IClientEntity* pEntity)
 	ClientClass* pCC = pEntity->GetClientClass();
 	if (!pCC)
 		return false;
-	//Все классы носимого оружия из дампа (винтовки/дроби/снайпы/пилы/пистолеты/меле/пила/гренник).
-	//CSubMachinegun/CTerrorGun покрывают UZI/MAC10/помпу/автошотган базовых слотов.
+	//All carried-weapon classes from the dump (rifles/shotguns/snipers/saws/pistols/melee/chainsaw/grenade launcher).
+	//CSubMachinegun/CTerrorGun cover UZI/MAC10/pump/autoshotgun base slots.
 	return U::Math.CompareGroup(pCC->m_ClassID, CTerrorWeapon, CTerrorGun, CTerrorMeleeWeapon,
 		CAssaultRifle, CAutoShotgun, CBaseAutoShotgun, CBaseRifle, CBaseShotgun, CBaseSniperRifle,
 		CPumpShotgun, CRifle_AK47, CRifle_Desert, CRifle_M60, CRifle_SG552,

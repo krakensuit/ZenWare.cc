@@ -1,8 +1,8 @@
 #pragma once
 
-// ZenWare Loader - рендерер: DirectComposition (D3D11 + swapchain со сквозной
-// альфой + D2D device context) с фолбэком на ID2D1HwndRenderTarget.
-// Если композиция не поднялась - работаем как раньше (плоский тёмный кадр).
+// ZenWare Loader - renderer: DirectComposition (D3D11 + straight-alpha swapchain
+// + D2D device context) with a fallback to ID2D1HwndRenderTarget.
+// If composition fails to come up - work as before (flat dark frame).
 
 #include <windows.h>
 #include <d2d1_1.h>
@@ -16,8 +16,8 @@
 
 namespace Zen2D
 {
-	// Проверка ДО создания окна: доступны ли D3D11 + DComp (нужно для выбора
-	// стиля окна WS_EX_NOREDIRECTIONBITMAP).
+	// Check BEFORE creating the window: whether D3D11 + DComp are available
+	// (needed to pick the WS_EX_NOREDIRECTIONBITMAP window style).
 	bool ProbeComposition();
 
 	class Renderer2D
@@ -31,7 +31,7 @@ namespace Zen2D
 		bool Enabled() const { return m_bReady && m_bEnabled; }
 		void SetEnabled(bool b) { m_bEnabled = b; }
 
-		// true = рисуем через композицию (окно создано с WS_EX_NOREDIRECTIONBITMAP).
+		// true = drawing via composition (window created with WS_EX_NOREDIRECTIONBITMAP).
 		bool IsUsingComposition() const { return m_bComposition; }
 
 		void RenderFrame(const FrameState_t& st, const Theme_t& th,
@@ -40,7 +40,7 @@ namespace Zen2D
 		void SetTheme(const Theme_t& th);
 
 	private:
-		// Полукадровые слои.
+		// Per-frame layers.
 		void DrawBackground(const FrameState_t& st);
 		void DrawHeader(const FrameState_t& st);
 		void DrawLogo(const FrameState_t& st);
@@ -50,7 +50,7 @@ namespace Zen2D
 		void DrawStatus(const FrameState_t& st, const wchar_t* wszText);
 		void DrawFooter(const FrameState_t& st, const wchar_t* wszVersion, const wchar_t* wszLang);
 
-		// Примитивы (работают и для device context, и для hwnd render target).
+		// Primitives (work for both the device context and the hwnd render target).
 		void FillRect(const D2D1_RECT_F& rc, DWORD rgb, float alpha = 1.0f);
 		void StrokeRect(const D2D1_RECT_F& rc, DWORD rgb, float alpha = 1.0f, float width = 1.0f);
 		void FillRound(const D2D1_RECT_F& rc, float radius, DWORD rgb, float alpha = 1.0f);
@@ -64,12 +64,12 @@ namespace Zen2D
 		bool CreateCompositionTarget();
 		bool CreateLegacyTarget();
 		bool CreateTargetBitmapFromBackBuffer();
-		// Девайс-лост (TDR, смена GPU): пересоздаёт композицию, иначе кадр замирает навсегда.
+		// Device lost (TDR, GPU change): re-creates the composition, otherwise the frame freezes forever.
 		bool RecreateAfterDeviceLost();
 		void ReleaseComposition();
 		void ReleaseLegacy();
 
-		// Общие ресурсы.
+		// Shared resources.
 		ID2D1Factory1*        m_factory = nullptr;
 		IDWriteFactory*       m_dwrite = nullptr;
 		IWICImagingFactory*   m_wic = nullptr;
@@ -80,7 +80,7 @@ namespace Zen2D
 		ID2D1SolidColorBrush* m_brush = nullptr;
 		ID2D1Bitmap*          m_logo = nullptr;
 
-		// Путь композиции.
+		// Composition path.
 		ID3D11Device*         m_d3dDevice = nullptr;
 		ID3D11DeviceContext*  m_d3dContext = nullptr;
 		IDXGISwapChain1*      m_swapChain = nullptr;
@@ -91,20 +91,20 @@ namespace Zen2D
 		IDCompositionTarget*  m_dcompTarget = nullptr;
 		IDCompositionVisual*  m_dcompVisual = nullptr;
 
-		// Фолбэк.
+		// Fallback.
 		ID2D1HwndRenderTarget* m_hwndRT = nullptr;
 
-		// Текущая цель отрисовки (device context либо hwnd RT).
+		// Current render target (device context or hwnd RT).
 		ID2D1RenderTarget*     m_target = nullptr;
 
 		bool  m_bReady = false;
 		bool  m_bComposition = false;
 		bool  m_bEnabled = false;
 		HWND  m_hwnd = nullptr;
-		HINSTANCE m_hInst = nullptr; // для перезагрузки логотипа после пересоздания цели
-		int   m_w = 0;      // логические пиксели (вёрстка)
-		int   m_h = 0;      // логические пиксели (вёрстка)
-		int   m_wPx = 0;    // физические пиксели (swapchain)
+		HINSTANCE m_hInst = nullptr; // to reload the logo after the target is re-created
+		int   m_w = 0;      // logical pixels (layout)
+		int   m_h = 0;      // logical pixels (layout)
+		int   m_wPx = 0;    // physical pixels (swapchain)
 		int   m_hPx = 0;
 		UINT  m_dpi = 96;
 		Theme_t m_theme = Dark();

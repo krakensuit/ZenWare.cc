@@ -14,13 +14,13 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	if (!Vars::BunnyHop::bAutoStrafe || !pLocal || !cmd || !cmd->command_number)
 		return;
 
-	//Статики выше ранних return: иначе смерть/вода/лестница оставляют
-	//stale-направление круга на следующий прыжок.
+	//Statics above the early returns: otherwise death/water/ladder leave a
+	//stale circle direction for the next jump.
 	static int s_nLastSide = 1;
 	static int s_nCircleSide = 1;
 
-	//Как в BunnyHop: мёртвый/гость/чужая команда/вода не стрейфятся,
-	//иначе портятся s_nLastSide/s_nCircleSide и стата синка.
+	//Same as BunnyHop: dead/ghost/foreign team/water do not strafe,
+	//otherwise s_nLastSide/s_nCircleSide get corrupted and the sync stat drifts.
 	if (pLocal->deadflag() || pLocal->m_lifeState() != 0 || pLocal->m_isGhost()
 		|| pLocal->m_isIncapacitated())
 	{
@@ -36,7 +36,7 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		return;
 	}
 
-	//Валидный water level — 0..3: байтовый проп, мусор (>3) не гейтит.
+	//Valid water level is 0..3: a byte prop, garbage (>3) does not gate.
 	if (pLocal->m_nWaterLevel() > 1 && pLocal->m_nWaterLevel() <= 3)
 	{
 		s_nLastSide = 1;
@@ -71,7 +71,7 @@ void CFeatures_AutoStrafe::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 		const int nSide = (cmd->mousedx > 0) ? 1 : -1;
 		s_nLastSide = nSide;
-		//плавный отклик: слабое движение мыши -> меньший side, резкий флик -> полный 450
+		//smooth response: small mouse movement -> smaller side, sharp flick -> full 450
 		const float flRatio = U::Math.Clamp(fabsf((float)cmd->mousedx) / 12.0f, 0.25f, 1.0f);
 		cmd->sidemove = 450.0f * flRatio * static_cast<float>(nSide);
 	}

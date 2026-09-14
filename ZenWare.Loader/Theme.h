@@ -1,9 +1,9 @@
 #pragma once
 
-// ZenWare Loader - палитра и типографика (Direct2D-слой).
-// РЕШЕНИЕ: загрузчик всегда тёмный. Светлая тема удалена целиком, чтобы её
-// никто случайно не вызвал: на светлой теме окно заливалось мятным, текст
-// становился нечитаемым (проверено на реальном запуске).
+// ZenWare Loader - palette and typography (Direct2D layer).
+// FIX: the loader is always dark. The light theme was removed entirely so that
+// nobody could trigger it by accident: on the light theme the window was flooded
+// with mint and the text became unreadable (verified in a real run).
 
 #include <windows.h>
 
@@ -16,7 +16,7 @@ namespace Zen2D
 		DWORD border;        // #1E2A25
 		DWORD textPrimary;   // #E8FFF5
 		DWORD textSecondary; // #7A948A
-		DWORD accent;        // #6EE7B7 спокойный мятный (был кислотный #7FFFD4)
+		DWORD accent;        // #6EE7B7 calm mint (used to be acid #7FFFD4)
 		DWORD accentDim;     // #3DB88F
 		DWORD danger;        // #FF5C5C
 	};
@@ -26,7 +26,7 @@ namespace Zen2D
 		return (static_cast<DWORD>(r) << 16) | (static_cast<DWORD>(g) << 8) | b;
 	}
 
-	// Единственная тема загрузчика.
+	// The loader's only theme.
 	inline Theme_t Dark()
 	{
 		Theme_t t{};
@@ -52,6 +52,6 @@ namespace Zen2D
 		float hoverInject = 0.0f;
 		float modeT = 0.0f;
 		POINT cursor = { 0, 0 };
-		bool  dark = true;   // не используется: тема всегда тёмная
+		bool  dark = true;   // unused: the theme is always dark
 	};
 }

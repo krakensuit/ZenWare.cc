@@ -41,8 +41,8 @@ float Movement::OnLogic(const Memory& mem, uintptr_t localAddr)
 	mem.Read(localAddr + Off::offFlags, flags);
 	if (Off::offOrigin) mem.Read(localAddr + Off::offOrigin, org);
 
-	// Скорость по дельте позиций со сглаживанием (offVelocity нет в референсе).
-	// Вызывается ~каждые 2мс.
+	// Speed from position deltas with smoothing (offVelocity is not in the netvar dump).
+	// Called ~every 2ms.
 	{
 		static Vec3m s_prev = { };
 		static uint64_t s_prevMs = 0;
@@ -68,11 +68,11 @@ float Movement::OnLogic(const Memory& mem, uintptr_t localAddr)
 	bool alive = (hp > 0);
 	uint64_t nowEj = NowMs();
 
-	// --- BunnyHop: только чтение флагов + эмуляция пробела ---
+	// --- BunnyHop: flag reads only + space emulation ---
 	bool wantJump = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
-	// --- EdgeJump: сошли с края с зажатым пробелом -> свежее нажатие.
-	// Просто держать down бесполезно (физическая клавиша и так зажата):
-	// отпускаем и жмём заново, держим 40мс чтобы тик игры увидел нажатие.
+	// --- EdgeJump: left the ground with space held -> a fresh press.
+	// Simply holding down is useless (the physical key is already pressed):
+	// release and press again, hold for 40ms so a game tick sees the press.
 	if (bBhop && alive && m_wasGround && !ground && wantJump)
 	{
 		TapKey(VK_SPACE, false);
@@ -86,14 +86,14 @@ float Movement::OnLogic(const Memory& mem, uintptr_t localAddr)
 	else
 		SetSpace(false);
 
-	// --- Strafe assist (experimental): чередование A/D в воздухе ---
+	// --- Strafe assist (experimental): alternating A/D in the air ---
 	if (bStrafe && alive && !ground)
 	{
 		uint64_t now = NowMs();
 		if (now >= m_nextFlip)
 		{
 			m_side = !m_side;
-			// интервал короче на высокой скорости
+			// shorter interval at high speed
 			int ms = speed > 500.0f ? 90 : 130;
 			m_nextFlip = now + ms;
 			TapKey(m_side ? 'D' : 'A', true);
@@ -102,8 +102,8 @@ float Movement::OnLogic(const Memory& mem, uintptr_t localAddr)
 	}
 	else
 	{
-		// Стрейф неактивен (выключили/приземлились): отпустить наши клавиши,
-		// но только если мы их вообще нажимали — иначе спамим keyup впустую.
+		// Strafe inactive (disabled/landed): release our keys, but only if we
+		// actually pressed them - otherwise we spam pointless keyups.
 		if (m_nextFlip)
 		{
 			TapKey('A', false);

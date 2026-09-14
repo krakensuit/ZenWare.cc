@@ -8,7 +8,7 @@
 
 namespace
 {
-	// Имя класса в нижний регистр, проверка подстроки.
+	// Lowercase the class name, then a substring check.
 	bool NameHas(const char* szNet, const char* sub)
 	{
 		if (!szNet || !szNet[0] || !sub)
@@ -24,8 +24,8 @@ namespace
 
 void CFeatures_Alerts::Render()
 {
-	//bPinned/bRevive равноправные: без них в условии только они включённые
-	//давали ранний return и никогда не рисовались.
+	//bPinned/bRevive are equal partners: without them in the condition, having
+	//only those enabled gave an early return and they were never drawn.
 	if (!Vars::Alerts::bEnabled || (!Vars::Alerts::bTank && !Vars::Alerts::bWitch
 		&& !Vars::Alerts::bSIList && !Vars::Alerts::bPinned && !Vars::Alerts::bRevive
 		&& !Vars::Alerts::bSpitAlert))
@@ -67,7 +67,7 @@ void CFeatures_Alerts::Render()
 		if ((bIsTank && !Vars::Alerts::bTank) || (bIsWitch && !Vars::Alerts::bWitch))
 			continue;
 
-		// Живой? (лёгкая проверка, без доверия чужой раскладке)
+		// Alive? (lightweight check, no trusting a foreign layout)
 		C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
 		if (!pPl || pPl->m_lifeState() != 0)
 			continue;
@@ -82,8 +82,8 @@ void CFeatures_Alerts::Render()
 	const int nCX = G::Draw.m_nScreenW / 2;
 	int nY = 96;
 
-	// Центрированная «пилюля»: тень + градиент + рамка + акцент сверху.
-	// Возвращает высоту, caller двигает nY сам.
+	// Centered "pill": shadow + gradient + outline + accent on top.
+	// Returns the height; the caller advances nY itself.
 	auto Pill = [&](EFonts eFont, const char* szText, Color clrText, Color clrAccent, int nCX_, int nY_) -> int
 	{
 		if (!szText || !szText[0]) return 0;
@@ -98,7 +98,7 @@ void CFeatures_Alerts::Render()
 		return nH;
 	};
 
-	// Пин на нас — самое срочное, поверх всего.
+	// Pinned on us — the most urgent, on top of everything.
 	if (Vars::Alerts::bPinned && !pLocal->deadflag() && pLocal->m_lifeState() == 0)
 	{
 		const char* szPin = nullptr;
@@ -125,7 +125,7 @@ void CFeatures_Alerts::Render()
 		nY += Pill(EFonts::MENU_TAB, szTank, clr, Color(255, 70, 70, 255), nCX, nY) + 4;
 		if (Vars::Alerts::bTankHp && pTankEnt)
 		{
-			//pTankEnt может быть name-совпадением (камень танка): клампим оба.
+			//pTankEnt may be a name match (a tank rock): clamp both.
 			const int nHp = U::Math.Clamp(pTankEnt->GetHealth(), 0, 20000);
 			const int nMaxHp = U::Math.Clamp(pTankEnt->As<C_TerrorPlayer*>()->m_iMaxHealth(), 1, 20000);
 			const int nPct = U::Math.Clamp(nHp * 100 / nMaxHp, 0, 100);
@@ -146,8 +146,8 @@ void CFeatures_Alerts::Render()
 		nY += Pill(EFonts::MENU_TAB, szWitch, Color(200, 0, 255, 255), Color(200, 0, 255, 255), nCX, nY) + 4;
 	}
 
-	// Блевотина под ногами: плевок плевальщицы бьёт по площади, радиус ~4м.
-	// Стоишь внутри — красным капсом поверх остального (после пина).
+	// Spit under our feet: spitter bile is an area attack, radius ~4m.
+	// Standing inside it — red caps on top of everything else (after the pin).
 	if (Vars::Alerts::bSpitAlert && !pLocal->deadflag() && pLocal->m_lifeState() == 0)
 	{
 		const Vector vFeet = pLocal->m_vecOrigin();
@@ -180,7 +180,7 @@ void CFeatures_Alerts::Render()
 		}
 	}
 
-	// Союзник в инкапе — зовём реанимировать (ближайший).
+	// Teammate incapped — call for a revive (nearest one).
 	if (Vars::Alerts::bRevive)
 	{
 		const int nLocalTeam = pLocal->GetTeamNumber();
@@ -209,7 +209,7 @@ void CFeatures_Alerts::Render()
 			if (!pT->m_isIncapacitated())
 				continue;
 			player_info_t pi = {};
-			//GetPlayerInfo ждёт клиент-слот: индексы выше maxclients не подаём.
+			//GetPlayerInfo expects a client slot: do not pass indices above maxclients.
 			if (n > I::EngineClient->GetMaxClients() || !I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 				continue;
 			pi.name[31] = '\0';
@@ -230,7 +230,7 @@ void CFeatures_Alerts::Render()
 		}
 	}
 
-	// Список живых особых рядом: имя + дистанция, правая колонка.
+	// List of living specials nearby: name + distance, right column.
 	if (Vars::Alerts::bSIList)
 	{
 		struct SI_t { const char* szName; float flD; };
@@ -274,7 +274,7 @@ void CFeatures_Alerts::Render()
 			continue;
 
 			const float flD = (pBase->m_vecOrigin() - vEye).Lenght() / 52.5f;
-			// Вставка по возрастанию дистанции.
+			// Insert in ascending distance order.
 			int nPos = nSI;
 			while (nPos > 0 && aSI[nPos - 1].flD > flD) { aSI[nPos] = aSI[nPos - 1]; nPos--; }
 			aSI[nPos].szName = szName;
@@ -284,7 +284,7 @@ void CFeatures_Alerts::Render()
 
 		if (nSI > 0)
 		{
-			// Панелька под список: тень + градиент + рамка + акцент слева.
+			// Panel for the list: shadow + gradient + outline + accent on the left.
 			const int nRows = nSI < 8 ? nSI : 8;
 			const int nLH = 16;
 			const int nPW = 190, nPH = 26 + nRows * nLH + 6;

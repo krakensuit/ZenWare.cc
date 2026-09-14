@@ -16,15 +16,15 @@ void CFeatures_Visuals::UpdateThirdPerson()
 	const bool bWant = Vars::Visuals::bThirdPerson && I::EngineClient && I::EngineClient->IsInGame();
 	const int nDist = U::Math.Clamp(Vars::Visuals::nThirdPersonDist, 30, 200);
 
-	// Как у space: консоль не трогаем вообще (ClientCmd_Unrestricted лежит
-	// на непроверенном слоте vtable и ронял игру при включении).
-	// Камера отъезжает через z_view_distance: 0 = от 1-го лица, <0 = дистанция.
+	// Like space: never touch the console (ClientCmd_Unrestricted sits
+	// on an unverified vtable slot and crashed the game on enable).
+	// The camera pulls back via z_view_distance: 0 = first person, <0 = distance.
 	if (!I::Cvar)
 		return;
 
 	if (bWant)
 	{
-		// Дистанцию досылаем и на ходу, а не только в момент включения.
+		// Push the distance update on the fly too, not only at the moment of enabling.
 		if (!s_bWasOn || nDist != s_nLastDist)
 		{
 			if (ConVar* pView = I::Cvar->FindVar("z_view_distance"))
@@ -46,8 +46,8 @@ void CFeatures_Visuals::UpdateThirdPerson()
 
 void CFeatures_Visuals::UpdateFullbright()
 {
-	// Как 3-е лицо: только через ICvar, консоль не трогаем. При выключении
-	// возвращаем 0, иначе фулбрайт залипает до перезапуска карты.
+	// Like 3rd person: ICvar only, never touch the console. On disable we
+	// set 0 back, otherwise fullbright sticks until the map restarts.
 	static bool s_bWasOn = false;
 	if (!I::Cvar)
 		return;
@@ -63,8 +63,8 @@ void CFeatures_Visuals::UpdateFullbright()
 
 void CFeatures_Visuals::UpdateHideHands()
 {
-	// Как фулбрайт: только через ICvar, консоль не трогаем. При выключении
-	// возвращаем 1, иначе руки пропадают до перезапуска карты.
+	// Like fullbright: ICvar only, never touch the console. On disable we
+	// set 1 back, otherwise the hands vanish until the map restarts.
 	static bool s_bWasOn = false;
 	if (!I::Cvar)
 		return;
@@ -95,9 +95,9 @@ void CFeatures_Visuals::DrawGrenade()
 	if (!pLocal || pLocal->deadflag() || pLocal->m_lifeState() != 0)
 		return;
 
-	// Только с throwable в руках (молотов/пайп/желчь) или гранатомётом.
-	// Виртуалку GetWeaponID дёргаем только на этих 4 классах: в руках может
-	// быть медкит/меле/пила с чужой таблицей (IsWeaponEntity их пропускает).
+	// Only with a throwable in hand (molotov/pipe/bile) or the grenade launcher.
+	// Call the GetWeaponID virtual only on these 4 classes: the hands may hold
+	// a medkit/melee/chainsaw with a foreign vtable (IsWeaponEntity lets them through).
 	C_BaseCombatWeapon* pBase = pLocal->GetActiveWeapon();
 	C_TerrorWeapon* pWpn = nullptr;
 	if (pBase && G::Util.IsWeaponEntity(pBase))
@@ -121,7 +121,7 @@ void CFeatures_Visuals::DrawGrenade()
 	Vector vFwd;
 	U::Math.AngleVectors(vAng, &vFwd);
 
-	// Старт из глаз + чуть вперёд, начальная скорость вдоль взгляда + наследие бега.
+	// Start at the eyes + a bit forward, initial velocity along the view + inherited run speed.
 	Vector vPos = G::Util.GetEyePosition(pLocal) + vFwd * 16.0f;
 	Vector vVel = vFwd * flSpeed + Vector(0.0f, 0.0f, flUp) + pLocal->m_vecVelocity() * 0.5f;
 
@@ -132,9 +132,9 @@ void CFeatures_Visuals::DrawGrenade()
 
 	CTraceFilterHitAll filter(static_cast<IHandleEntity*>(pLocal));
 
-	// Кэш сегментов: симуляция делает до 90 трейсов движка, каждый кадр это
-	// роняло FPS с гранатой в руках. Пересчёт только когда съехали глаза/
-	// взгляд/скорость/оружие или прошло 100мс. Рисуем всегда из кэша.
+	// Segment cache: the simulation does up to 90 engine traces, doing that every
+	// frame tanked FPS with a grenade in hand. Recompute only when the eyes/
+	// view/velocity/weapon drifted or 100ms elapsed. Always draw from the cache.
 	static Vector s_vEyeK; static Vector s_vVelK; static int s_nWpnK = -1;
 	static unsigned long long s_ullK = 0;
 	static Vector s_aPath[96]; static int s_nPath = 0;
@@ -142,7 +142,7 @@ void CFeatures_Visuals::DrawGrenade()
 
 	const unsigned long long ullNow = GetTickCount64();
 	const Vector vEye0 = G::Util.GetEyePosition(pLocal);
-	const Vector vVelKey = vVel; // vVel ниже мутирует в симуляции — ключ снимаем до.
+	const Vector vVelKey = vVel; // vVel is mutated by the simulation below — snapshot the key early.
 	const int nWpnID = pWpn->GetWeaponID();
 	const bool bSame = (s_nPath > 1 && s_nWpnK == nWpnID
 		&& (vEye0 - s_vEyeK).LenghtSqr() < 1.0f
@@ -169,10 +169,10 @@ void CFeatures_Visuals::DrawGrenade()
 			if (tr.DidHit())
 			{
 				vEnd = tr.endpos;
-				// Отражение от плоскости с потерей скорости.
+				// Reflect off the plane with velocity loss.
 				const Vector& n = tr.plane.normal;
 				vVel = (vVel - n * (2.0f * vVel.Dot(n))) * flElast;
-				if (++nBounces >= 2 || vVel.LenghtSqr() < 900.0f) // <30 u/s — легла
+				if (++nBounces >= 2 || vVel.LenghtSqr() < 900.0f) // <30 u/s — settled
 				{
 					s_vLandK = vEnd;
 					s_bLandK = true;
@@ -213,7 +213,7 @@ void CFeatures_Visuals::DrawGrenade()
 
 void CFeatures_Visuals::DrawCrosshair()
 {
-	//IsInGame как у соседей (DrawGrenade/DrawOverlay): иначе прицел в меню/табе.
+	//IsInGame like the neighbors (DrawGrenade/DrawOverlay): otherwise the crosshair draws in menu/tab.
 	if (!Vars::Visuals::bCrosshair || !G::Draw.m_nScreenW || !G::Draw.m_nScreenH
 		|| !I::EngineClient || !I::EngineClient->IsInGame() || !I::ClientEntityList)
 		return;
@@ -241,8 +241,8 @@ void CFeatures_Visuals::DrawCrosshair()
 	const int nGap = 4 + U::Math.Clamp((int)(flSpeed / 50.0f), 0, 12);
 	constexpr int nThick = 2;
 
-	//Тёмная обводка под рисками: на светлых картах цветной прицел без
-	//контура сливается со снегом/небом. 4 смещённые копии + цвет поверх.
+	//Dark outline under the arms: on bright maps a colored crosshair without
+	//a contour blends into snow/sky. 4 offset copies + color on top.
 	const Color clrOutline(0, 0, 0, 170);
 	const int nArmX0 = nCX - nGap - nS, nArmX1 = nCX + nGap;
 	const int nArmY0 = nCY - nGap - nS, nArmY1 = nCY + nGap;
@@ -264,9 +264,9 @@ void CFeatures_Visuals::DrawCrosshair()
 	G::Draw.Rect(nCX - (nThick / 2), nArmY1, nThick, nS, clr);
 	G::Draw.Rect(nCX - 1, nCY - 1, 2, 2, clr);
 
-	//HUD оружия: имя + магазин + запас под прицелом. Хендл активного оружия
-	//в тике смены может указывать на viewmodel/руки/меле: GetWeaponID только
-	//за IsGunEntity, иначе виртуалка идёт по чужой таблице.
+	//Weapon HUD: name + clip + reserve under the crosshair. During a weapon
+	//switch tick the active handle may point at viewmodel/hands/melee: GetWeaponID
+	//only behind IsGunEntity, otherwise the virtual walks a foreign vtable.
 	if (Vars::Visuals::bWeaponHud && pLocal && I::ClientEntityList)
 	{
 		EHANDLE hActive = pLocal->m_hActiveWeapon();
@@ -281,7 +281,7 @@ void CFeatures_Visuals::DrawCrosshair()
 			const wchar_t* wszName = nullptr;
 			wchar_t wszFallback[48] = { };
 			C_TerrorWeapon* pTW = pActive->As<C_TerrorWeapon*>();
-			// Меле/пила/гренник — сиблинги с чужой vtable: виртуалку только за IsGunEntity.
+			// Melee/chainsaw/GL are siblings with a foreign vtable: virtual calls only behind IsGunEntity.
 			const int nID = (pTW && G::Util.IsGunEntity(pActive)) ? pTW->GetWeaponID() : 0;
 			if (nID > 0 && nID < 38 && wcscmp(g_aSpawnInfo[nID].m_szName, L"unknown") != 0)
 				wszName = g_aSpawnInfo[nID].m_szName;
@@ -298,7 +298,7 @@ void CFeatures_Visuals::DrawCrosshair()
 			{
 				G::Draw.String(EFonts::ESP, nCX, nCY + 24, Color(220, 220, 220, 255), TXT_CENTERXY, "%ls", wszName);
 
-				//Запас: m_iAmmo — массив int[32] на игроке, индекс = ammo type ствола.
+				//Reserve: m_iAmmo is an int[32] array on the player, index = weapon's ammo type.
 				int nReserve = -1;
 				const int nType = pActive->m_iPrimaryAmmoType();
 				if (nType >= 0 && nType < 32)
@@ -331,7 +331,7 @@ void CFeatures_Visuals::DrawCrosshair()
 		}
 	}
 
-	// Круг разброса NoSpread: радиус ~ текущий спред ствола.
+	// NoSpread spread circle: radius ~ the weapon's current spread.
 	if (Vars::Visuals::bSpreadCircle && pLocal && I::ClientEntityList)
 	{
 		float flSpread = 0.0f;
@@ -339,8 +339,8 @@ void CFeatures_Visuals::DrawCrosshair()
 		if (hActive.IsValid())
 		{
 			IClientEntity* pViaHandle = I::ClientEntityList->GetClientEntityFromHandle(hActive);
-			//IsGunEntity гейтит чужую таблицу: GetCurrentSpread — виртуалка
-			//C_TerrorWeapon, на меле/пиле/греннике слот чужой (краш).
+			//IsGunEntity gates the foreign vtable: GetCurrentSpread is a
+			//C_TerrorWeapon virtual, on melee/chainsaw/GL the slot is foreign (crash).
 			if (G::Util.IsGunEntity(pViaHandle))
 			{
 				C_TerrorWeapon* pTW = pViaHandle->As<C_TerrorWeapon*>();
@@ -354,7 +354,7 @@ void CFeatures_Visuals::DrawCrosshair()
 		}
 	}
 
-	// Крест попадания: 0.25 c после зачтённого урона.
+	// Hit cross: 0.25 s after registered damage.
 	if (Vars::Hitmarker::bEnabled && Vars::Hitmarker::bXMark)
 	{
 		const float flAge = F::Hitmarker.SecondsSinceHit();
@@ -368,7 +368,7 @@ void CFeatures_Visuals::DrawCrosshair()
 		}
 	}
 }
-//Имя клавиши для панели биндов: мышь отдельно, остальное через Win32.
+//Key name for the binds panel: mouse handled separately, the rest via Win32.
 static void KeyLabel(const int nVk, char* const szOut, const int nSize)
 {
 	if (nVk <= 0) { strcpy_s(szOut, nSize, "always"); return; }
@@ -406,7 +406,7 @@ void CFeatures_Visuals::DrawOverlay()
  if (!pLocal)
   return;
 
- //В спектаторе/трупе — мертвецкие pos/hp (DrawGrenade так гейтит).
+ //Spectator/corpse state gives dead pos/hp (DrawGrenade gates the same way).
  if (pLocal->deadflag() || pLocal->m_lifeState() != 0)
   return;
 
@@ -462,7 +462,7 @@ void CFeatures_Visuals::DrawOverlay()
 			clrSpd, TXT_DEFAULT, "speed %.0f u/s", flSpeed);
 	}
 
-	// Панель биндов: клавиши фич + удержание. Справа, под карточками киллфида.
+	// Binds panel: feature keys + hold state. Right side, under the killfeed cards.
 	if (Vars::Visuals::bBindList)
 	{
 		char szAim[32], szMenu[32], szPanic[32];

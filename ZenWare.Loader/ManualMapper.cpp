@@ -72,7 +72,7 @@ bool CManualMapper::Map(const Params_t& params) const
 
 	if (!ReadFileToBuffer(hwndLog, fnLog, params.wszDllPath, vecFile))
 	{
-		// Файл не найден — пробуем встроенный ресурс (для однофайловой раздачи)
+		// File not found - try the embedded resource (for single-file distribution)
 		if (!LoaderUtil::LoadDllFromResource(vecFile))
 		{
 			fnLog(hwndLog, "[!] Failed to read the DLL file and no embedded resource found.");
@@ -301,7 +301,7 @@ bool CManualMapper::BuildLocalImage(HWND hwndLog, LoaderLog::Fn fnLog, const std
 
 	vecImage.assign(pNt->OptionalHeader.SizeOfImage, 0);
 
-	//Fail-closed: битый SizeOfHeaders иначе читал бы heap OOB из vecFile.
+	//Fail-closed: a corrupt SizeOfHeaders would otherwise read heap OOB from vecFile.
 	if (pNt->OptionalHeader.SizeOfHeaders > vecFile.size() || pNt->OptionalHeader.SizeOfHeaders > vecImage.size())
 	{
 		fnLog(hwndLog, "[!] SizeOfHeaders 0x%08X out of file/image bounds.", pNt->OptionalHeader.SizeOfHeaders);
@@ -382,8 +382,8 @@ bool CManualMapper::ApplyRelocations(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pI
 			return false;
 		}
 
-		//Блок не должен вылезать за пределы каталога релокаций: битый
-		//SizeOfBlock иначе уводил чтение записей за границу образа.
+		//The block must not overrun the relocation directory: a corrupt
+		//SizeOfBlock would otherwise read entries past the image bounds.
 		if (pRelocBlob + pBlock->SizeOfBlock > pBlobEnd)
 		{
 			fnLog(hwndLog, "[!] Relocation block overruns directory (size %u).", pBlock->SizeOfBlock);
@@ -448,9 +448,9 @@ bool CManualMapper::ResolveImports(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pIma
 		return true;
 	}
 
-	//Fail-closed: каталог импортов обязан лежать внутри образа, а перебор
-	//дескрипторов — не выходить за его размер (битый образ иначе уводил
-	//цикл по мусорной памяти).
+	//Fail-closed: the import directory must lie inside the image and the
+	//descriptor walk must not exceed its size (a corrupt image would otherwise
+	//walk the loop through garbage memory).
 	if (dir.VirtualAddress > pNt->OptionalHeader.SizeOfImage || dir.Size > pNt->OptionalHeader.SizeOfImage - dir.VirtualAddress)
 	{
 		fnLog(hwndLog, "[!] Import directory out of image bounds.");
@@ -519,8 +519,8 @@ bool CManualMapper::ResolveImports(HWND hwndLog, LoaderLog::Fn fnLog, BYTE* pIma
 			}
 			else
 			{
-				//Имя функции — RVA внутрь образа: за границей читать нельзя
-				//(ordinal-вариант выше несёт в этом поле флаг, не RVA).
+				//The function name is an RVA into the image: must not read past the bounds
+				//(the ordinal variant above carries a flag in this field, not an RVA).
 				if (pOrig->u1.AddressOfData >= dwImageSize)
 				{
 					fnLog(hwndLog, "[!] Import name RVA out of image bounds.");
@@ -599,9 +599,9 @@ bool CManualMapper::CallEntryAndWipeHeaders(HWND hwndLog, LoaderLog::Fn fnLog, c
 	//   mov eax, dwEntry
 	//   call eax                  ; DllMain (__stdcall, cleans its own args)
 	//   ret                       ; back to the thread dispatcher
-	//Раскладка = 1+4 + 1+4 + 1+4 + 1+4 + 2 + 1 = 23 байта. Массив на 22
-	//молча терял финальный ret: WriteProcessMemory писал sizeof(abyStub),
-	//удалённый поток после возврата из DllMain уходил исполнять нули -> AV.
+	//Layout = 1+4 + 1+4 + 1+4 + 1+4 + 2 + 1 = 23 bytes. A 22-byte array
+	//silently lost the final ret: WriteProcessMemory wrote sizeof(abyStub),
+	//and the remote thread returned from DllMain into executing zeros -> AV.
 	BYTE abyStub[23] = { };
 	size_t nIdx = 0;
 
@@ -626,7 +626,7 @@ bool CManualMapper::CallEntryAndWipeHeaders(HWND hwndLog, LoaderLog::Fn fnLog, c
 
 	abyStub[nIdx++] = 0xC3; //ret
 
-	//Fail-closed: расхождение раскладки с размером буфера = инжект не запускаем.
+	//Fail-closed: a layout/size mismatch means the injection is not started.
 	if (nIdx != sizeof(abyStub))
 	{
 		fnLog(hwndLog, "[!] Stub layout mismatch: %u != %u bytes.", static_cast<unsigned>(nIdx), static_cast<unsigned>(sizeof(abyStub)));
@@ -776,8 +776,9 @@ bool CManualMapper::InjectStandard(const Params_t& params)
 		}
 
 		wchar_t wszCheck[MAX_PATH] = { };
-		//Read-back строго в размер буфера: путь длиннее MAX_PATH-1 символов
-		//иначе переполнял wszCheck (nBytes доходит до 520 при 512-байтном буфере).
+		//Read-back strictly limited to the buffer size: a path longer than
+		//MAX_PATH-1 chars would otherwise overflow wszCheck (nBytes reaches 520
+		//with a 512-byte buffer).
 		ReadProcessMemory(hProcess, pRemotePath, wszCheck, (nBytes < sizeof(wszCheck) - sizeof(wchar_t)) ? nBytes : sizeof(wszCheck) - sizeof(wchar_t), nullptr);
 		fnLog(hwndLog, "[+] Path written and read back: %ls", wszCheck);
 

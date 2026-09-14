@@ -21,8 +21,8 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 		return;
 	}
 
-	//Лестница/гость/вода — не полёт: иначе езда по лестнице считается
-	//прыжком (мусор в airticks/dist/sync + ложный [eb]).
+	//Ladder/ghost/water — not a jump: otherwise ladder riding counts as a
+	//jump (garbage in airticks/dist/sync + a false [eb]).
 	{
 		const unsigned char nMoveType = pLocal->m_MoveType();
 
@@ -42,10 +42,10 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 	const float speed2d = vel.Lenght2D();
 	const int tick = cmd->tick_count;
 
-	//Взлёт только после ≥1 живого наземного тика: иначе загрузка DLL,
-	//респаун в падении или выход из лестницы синтезируют взлёт из воздуха.
-	//Заодно снимаем наземное состояние: на первом воздушном тике origin уже
-	//уехал на ~1 тик — дистанция и престрейф с него систематически врали.
+	//Takeoff only after >= 1 live ground tick: otherwise DLL load, a falling
+	//respawn or leaving a ladder synthesizes a takeoff from thin air.
+	//We also record the ground state: on the first air tick the origin has
+	//already traveled ~1 tick — distance and prestrafe from it systematically lied.
 	if (bOnGround)
 	{
 		m_bSeenGround = true;
@@ -57,7 +57,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 
 	if (!m_bAir && !bOnGround)
 	{
-		//Takeoff — от последнего наземного тика, не от первого воздушного.
+		//Takeoff — from the last ground tick, not the first air one.
 		m_bAir = true;
 		m_vTakeoff = m_vGroundOrigin;
 		m_fTakeSpeed = m_fGroundSpeed;
@@ -99,8 +99,7 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 
 		if (side)
 		{
-			//Первый стрейф 0→side тоже считается (раньше каждый прыжок
-			//недосчитывал 1).
+			//The first 0→side strafe counts too (each jump used to undercount by 1).
 			if (side != m_nLastSide)
 				m_nStrafes++;
 
@@ -113,9 +112,10 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 				m_nGoodTicks++;
 		}
 
-		// Латчим присед только в воздухе: на тике касания BunnyHop уже снял
-		// IN_DUCK с cmd (JB-релиз), и чтение cmd на лендинге врало бы "не присел" —
-		// из-за этого [eb] никогда не показывался, а jb/eb-счётчики стояли на нуле.
+		// Latch duck only while airborne: on the touch tick BunnyHop has already
+		// cleared IN_DUCK from cmd (JB release), and reading cmd on landing would
+		// lie "not ducked" — because of that [eb] never showed and the jb/eb
+		// counters stayed at zero.
 		if (!bOnGround)
 		{
 			if (cmd->buttons & IN_DUCK)
@@ -141,30 +141,30 @@ void CFeatures_JumpStats::OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float fl
 			m_last.strafes = m_nStrafes;
 			m_last.syncPct = (m_nMoveTicks > 0) ? (m_nGoodTicks * 100 / m_nMoveTicks) : 0;
 			m_last.landTick = tick;
-		//[edge] — только реальный EdgeJump: файр showtick на тике схода.
-		//Старое (TakeTick-LastGroundTick) врало в обе стороны: перфект-бхоп
-		//без касаний давал false, простой сход с бордюра — true.
+		//[edge] — a real EdgeJump only: the showtick fires on the tick we leave the edge.
+		//The old (TakeTick-LastGroundTick) lied both ways: a perfect bhop without
+		//touching ground gave false, a plain walk off a curb gave true.
 		m_last.edge = Vars::BunnyHop::bEdgeJump && Vars::BunnyHop::nEjShowTick != 0
 			&& m_nTakeTick >= Vars::BunnyHop::nEjShowTick
 			&& (m_nTakeTick - Vars::BunnyHop::nEjShowTick) <= 2;
 		const bool bDucked = m_bDuckAtLand || ((cmd->buttons & IN_DUCK) != 0);
-		//Считаем только фактические срабатывания: свежий showtick (<=6 тиков) +
-		//включённая фича + посадка в приседе. Ручной дак — только без AutoDuck
-		//(иначе каждый прыжок с зажатым приседом был бы "+1 JB/EB").
-		//ShowTick 0 = фича ни разу не файрила (первые тики карты врали бы true).
+		//Count actual firings only: a fresh showtick (<=6 ticks) + the feature
+		//enabled + a ducked landing. Manual duck counts only without AutoDuck
+		//(otherwise every jump with duck held would be "+1 JB/EB").
+		//ShowTick 0 = the feature never fired (the first map ticks would lie true).
 		const bool bEbFired = Vars::BunnyHop::bEdgeBug && Vars::BunnyHop::nEbShowTick != 0
 			&& tick >= Vars::BunnyHop::nEbShowTick && (tick - Vars::BunnyHop::nEbShowTick) <= 6;
 		const bool bJbFired = Vars::BunnyHop::bJumpBug && Vars::BunnyHop::nJbShowTick != 0
 			&& tick >= Vars::BunnyHop::nJbShowTick && (tick - Vars::BunnyHop::nJbShowTick) <= 6;
-		//Ручной дак — только при включённой фиче и без AutoDuck
-		//(иначе каждый прыжок с зажатым приседом был бы "+1 JB/EB").
+		//Manual duck — only with the feature enabled and without AutoDuck
+		//(otherwise every jump with duck held would be "+1 JB/EB").
 		const bool bManualEb = Vars::BunnyHop::bEdgeBug && !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -500.0f && dist > 150.0f;
 		const bool bManualJb = Vars::BunnyHop::bJumpBug && !Vars::BunnyHop::bAutoDuck && m_fMaxFall < -350.0f && dist > 100.0f;
 		m_last.eb = bDucked && (bEbFired || bManualEb);
 		m_last.fall = m_fMaxFall;
 		m_last.height = (m_fMaxHeight > 0.0f) ? m_fMaxHeight : 0.0f;
 		m_last.airSec = m_nAirTicks * (I::GlobalVars ? I::GlobalVars->interval_per_tick : (1.0f / 66.0f));
-		// EB важнее JB: eb включает и условия JB, считаем только раз.
+		// EB outranks JB: eb covers the JB conditions too, count it only once.
 		if (m_last.eb)
 			Vars::BunnyHop::nEbCount++;
 		else if (bDucked && (bJbFired || bManualJb))
@@ -189,15 +189,15 @@ void CFeatures_JumpStats::Draw()
 	if (!Vars::BunnyHop::bJumpStats || !I::GlobalVars)
 		return;
 
-	// Без игры — stale-панель с прошлой карты и ложные баннеры showtick.
+	// Not in game — a stale panel from the last map and false showtick banners.
 	if (!I::EngineClient || !I::EngineClient->IsInGame())
 	{
 		m_last.valid = false;
 		return;
 	}
 
-	// Live-sync текущего полёта: не ждём лендинга, рисуем пока летим.
-	// m_last-панель ниже всё равно требует valid, порядок не важен.
+	// Live sync of the current flight: no waiting for landing, draw while airborne.
+	// The m_last panel below requires valid anyway, order does not matter.
 	{
 		const int nLive = LiveSyncPct();
 		if (nLive >= 0)
@@ -218,7 +218,7 @@ void CFeatures_JumpStats::Draw()
 	const int cx = G::Draw.m_nScreenW / 2;
 	const int cy = G::Draw.m_nScreenH / 2 + 76;
 
-	//ShowTick 0 = ни разу не файрило: без проверки баннер горит на спавне.
+	//ShowTick 0 = never fired: without the check the banner burns at spawn.
 	if (Vars::BunnyHop::nJbShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nJbShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nJbShowTick + 66)
 		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 18, Color(0, 255, 171, 255), TXT_CENTERXY, "JUMPBUG");
 	if (Vars::BunnyHop::nEbShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nEbShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nEbShowTick + 66)
@@ -230,8 +230,8 @@ void CFeatures_JumpStats::Draw()
 	const bool bGood = (m_last.syncPct >= 90 && m_last.strafes > 0);
 	const Color& clrVerdict = bGood ? clrGood : Color(200, 200, 200, 255);
 
-	//Подложка под три строки: без неё текст тонет в яркой карте. Плюс
-	//акцентная риска слева — зелёная на удачном прыжке, серая иначе.
+	//Backing behind the three lines: without it the text drowns in a bright map.
+	//Plus an accent bar on the left — green on a good jump, gray otherwise.
 	{
 		constexpr int nPW = 280, nPH = 58;
 		const int nPX = cx - nPW / 2;

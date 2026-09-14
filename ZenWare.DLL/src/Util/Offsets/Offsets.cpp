@@ -6,12 +6,12 @@
 
 namespace
 {
-	// Кэш ресолва: <gamedir>\ZenWare.offsets. Формат:
+	// Resolve cache: <gamedir>\ZenWare.offsets. Format:
 	//   # ZenWare offsets cache v1
 	//   mod client.dll <identity>
 	//   rva SharedRandomFloat=00A1B2C0
-	// Identity = путь|время записи|размер: после обновы игры кэш молча
-	// инвалидируется и идёт полный перескан.
+	// Identity = path|write time|size: after a game update the cache is silently
+	// invalidated and a full rescan runs.
 	bool CacheGameDir(char* szOut, size_t nOut)
 	{
 		HMODULE hClient = GetModuleHandleA("client.dll");
@@ -68,7 +68,7 @@ namespace
 		if (fopen_s(&f, szPath, "r") != 0 || !f)
 			return false;
 
-		// Сначала identity трёх модулей, потом RVA.
+		// First the identity of the three modules, then the RVAs.
 		char szWant[3][MAX_PATH] = { };
 		static const char* kMods[] = { "client.dll", "engine.dll", "vguimatsurface.dll" };
 		for (int i = 0; i < 3; i++)
@@ -93,8 +93,8 @@ namespace
 				continue;
 			if (!strncmp(szLine, "mod ", 4))
 			{
-				// "mod <module> <identity...>": в identity есть пробелы (путь),
-				// поэтому делим по ПЕРВОМУ пробелу вручную, а не sscanf.
+				// "mod <module> <identity...>": the identity contains spaces (path),
+				// so split at the FIRST space manually instead of sscanf.
 				char* pSp = strchr(szLine + 4, ' ');
 				if (!pSp)
 					continue;
@@ -207,7 +207,7 @@ namespace
 
 void CUtil_Offsets::Init()
 {
-	// Быстрый путь: модули не менялись — берём RVA из кэша без скана.
+	// Fast path: modules unchanged — take RVAs from the cache without a scan.
 	if (TryLoadCache(*this))
 	{
 		m_bCacheUsed = true;
@@ -278,7 +278,7 @@ void CUtil_Offsets::Init()
 	if (m_dwSharedRandomFloat)
 		m_dwRandomSeed = (m_dwSharedRandomFloat + 0x7);
 
-	// Полный скан прошёл — сохраняем RVA в кэш для следующего старта.
+	// Full scan succeeded — save the RVAs to the cache for the next start.
 	SaveCache(*this);
 
 	//Per-pattern results for the log file.

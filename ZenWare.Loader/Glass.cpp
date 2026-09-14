@@ -1,14 +1,14 @@
-// ZenWare Loader - системный бэкдроп (реализация). См. Glass.h.
+// ZenWare Loader - system backdrop (implementation). See Glass.h.
 
 #include "Glass.h"
 
 #include <dwmapi.h>   // DwmSetWindowAttribute, DwmExtendFrameIntoClientArea, MARGINS
-#include <uxtheme.h>  // MARGINS (на случай старого SDK)
+#include <uxtheme.h>  // MARGINS (in case of an older SDK)
 
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
-// Подготовлено под DirectComposition (следующий шаг).
+// Prepared for DirectComposition (next step).
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dcomp.lib")
@@ -43,8 +43,8 @@ namespace
 
 	PFN_SetWindowCompositionAttribute g_pfnSetWCA = nullptr;
 	bool  g_bProbed = false;
-	bool  g_bBackdrop = false;      // бэкдроп реально применён
-	bool  g_bSystemMaterial = false;// применён системный материал Win11 (тинт не управляется)
+	bool  g_bBackdrop = false;      // backdrop actually applied
+	bool  g_bSystemMaterial = false;// Win11 system material applied (tint is not controllable)
 	DWORD g_nAccentState = 0;
 	COLORREF g_tint = Glass::kMint;
 	BYTE  g_alpha = 0;
@@ -63,7 +63,7 @@ namespace
 				GetProcAddress(hUser, "SetWindowCompositionAttribute"));
 	}
 
-	// Применяет accent policy с заданным состоянием и тинтом.
+	// Applies the accent policy with the given state and tint.
 	bool ApplyAccent(HWND hwnd, DWORD state, DWORD abgr)
 	{
 		ACCENT_POLICY policy{};
@@ -79,7 +79,7 @@ namespace
 		return g_pfnSetWCA(hwnd, &data) != FALSE;
 	}
 
-	// Тинт в ABGR: 0xAABBGGRR. Для RGB 0x0A0E0D получаем B=0D, G=0E, R=0A.
+	// Tint in ABGR: 0xAABBGGRR. For RGB 0x0A0E0D this yields B=0D, G=0E, R=0A.
 	DWORD TintAbgr(COLORREF rgb, BYTE alpha)
 	{
 		return (static_cast<DWORD>(alpha) << 24) |
@@ -93,7 +93,7 @@ namespace Glass
 {
 	DWORD OsBuild()
 	{
-		// RtlGetVersion не врёт, в отличие от GetVersionEx с манифестом.
+		// RtlGetVersion does not lie, unlike GetVersionEx with a manifest.
 		typedef LONG(WINAPI* PFN_RtlGetVersion)(PRTL_OSVERSIONINFOW);
 
 		const HMODULE hNt = GetModuleHandleW(L"ntdll.dll");
@@ -124,22 +124,22 @@ namespace Glass
 
 		const DWORD build = OsBuild();
 
-		// Тёмный near-black тинт в ABGR: 0xCC0D0E0A (A=CC, B=0D, G=0E, R=0A).
+		// Dark near-black tint in ABGR: 0xCC0D0E0A (A=CC, B=0D, G=0E, R=0A).
 		const DWORD abgrAcrylic = TintAbgr(RGB(0x0A, 0x0E, 0x0D), 0xCC);
 		const DWORD abgrBlur = TintAbgr(RGB(0x0A, 0x0E, 0x0D), 0x99);
 
-		// Windows 11 22H2+: системный Acrylic (полупрозрачнее Mica - лучше для лоадера).
+		// Windows 11 22H2+: system Acrylic (more translucent than Mica - better for the loader).
 		if (build >= 22621)
 		{
 			INT backdrop = 3; // DWMSBT_TRANSIENTWINDOW == Acrylic
 
 			if (SUCCEEDED(DwmSetWindowAttribute(hwnd, 38 /*DWMWA_SYSTEMBACKDROP_TYPE*/, &backdrop, sizeof(backdrop))))
 			{
-				// Рамка DWM должна покрывать всю клиентскую область, иначе материал не виден.
-				// РЕШЕНИЕ: ExtendFrameIntoClientArea здесь НЕ вызываем: он отдаёт всю
-				// клиентскую область DWM, и при GDI-отрисовке интерфейс пропадает (только бэкдроп).
-				// Материал и так виден через альфа-композит кадра (AlphaBlend 224).
-				// ExtendFrame намеренно не вызываем (см. пояснение выше).
+				// The DWM frame must cover the whole client area, otherwise the material is invisible.
+				// FIX: ExtendFrameIntoClientArea is NOT called here: it hands the entire
+				// client area to DWM, and with GDI drawing the UI disappears (only the backdrop stays).
+				// The material is visible anyway through the frame's alpha composite (AlphaBlend 224).
+				// ExtendFrame is intentionally not called (see the explanation above).
 
 				g_bBackdrop = true;
 				g_bSystemMaterial = true;
@@ -147,7 +147,7 @@ namespace Glass
 			}
 		}
 
-		// Windows 10 1803+ и Win11 до 22H2: акрил через недокументированный вызов.
+		// Windows 10 1803+ and Win11 below 22H2: acrylic via the undocumented call.
 		if (build >= 17134)
 		{
 			if (ApplyAccent(hwnd, ACCENT_ENABLE_ACRYLICBLURBEHIND, abgrAcrylic))
@@ -161,7 +161,7 @@ namespace Glass
 			}
 		}
 
-		// Windows 10 < 1803: простой блюр.
+		// Windows 10 < 1803: plain blur.
 		if (ApplyAccent(hwnd, ACCENT_ENABLE_BLURBEHIND, abgrBlur))
 		{
 			g_nAccentState = ACCENT_ENABLE_BLURBEHIND;
@@ -236,7 +236,7 @@ namespace Glass
 		if (SUCCEEDED(DwmSetWindowAttribute(hwnd, 33, &pref, sizeof(pref))))
 			return;
 
-		// Win10: регион со скруглением.
+		// Win10: rounded window region.
 		RECT rc{};
 		GetWindowRect(hwnd, &rc);
 

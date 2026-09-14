@@ -14,21 +14,21 @@ LRESULT CALLBACK WndProc::Detour(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 	if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN)
 		F::Menu.PollMenuKey();
 
-	//F7 вслепую крутит языки EN->RU->DE (друг с битым шрифтом не прочитает меню).
-	//Здесь, а не в Render: работает и при закрытом меню. bit30 режет
-	//автоповтор удержания, иначе язык стробит ~30 Гц.
+	//F7 blindly cycles languages EN->RU->DE (a player with a broken font could not read the menu).
+	//Here, not in Render: works with the menu closed too. bit30 cuts
+	//hold auto-repeat, otherwise the language strobes at ~30 Hz.
 	if ((uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN) && wParam == VK_F7 && !(lParam & (1 << 30)))
 		Lang::Next();
 
-	// Колесо крутит вкладки меню, в игру не уходит.
+	// Mouse wheel cycles menu tabs, never reaches the game.
 	if (uMsg == WM_MOUSEWHEEL && Vars::Menu::bOpen)
 	{
 		F::Menu.OnWheel(GET_WHEEL_DELTA_WPARAM(wParam));
 		return 0;
 	}
 
-	// Сырой ввод мыши глушим, пока меню открыто: иначе двигается камера,
-	// хотя курсор уже наш. Клавиши меню опрашиваются напрямую и не страдают.
+	// Raw mouse input is muted while the menu is open: otherwise the camera
+	// moves even though the cursor is already ours. Menu keys are polled directly and unaffected.
 	if (uMsg == WM_INPUT && Vars::Menu::bOpen)
 		return 0;
 

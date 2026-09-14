@@ -1,5 +1,5 @@
 // ZenWare Loader - clean dark UI, RGB glowing logo, Steam game launch.
-// Версия задаётся в resource.h (ZENWARE_VER_STR), руками тут не править.
+// Version lives in resource.h (ZENWARE_VER_STR), do not edit it here.
 #include <windows.h>
 #include <commdlg.h>
 #include <dwmapi.h>
@@ -18,13 +18,13 @@
 #include "Glass.h"
 #include "Renderer2D.h"
 
-// Версия из resource.h в wide-строку для заголовков.
+// Version from resource.h as a wide string for window titles.
 #define ZW_WIDEN2(x) L##x
 #define ZW_WIDEN(x) ZW_WIDEN2(x)
 #define ZENWARE_VER_WSTR ZW_WIDEN(ZENWARE_VER_STR)
 namespace {
 constexpr int WINDOW_W = 620;
-constexpr int WINDOW_H = 334; // футер (пилюли языка/обновлений) на y304-326 должен влезать
+constexpr int WINDOW_H = 334; // footer (language/updates pills) at y304-326 must fit
 constexpr int IDC_INJECT = 1003;
 constexpr int IDC_STATUS = 1005;
 constexpr int IDC_LAUNCH = 1008;
@@ -45,7 +45,7 @@ Theme_t MakeTheme(bool d){
  else { t.bg=RGB(242,249,244); t.ctl=RGB(255,255,255); t.text=RGB(20,35,30); t.dim=RGB(100,115,110); t.accent=RGB(0,200,135); t.accent2=RGB(0,150,100); t.alt=RGB(40,110,230); t.alt2=RGB(25,80,190); t.border=RGB(178,218,198); }
  return t;
 }
-// HSV (h 0..360, s/v 0..1) -> RGB, для радужного логотипа
+// HSV (h 0..360, s/v 0..1) -> RGB, for the rainbow logo
 static COLORREF Hsv(float h, float s, float v){
  while(h<0) h+=360; while(h>=360) h-=360;
  float c=v*s, x=c*(1-fabsf(fmodf(h/60.0f,2.0f)-1.0f)), m=v-c, r=0,g=0,b=0;
@@ -54,7 +54,7 @@ static COLORREF Hsv(float h, float s, float v){
  return RGB((BYTE)((r+m)*255),(BYTE)((g+m)*255),(BYTE)((b+m)*255));
 }
 Theme_t g_theme = MakeTheme(true);
-static float g_flModeT=0.0f, g_flModeTarget=0.0f; // 0=internal мятный, 1=external синий
+static float g_flModeT=0.0f, g_flModeTarget=0.0f; // 0=internal mint, 1=external blue
 HWND g_hMain=nullptr, g_hInject=nullptr, g_hStatus=nullptr, g_hLaunch=nullptr;
 static bool g_bExternal=false, g_bModeHov=false;
 static RECT g_rcMode={0,0,0,0};
@@ -62,11 +62,11 @@ static bool g_bLangHov=false;
 static RECT g_rcLang={0,0,0,0};
 static bool g_bUpdHov=false;
 static RECT g_rcUpdate={0,0,0,0};
-// dt-анимации: экспоненциальное сглаживание вместо фиксированного шага
-static float g_flHovLaunch=0.0f, g_flHovInject=0.0f; // подсветка кнопок под курсором
-static float g_flPressMode=0.0f; // тактильный отклик пилюли режима
-static float g_flModeHovA=0.0f; // подсветка пилюли режима под курсором
-static float g_flWinAlpha=0.0f;  // fade-in главного окна
+// dt-based animations: exponential smoothing instead of a fixed step
+static float g_flHovLaunch=0.0f, g_flHovInject=0.0f; // button hover highlight
+static float g_flPressMode=0.0f; // tactile press feedback of the mode pill
+static float g_flModeHovA=0.0f; // mode pill hover highlight
+static float g_flWinAlpha=0.0f;  // main window fade-in
 static bool g_bFading=true;
 static ULONGLONG g_ullLastTick=0;
 static float Approach(float cur,float target,float dt,float speed){ return cur+(target-cur)*(1.0f-expf(-dt*speed)); }
@@ -84,8 +84,8 @@ void ApplyDwm(){
  INT r=2; DwmSetWindowAttribute(g_hMain,33,&r,sizeof(r));
  Glass::RoundCorners(g_hMain, Glass::kCornerRadius);
 }
-// Liquid glass: когда системный акрил доступен, прозрачность окна меняется
-// через тинт стекла (layered-окно несовместимо с блюром); иначе - как раньше.
+// Liquid glass: when system acrylic is available, window opacity is changed
+// via the glass tint (layered windows are incompatible with blur); otherwise as before.
 static void SetWinAlpha(HWND h, BYTE a)
 {
 	if (Glass::IsAvailable())
@@ -94,7 +94,7 @@ static void SetWinAlpha(HWND h, BYTE a)
 		SetLayeredWindowAttributes(h, 0, a, LWA_ALPHA);
 }
 void RefreshTheme(){
- g_theme=MakeTheme(true); // РЕШЕНИЕ: лоадер всегда тёмный, светлая тема Windows его заливала
+ g_theme=MakeTheme(true); // FIX: the loader is always dark, the Windows light theme washed it out
  DestroyGdi();
  g_brBg=CreateSolidBrush(g_theme.bg);
  g_brCtl=CreateSolidBrush(g_theme.ctl);
@@ -105,7 +105,7 @@ void RefreshTheme(){
 void InitFonts(HWND hwnd){
  if(g_fUI)DeleteObject(g_fUI); if(g_fTitle)DeleteObject(g_fTitle); if(g_fSmall)DeleteObject(g_fSmall);
  g_fUI=g_fTitle=g_fSmall=nullptr;
- // У друга кастомный шрифт: если Segoe UI нет/битый — откат на Tahoma (кириллица есть везде).
+ // Custom system fonts happen: if Segoe UI is missing/broken, fall back to Tahoma (Cyrillic everywhere).
  static const wchar_t* s_face=nullptr;
  if(!s_face){
   s_face=L"Tahoma";
@@ -119,7 +119,7 @@ void InitFonts(HWND hwnd){
     SelectObject(mm,o); DeleteObject(f);
     if(!_wcsicmp(real,cand)){ s_face=cand; break; }
    }
-   // Tahoma есть практически всегда; последний шанс — что нашлось
+   // Tahoma is present almost everywhere; last resort is whatever was found
    DeleteDC(mm); ReleaseDC(nullptr,dc);
   }
  }
@@ -131,7 +131,7 @@ void InitFonts(HWND hwnd){
  g_fTitle=CreateFontW(h2,0,0,0,800,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,s_face);
  g_fSmall=CreateFontW(h3,0,0,0,600,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,s_face);
 }
-// Радужный неоновый логотип: свечение + переливающиеся буквы
+// Rainbow neon logo: glow + shimmering letters
 void DrawRgbLogo(HDC dc, int x, int y){
  const wchar_t* txt=L"ZenWare.cc";
  SIZE sz={0,0};
@@ -139,13 +139,13 @@ void DrawRgbLogo(HDC dc, int x, int y){
  SetBkMode(dc,TRANSPARENT);
  GetTextExtentPoint32W(dc,txt,(int)wcslen(txt),&sz);
  const float hue=fmodf(GetTickCount64()/38.0f,360.0f);
- // свечение: 8 копий вокруг со сдвигом, тёмный радужный цвет
+ // glow: 8 offset copies around, dark rainbow color
  for(int dx=-2;dx<=2;dx+=2) for(int dy=-2;dy<=2;dy+=2){
   if(!dx&&!dy) continue;
    SetTextColor(dc,Hsv(hue,0.9f,0.35f));
   TextOutW(dc,x+dx,y+dy,txt,(int)wcslen(txt));
  }
- // буквы радугой
+ // letters in rainbow colors
  int cx=x;
  for(const wchar_t* p=txt;*p;++p){
   int idx=(int)(p-txt);
@@ -178,7 +178,7 @@ static bool FindDll(wchar_t* out){
   GetFullPathNameW(t,MAX_PATH,f,nullptr);
   if(GetFileAttributesW(f)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,f); return true; }
  }
- // Однофайловая раздача: DLL вшита в ресурсы лоадера -> распаковываем в %TEMP%
+ // Single-file distribution: DLL is embedded in the loader resources -> extract to %TEMP%
  std::vector<BYTE> vec;
  if(LoaderUtil::LoadDllFromResource(vec)){
   LoaderUtil::Log(g_hMain,"[*] DLL from embedded resource: %u bytes.",(unsigned)vec.size());
@@ -197,9 +197,9 @@ void ToggleMode(){
  LoaderUtil::Status(g_hMain,LoaderUtil::S(g_bExternal?"Режим: External (отдельный процесс)":"Режим: Internal (инжект DLL)",g_bExternal?"Mode: External (own process)":"Mode: Internal (DLL inject)",g_bExternal?"Modus: External (eigener Prozess)":"Modus: Internal (DLL-Inject)",g_bExternal?"Modo: External (proceso propio)":"Modo: Internal (inyección DLL)",g_bExternal?"Modo: External (processo próprio)":"Modo: Internal (injeção DLL)",g_bExternal?"Tryb: External (osobny proces)":"Tryb: Internal (wstrzyknięcie DLL)",g_bExternal?"Mode : External (processus séparé)":"Mode : Internal (injection DLL)",g_bExternal?"模式：External（独立进程）":"模式：Internal（注入 DLL）"));
  RECT hdr={0,0,WINDOW_W,76}; InvalidateRect(g_hMain,&hdr,FALSE);
 }
-// Язык UI: 0=RU, 1=EN, 2=DE, 3=ES, 4=PT, 5=PL, 6=FR, 7=ZH. Живёт в реестре
-// в "Lang2" (новый формат). Легаси "Lang" писался в формате 1=RU/2=EN — после
-// перехода миграция (1->0, 2->1) молча портила выбор EN/DE при перезапуске.
+// UI language: 0=RU, 1=EN, 2=DE, 3=ES, 4=PT, 5=PL, 6=FR, 7=ZH. Stored in the
+// registry under "Lang2" (new format). The legacy "Lang" value used 1=RU/2=EN;
+// after the switch, its migration (1->0, 2->1) silently broke the EN/DE choice on restart.
 static void SaveLang(){
  DWORD v=(DWORD)LoaderUtil::g_nLang;
  RegSetKeyValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang2",REG_DWORD,&v,sizeof(v));
@@ -210,11 +210,11 @@ static void LoadLang(){
   LoaderUtil::g_nLang=(int)v; return;
  }
  if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\ZenWare.cc",L"Lang",RRF_RT_REG_DWORD,nullptr,&v,&s)==ERROR_SUCCESS&&v<=7){
-  // Одноразовая миграция старого формата: 1=RU -> 0, 2=EN -> 1, остальные совпадают.
+  // One-time migration of the old format: 1=RU -> 0, 2=EN -> 1, the rest already match.
   LoaderUtil::g_nLang=(v==1||v==2)?(int)(v-1):(int)v;
   SaveLang(); return;
  }
- LoaderUtil::g_nLang=1; // Английский по умолчанию; выбор пользователя — в реестре выше.
+ LoaderUtil::g_nLang=1; // English by default; the user's choice is stored in the registry above.
 }
 void ToggleLang(){
  LoaderUtil::g_nLang=(LoaderUtil::g_nLang+1)%LoaderUtil::kLangCount;
@@ -224,13 +224,13 @@ void ToggleLang(){
  if(g_hMain){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(g_hMain,&all,FALSE); }
 }
 void LaunchExternal(){
- // Тот же busy-флаг, что у инжекта: двойной клик давал два процесса оверлея
- // (дублированный SendInput-bhop), а запуск во время инжекта — гонку файлов.
+// Same busy flag as injection: a double click used to spawn two overlay
+// processes (duplicated SendInput bhop), and launching during injection raced on files.
  if(InterlockedExchange(&g_busy,1)) return;
  struct BusyRel{ ~BusyRel(){ InterlockedExchange(&g_busy,0); } } rel;
  wchar_t dir[MAX_PATH]={}; GetModuleFileNameW(NULL,dir,MAX_PATH);
  wchar_t* s=wcsrchr(dir,L'\\'); if(s) *s=0;
- // bin\Release -> корень репо: три "..", два оставляли несуществующий путь.
+ // bin\Release -> repo root: three ".."; two left a non-existent path.
  const wchar_t* cands[]={L"\\ZenWare.External.exe",L"\\..\\..\\..\\ZenWare.External\\bin\\Release\\ZenWare.External.exe"};
  wchar_t goods[MAX_PATH]={};
   wchar_t tried[2][MAX_PATH]={};
@@ -244,7 +244,7 @@ void LaunchExternal(){
   if(GetFileAttributesW(f)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(goods,MAX_PATH,f); break; }
  }
  if(!goods[0]){
-  // Однофайловая раздача: External вшит в ресурсы -> распаковываем в %TEMP% и запускаем
+  // Single-file distribution: External is embedded in resources -> extract to %TEMP% and run
   std::vector<BYTE> vec;
   if(LoaderUtil::LoadExternalFromResource(vec)){
    LoaderUtil::Log(g_hMain,"[*] External from embedded resource: %u bytes.",(unsigned)vec.size());
@@ -265,10 +265,10 @@ void LaunchExternal(){
   LoaderUtil::Status(g_hMain,LoaderUtil::S("External запущен","External launched","External gestartet","External iniciado","External iniciado","External uruchomiony","External lancé","External 已启动"));
 }
 void StartInject(){
- // Атомарный захват ДО поиска/распаковки: два быстрых клика иначе дважды
- // писали DLL в один %TEMP% путь (второй CREATE_ALWAYS усекает файл, пока
- // первый инжект уже читает его). Клики в игре кнопки блокирует EnableWindow,
- // но он ставится позже, в потоке инжекта.
+// Atomic grab BEFORE the search/extraction: otherwise two quick clicks wrote
+// the DLL to the same %TEMP% path twice (the second CREATE_ALWAYS truncates
+// the file while the first injection is still reading it). EnableWindow blocks
+// clicks on the in-game button, but it is set later, in the injection thread.
  if(InterlockedExchange(&g_busy,1)) return;
  wchar_t p[MAX_PATH]={};
  if(!FindDll(p)){
@@ -285,9 +285,9 @@ void StartInject(){
 }
 void LaunchGame(){
  wchar_t steam[MAX_PATH]={}; DWORD sz=sizeof(steam);
- // 1) полный путь из реестра
+ // 1) full path from the registry
  if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\Valve\\Steam",L"SteamExe",RRF_RT_REG_SZ,nullptr,steam,&sz)!=ERROR_SUCCESS){
-  // 2) папка Steam + steam.exe
+  // 2) Steam folder + steam.exe
   wchar_t dir[MAX_PATH]={}; DWORD dz=sizeof(dir);
   if(RegGetValueW(HKEY_CURRENT_USER,L"Software\\Valve\\Steam",L"SteamPath",RRF_RT_REG_SZ,nullptr,dir,&dz)==ERROR_SUCCESS){
    wcscpy_s(steam,dir); wcscat_s(steam,L"\\steam.exe");
@@ -297,8 +297,8 @@ void LaunchGame(){
   LoaderUtil::Status(g_hMain, LoaderUtil::S("Steam не найден","Steam not found","Steam nicht gefunden","Steam no encontrado","Steam não encontrado","Nie znaleziono Steam","Steam introuvable","未找到 Steam"));
   return;
  }
- // -applaunch 550 = Left 4 Dead 2, дальше аргументы уходят игре.
- // -insecure обязателен: чит только для локального сервера без VAC.
+// -applaunch 550 = Left 4 Dead 2, the remaining arguments go to the game.
+// -insecure is mandatory: the cheat is for local servers without VAC only.
  ShellExecuteW(nullptr,L"open",steam,L"-applaunch 550 -novid -console -insecure",nullptr,SW_SHOWNORMAL);
  LoaderUtil::Status(g_hMain, LoaderUtil::S("Запуск игры через Steam...","Launching via Steam...","Spielstart über Steam...","Iniciando juego vía Steam...","Iniciando jogo via Steam...","Uruchamianie gry przez Steam...","Lancement via Steam...","正在通过 Steam 启动游戏..."));
  g_gameSeen=false;
@@ -309,7 +309,7 @@ static COLORREF Mix2(COLORREF a, COLORREF b, int t){
  int bl=(GetBValue(a)*(255-t)+GetBValue(b)*t)/255;
  return RGB(r,g,bl);
 }
-// Плавный акцент темы: external мятный -> internal красный
+// Smooth theme accent: external mint -> internal red
 static COLORREF LerpC2(COLORREF a,COLORREF b,float t){
  if(t<0)t=0; if(t>1)t=1;
  return RGB((int)(GetRValue(a)+(GetRValue(b)-GetRValue(a))*t),(int)(GetGValue(a)+(GetGValue(b)-GetGValue(a))*t),(int)(GetBValue(a)+(GetBValue(b)-GetBValue(a))*t));
@@ -331,8 +331,8 @@ LRESULT DrawBtn(LPARAM lp){
    bool en=IsWindowEnabled(d->hwndItem); bool pri=(d->CtlID==IDC_INJECT);
    bool pr=(d->itemState & ODS_SELECTED)!=0;
    RECT cr; GetClientRect(d->hwndItem,&cr);
- // закрасить всё поле кнопки цветом диалога и обрезать рисование скруглением,
- // иначе по краям остаются неокрашенные белые пиксели
+// fill the entire button area with the dialog color and clip drawing to the
+// rounded rect, otherwise unpainted white pixels remain along the edges
  FillRect(d->hDC,&cr,g_brBg);
  HRGN rgClip=CreateRoundRectRgn(cr.left,cr.top,cr.right+1,cr.bottom+1,12,12);
  SelectClipRgn(d->hDC,rgClip);
@@ -340,7 +340,7 @@ LRESULT DrawBtn(LPARAM lp){
   float hovF= (d->CtlID==IDC_INJECT)?g_flHovInject : (d->CtlID==IDC_LAUNCH)?g_flHovLaunch : 0.0f;
   if(pri&&en){
    fill=Mix2(Acc(),RGB(255,255,255),(int)(hovF*50)); txt=g_theme.dark?RGB(4,12,8):RGB(255,255,255); br=Acc();
-  // вертикальный градиент поверх заливки
+  // vertical gradient on top of the fill
   TRIVERTEX vv[2]={{cr.left,cr.top,(COLOR16)(GetRValue(fill)<<8),(COLOR16)(GetGValue(fill)<<8),(COLOR16)(GetBValue(fill)<<8),0},
    {cr.right,cr.bottom,(COLOR16)(GetRValue(Acc2())<<8),(COLOR16)(GetGValue(Acc2())<<8),(COLOR16)(GetBValue(Acc2())<<8),0}};
   GRADIENT_RECT gr={0,1}; GdiGradientFill(d->hDC,vv,2,&gr,1,GRADIENT_FILL_RECT_V);
@@ -348,7 +348,7 @@ LRESULT DrawBtn(LPARAM lp){
     if(!en){ fill=g_theme.bg; txt=g_theme.dim; }
     else if(pr){ fill=Mix2(g_theme.ctl,Acc(),60); }
     else { fill=Mix2(g_theme.ctl,Acc(),(int)(hovF*36)); br=Mix2(g_theme.border,Acc(),110+(int)(hovF*145)); }
-   // кнопка запуска игры: радужная обводка в ритме логотипа
+   // game launch button: rainbow border in sync with the logo
    bool launch=(d->CtlID==IDC_LAUNCH);
    COLORREF rbDim=0;
    if(launch&&en){
@@ -359,7 +359,7 @@ LRESULT DrawBtn(LPARAM lp){
    auto o1=SelectObject(d->hDC,b); auto o2=SelectObject(d->hDC,pen);
    RECT r=cr; InflateRect(&r,-1,-1); RoundRect(d->hDC,r.left,r.top,r.right,r.bottom,10,10);
    if(launch&&en){
-    // внешнее неоновое свечение тем же оттенком, что у логотипа
+    // outer neon glow in the same hue as the logo
     HPEN gp=CreatePen(PS_SOLID,1,rbDim); auto og=SelectObject(d->hDC,gp);
     HGDIOBJ ng=SelectObject(d->hDC,GetStockObject(NULL_BRUSH));
     RoundRect(d->hDC,cr.left,cr.top,cr.right,cr.bottom,11,11);
@@ -373,7 +373,7 @@ LRESULT DrawBtn(LPARAM lp){
   RECT r=cr; InflateRect(&r,-1,-1); RoundRect(d->hDC,r.left,r.top,r.right,r.bottom,10,10);
   SelectObject(d->hDC,nb); SelectObject(d->hDC,ob); DeleteObject(bp);
  }
-  { // стеклянный блик сверху кнопки
+  { // glass highlight on top of the button
    HBRUSH hb=CreateSolidBrush(Mix2(fill,RGB(255,255,255),26));
    RECT hr={cr.left+3,cr.top+1,cr.right-3,cr.top+3}; FillRect(d->hDC,&hr,hb); DeleteObject(hb);
   }
@@ -388,7 +388,7 @@ LRESULT ColorChild(UINT msg,WPARAM wp,LPARAM lp){
  HDC dc=(HDC)wp; HWND ctl=(HWND)lp; int id=ctl?GetDlgCtrlID(ctl):0;
  SetTextColor(dc, id==IDC_STATUS?Acc():g_theme.dim); SetBkColor(dc,g_theme.bg); return (LRESULT)g_brBg;
 }
-// ---------- кодовый интро-сплэш: безрамочное окно ~2.8с, клик пропускает ----------
+// ---------- code intro splash: borderless window for ~2.8s, click to skip ----------
 static constexpr int SPL_W=560, SPL_H=300;
 static constexpr ULONGLONG SPLASH_MS=2800;
 static HWND g_hSplash=nullptr;
@@ -429,7 +429,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   HBITMAP bmp=CreateCompatibleBitmap(hdc,SPL_W,SPL_H);
   HGDIOBJ obm=SelectObject(mem,bmp);
   HDC dc=mem;
-  { // fade поверх кадра, альфу дёргаем только при изменении
+  { // fade over the frame, only touch the alpha when it changes
    ULONGLONG elA=GetTickCount64()-g_splashT0; BYTE a=255;
    if(elA<300) a=(BYTE)(elA*255/300);
    else if(elA>SPLASH_MS-400) a=(elA>=SPLASH_MS)?0:(BYTE)((SPLASH_MS-elA)*255/400);
@@ -440,7 +440,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   HBRUSH bb=CreateSolidBrush(bg); RECT rc={0,0,SPL_W,SPL_H}; FillRect(dc,&rc,bb); DeleteObject(bb);
   const float el=(GetTickCount64()-g_splashT0)/1000.0f;
   const float hue=fmodf((float)GetTickCount64()/38.0f,360.0f);
-  // сетка
+  // grid
   {
    int gk=(int)(SplashEase(el/1.2f)*26);
    if(gk>0){
@@ -450,7 +450,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     SelectObject(dc,og2); DeleteObject(gp2);
    }
   }
-  // пыль
+  // dust
   for(int i=0;i<45;i++){
    const SplashD_t& d=g_dust[i];
    float dyy=d.y-el*9.0f*d.sp; dyy=dyy-(int)(dyy/SPL_H)*SPL_H; if(dyy<0)dyy+=SPL_H;
@@ -460,7 +460,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    HBRUSH db=CreateSolidBrush(Mix2(bg,g_theme.dim,da));
    RECT dr={(int)dxx,(int)dyy,(int)dxx+2,(int)dyy+2}; FillRect(dc,&dr,db); DeleteObject(db);
   }
-  // частицы со шлейфами
+  // particles with trails
   for(int i=0;i<130;i++){
    const SplashP_t& p=g_parts[i];
    float t=SplashEase((el-p.dl)/1.1f);
@@ -475,7 +475,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     FillRect(dc,&pr,pb); DeleteObject(pb);
    }
   }
-  // ударные кольца
+  // shockwave rings
   for(int r2=0;r2<2;r2++){
    float rt0=r2?1.9f:1.2f;
    float rt=(el-rt0)/0.7f;
@@ -488,7 +488,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    }
   }
    g_splashQ[0]+=GetTickCount64()-q0; ULONGLONG q1=GetTickCount64();
-   // эмблема: настоящий логотип со свечением, ESP-уголками и сканлайном
+   // emblem: real logo with glow, ESP corners and a scanline
    float la=SplashEase((el-0.15f)/0.6f);
    const int LCX=SPL_W/2, LCY=89, LSZ=150;
    if(la>0){
@@ -513,7 +513,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
       MoveToEx(dc,bx0+bl,by1,nullptr); LineTo(dc,bx0,by1); LineTo(dc,bx0,by1-bl);
       SelectObject(dc,oh); DeleteObject(hp);
      }
-     { // орбита из пунктирных дуг вокруг эмблемы
+     { // orbit of dashed arcs around the emblem
       float oa=el*0.9f;
       int orad=LSZ/2+30;
       HPEN op=CreatePen(PS_SOLID,2,Mix2(bg,Acc(),(int)(la*130))); auto oo=SelectObject(dc,op);
@@ -544,10 +544,10 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     float swx=(el-1.6f)/0.8f;
     for(const wchar_t* p=txt;*p;++p){
      int idx=(int)(p-txt);
-     // посимвольный вылет: каждая буква выезжает снизу с overshoot-пружинкой
+     // per-letter entrance: each letter slides up from below with an overshoot spring
      float lc=SplashEase((el-0.75f-idx*0.045f)/0.5f);
      if(lc<=0.0f){ wchar_t c0[2]={*p,0}; SIZE cs0={0,0}; GetTextExtentPoint32W(dc,c0,1,&cs0); cx+=cs0.cx; continue; }
-     float ov=lc<1.0f?(1.0f-lc)*(1.0f-lc)*-26.0f:0.0f; // подпрыгивание в конце
+     float ov=lc<1.0f?(1.0f-lc)*(1.0f-lc)*-26.0f:0.0f; // small bounce at the end
      int dy=(int)((1.0f-lc)*34+ov);
      COLORREF lcol=Mix2(bg,Hsv(hue+idx*5.0f,0.85f,1.0f),k);
      if(swx>0&&swx<1.4f){
@@ -559,7 +559,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
      wchar_t ch[2]={*p,0}; SIZE cs={0,0}; GetTextExtentPoint32W(dc,ch,1,&cs);
      TextOutW(dc,cx,y0+dy,ch,1); cx+=cs.cx;
     }
-   // раскрывающаяся линия + подпись
+   // expanding line + caption
    float lw=SplashEase((el-0.9f)/0.8f);
    if(lw>0){
      int hw2=(int)(200*lw);
@@ -575,7 +575,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
    SelectObject(dc,of);
   }
   if(q2mark){ g_splashQ[2]+=GetTickCount64()-q2mark; g_nQ2++; } ULONGLONG q3=GetTickCount64();
-  // прогресс-бар
+  // progress bar
   {
    float f=el/2.6f; if(f>1) f=1;
    RECT tr={80,252,480,256}; HBRUSH tb=CreateSolidBrush(g_theme.ctl); FillRect(dc,&tr,tb); DeleteObject(tb);
@@ -583,7 +583,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
     int hx=80+(int)(400*f);
     HBRUSH hb=CreateSolidBrush(Mix2(Acc(),RGB(255,255,255),120)); RECT hr2={hx-12,251,hx,257}; FillRect(dc,&hr2,hb); DeleteObject(hb); }
   }
-   { // финальная вспышка при закрытии: короткая белая заливка с затуханием
+   { // final flash on close: short white fill fading out
     ULONGLONG elF=GetTickCount64()-g_splashT0;
     if(elF>SPLASH_MS-320){
      float ft=(float)(elF-(SPLASH_MS-320))/320.0f;
@@ -618,7 +618,7 @@ static bool FindLogo(wchar_t* out){
  wcscpy_s(t,dir); wcscat_s(t,L"\\zenwareLOGO.png");
  if(GetFileAttributesW(t)!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,t); return true; }
  if(GetFileAttributesW(L"zenwareLOGO.png")!=INVALID_FILE_ATTRIBUTES){ wcscpy_s(out,MAX_PATH,L"zenwareLOGO.png"); return true; }
- // Однофайловая раздача: логотип вшит в ресурсы -> распаковываем в %TEMP%
+ // Single-file distribution: logo is embedded in resources -> extract to %TEMP%
  std::vector<BYTE> vec;
  if(LoaderUtil::LoadLogoFromResource(vec) && LoaderUtil::WriteTempFile(L"zenwareLOGO.png",vec,out)) return true;
  return false;
@@ -630,13 +630,13 @@ void RunSplash(HINSTANCE hi){
   g_splashImg=Gdiplus::Image::FromFile(lp);
   if(g_splashImg&&g_splashImg->GetLastStatus()!=Gdiplus::Ok){ delete g_splashImg; g_splashImg=nullptr; }
  }
- if(g_splashImg){ // логотип один раз в готовый спрайт, в кадре только быстрый блит
+ if(g_splashImg){ // render the logo once into a sprite, the frame only does a fast blit
   g_logoBase=new Gdiplus::Bitmap(150,150,PixelFormat32bppPARGB);
   Gdiplus::Graphics gl(g_logoBase);
   gl.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
   gl.DrawImage(g_splashImg,0,0,150,150);
  }
- // свечение предрендерим один раз в спрайт, а не считаем градиент каждый кадр
+ // pre-render the glow into a sprite once instead of computing the gradient every frame
  g_splashGlow=new Gdiplus::Bitmap(240,240,PixelFormat32bppPARGB);
  {
   Gdiplus::Graphics gg(g_splashGlow);
@@ -653,7 +653,7 @@ void RunSplash(HINSTANCE hi){
   InitFonts(hw);
   timeBeginPeriod(1);
   int nFrames=0; ULONGLONG msPaint=0; const ULONGLONG tFps0=GetTickCount64();
-  for(;;){ // vsync-цикл вместо таймера: кадр рисуется синхронно и ждёт вертикалку
+  for(;;){ // vsync loop instead of a timer: frames are drawn synchronously, waiting for vblank
    MSG m{};
    while(PeekMessageW(&m,nullptr,0,0,PM_REMOVE)){ TranslateMessage(&m); DispatchMessageW(&m); }
    if(!IsWindow(hw)) break;
@@ -665,7 +665,7 @@ void RunSplash(HINSTANCE hi){
    if(FAILED(DwmFlush())) Sleep(16);
   }
   timeEndPeriod(1);
-  { // диагностика: средний fps и стоимость кадра в файл
+  { // diagnostics: average fps and per-frame cost dumped to a file
    wchar_t fp[MAX_PATH]={}; GetTempPathW(MAX_PATH,fp); wcscat_s(fp,L"ZenWare.splash_fps.txt");
    char buf[256]={}; sprintf_s(buf,"frames=%d totalMs=%llu paintAvgMs=%.2f qBgPart=%.2f qLogo=%.2f qTitle=%.2f qBar=%.2f qBlt=%.2f\r\n",nFrames,GetTickCount64()-tFps0,nFrames?(double)msPaint/nFrames:0.0,nFrames?(double)g_splashQ[0]/nFrames:0.0,nFrames?(double)g_splashQ[1]/nFrames:0.0,g_nQ2?(double)g_splashQ[2]/g_nQ2:0.0,nFrames?(double)g_splashQ[3]/nFrames:0.0,nFrames?(double)g_splashQ[4]/nFrames:0.0);
    HANDLE hf=CreateFileW(fp,GENERIC_WRITE,0,nullptr,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
@@ -678,11 +678,11 @@ void RunSplash(HINSTANCE hi){
  Gdiplus::GdiplusShutdown(tok);
 }
 } // namespace
-// Единый источник состояния кадра для таймера и WM_PAINT: раньше таймер терял
-// busy/dark/cursor — прогресс-бар инжекта в D2D не анимировался никогда.
+// Single source of frame state for the timer and WM_PAINT: the timer used to
+// lose busy/dark/cursor, so the D2D injection progress bar never animated.
 static void FillFrameState(HWND h,Zen2D::FrameState_t& f){
  f.dt=0.016f;
- f.elapsed=(float)(GetTickCount64()%3600000)/1000.0f; // не %100000: пульсы прыгали каждые 100 с
+ f.elapsed=(float)(GetTickCount64()%3600000)/1000.0f; // not %100000: pulses jumped every 100 s
  f.external=g_bExternal;
  f.hoverLaunch=g_flHovLaunch;
  f.hoverInject=g_flHovInject;
@@ -695,7 +695,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  switch(m){
   case WM_CREATE:{
    g_hMain=h; InitFonts(h); RefreshTheme();
-   if(!Glass::EnableSystemBackdrop(h) && !Glass::Enable(h,Glass::kMint,0)) SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // старт почти прозрачным для fade-in
+   if(!Glass::EnableSystemBackdrop(h) && !Glass::Enable(h,Glass::kMint,0)) SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // start almost transparent for the fade-in
    g_ullLastTick=GetTickCount64();
     CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ЗАПУСТИТЬ ИГРУ",L"LAUNCH GAME",L"SPIEL STARTEN",L"INICIAR JUEGO",L"INICIAR JOGO",L"URUCHOM GRĘ",L"LANCER LE JEU",L"启动游戏"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,92,580,36,h,(HMENU)IDC_LAUNCH,nullptr,nullptr);
     g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT",g_bExternal?L"EXTERNAL STARTEN":L"INJECT",g_bExternal?L"INICIAR EXTERNAL":L"INYECTAR",g_bExternal?L"INICIAR EXTERNAL":L"INJETAR",g_bExternal?L"URUCHOM EXTERNAL":L"WSTRZYKIJ",g_bExternal?L"LANCER EXTERNAL":L"INJECTER",g_bExternal?L"启动 EXTERNAL":L"注入"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
@@ -705,11 +705,11 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  }
   case WM_TIMER:
     if(w==1){
-    { // dt-обновление всех плавных значений раз в кадр
+    { // dt-update of all smooth values once per frame
      ULONGLONG now=GetTickCount64();
      float dt=g_ullLastTick?((float)(now-g_ullLastTick)/1000.0f):0.016f; if(dt>0.1f)dt=0.1f;
      g_ullLastTick=now;
-     // hover кнопок: цель 1/0 по позиции курсора
+     // button hover: target 1/0 from the cursor position
      POINT cp{0,0}; GetCursorPos(&cp); ScreenToClient(h,&cp);
      auto hovOf=[&](int id){ HWND b=GetDlgItem(h,id); if(!b) return 0.0f; RECT r; GetWindowRect(b,&r); MapWindowPoints(HWND_DESKTOP,h,(LPPOINT)&r,2); return PtInRect(&r,cp)?1.0f:0.0f; };
      float tL=hovOf(IDC_LAUNCH), tI=hovOf(IDC_INJECT);
@@ -735,7 +735,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
      if(changed&&!Zen2D::R().Enabled()){ RECT all={0,0,WINDOW_W,WINDOW_H+40}; InvalidateRect(h,&all,FALSE); }
     }
      RECT hdr={0,0,WINDOW_W,76};
-     if(!Zen2D::R().Enabled()) InvalidateRect(h,&hdr,FALSE); // GDI-шапку анимируем сама GDI, у D2D свой таймер
+     if(!Zen2D::R().Enabled()) InvalidateRect(h,&hdr,FALSE); // GDI animates its own header, D2D has its own timer
      if(Zen2D::R().Enabled()){
       Zen2D::FrameState_t fst2{}; FillFrameState(h,fst2);
       wchar_t wszS[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszS,127);
@@ -743,10 +743,10 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
       wchar_t wszL[32]={}; swprintf_s(wszL,L"%ls",LoaderUtil::LangCode());
       Zen2D::R().RenderFrame(fst2, Zen2D::Dark(), wszS, wszV, wszL);
      }
-    // перерисовка кнопки запуска, чтобы радужная обводка анимировалась вместе с логотипом
+    // repaint the launch button so its rainbow border animates along with the logo
     if(!Zen2D::R().Enabled()){ HWND bl=GetDlgItem(h,IDC_LAUNCH); if(bl) InvalidateRect(bl,nullptr,FALSE); }
    if(g_busy&&!Zen2D::R().Enabled()){ RECT pr={20,262,600,266}; InvalidateRect(h,&pr,FALSE); }
-   // следим, появилась ли игра после кнопки запуска
+   // watch whether the game has appeared after pressing launch
    static int tick=0;
    if(++tick%10==0){
     bool has=LoaderUtil::FindProcessId(L"left4dead2.exe")!=0;
@@ -835,7 +835,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
      {rc.right,rc.bottom,(COLOR16)(GetRValue(gbot)<<8),(COLOR16)(GetGValue(gbot)<<8),(COLOR16)(GetBValue(gbot)<<8),0}};
     GRADIENT_RECT ggr={0,1}; GdiGradientFill(dc,gv,2,&ggr,1,GRADIENT_FILL_RECT_V);
    }
-   { // дрейфующая пыль по фону (детерминированная, без состояния)
+   { // drifting background dust (deterministic, stateless)
     float elP=GetTickCount64()/1000.0f;
     float spd=g_bParty?3.0f:1.0f;
     for(int i=0;i<36;i++){
@@ -846,23 +846,23 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
      RECT pr={px,py,px+2,py+2}; FillRect(dc,&pr,pb); DeleteObject(pb);
     }
    }
-  // тёмная шапка с тонкой мятной линией снизу
+  // dark header with a thin mint line at the bottom
   RECT hdr={0,0,rc.right,66};
   HBRUSH hb=CreateSolidBrush(g_theme.dark?RGB(8,11,10):RGB(228,242,235));
   FillRect(dc,&hdr,hb); DeleteObject(hb);
    HPEN lp=CreatePen(PS_SOLID,2,Acc()); auto ol=SelectObject(dc,lp);
    MoveToEx(dc,0,66,nullptr); LineTo(dc,rc.right,66);
    SelectObject(dc,ol); DeleteObject(lp);
-   { // бегущий блик по линии шапки
+   { // running highlight along the header line
     float elP=GetTickCount64()/1000.0f;
     int sx=(int)fmodf(elP*170.0f,(float)(rc.right+240))-120;
     HBRUSH sb=CreateSolidBrush(Mix2(Acc(),RGB(255,255,255),150));
     RECT sr={sx,64,sx+90,68}; FillRect(dc,&sr,sb); DeleteObject(sb);
    }
-  // радужный логотип
+  // rainbow logo
   DrawRgbLogo(dc,22,8);
-    // пилюля-кнопка режима справа (с тактильным сжатием при клике)
-    int sq=(int)(g_flPressMode*4.0f); // прижимается на 4px
+    // mode pill button on the right (tactile squeeze on click)
+    int sq=(int)(g_flPressMode*4.0f); // pressed in by 4px
     RECT vr={rc.right-170+sq,16+sq/2,rc.right-20-sq,42-sq/2}; g_rcMode=vr;
     float hovT=g_bModeHov?1.0f:0.0f;
     g_flModeHovA=hovT;
@@ -873,31 +873,31 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    SelectObject(dc,vo1); SelectObject(dc,vo2); DeleteObject(vb); DeleteObject(vp);
    SelectObject(dc,g_fSmall); SetBkMode(dc,TRANSPARENT); SetTextColor(dc,g_theme.dark?Acc():Acc2());
    DrawTextW(dc,g_bExternal?L"EXTERNAL • x86":L"INTERNAL • x86",-1,&vr,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-  // подписи секций
+  // section captions
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
 
-  // прогресс-бар инжекта
+  // injection progress bar
   if(g_busy){
    RECT trk={20,196,600,200}; HBRUSH tb=CreateSolidBrush(g_theme.ctl); FillRect(dc,&trk,tb); DeleteObject(tb);
    static int px=0; px=(px+7)%(580+120);
    RECT sg={20+px-120,196,20+px,200}; HBRUSH sb=CreateSolidBrush(Acc()); FillRect(dc,&sg,sb); DeleteObject(sb);
    FrameRect(dc,&trk,g_brBorder);
   }
-   // статус-точка (пульсирует, пока идёт работа)
+   // status dot (pulses while work is in progress)
    COLORREF dotC=g_dotColor;
    if(g_busy){ float pl=0.5f+0.5f*sinf(GetTickCount64()/130.0f); dotC=Mix2(Acc(),RGB(255,255,255),(int)(pl*90)); }
    else if(dotC==RGB(120,130,124)){ float br=0.5f+0.5f*sinf(GetTickCount64()/900.0f); dotC=Mix2(g_dotColor,Acc(),(int)(br*40)); }
-   { // мягкое свечение вокруг точки
+   { // soft glow around the dot
     HBRUSH gb=CreateSolidBrush(Mix2(g_theme.bg,dotC,26));
     RECT gr={17,201,37,221}; FillRect(dc,&gr,gb); DeleteObject(gb);
    }
-   { // сама точка
+   { // the dot itself
     HBRUSH db=CreateSolidBrush(dotC); HPEN dp=CreatePen(PS_SOLID,1,dotC);
     auto od1=SelectObject(dc,db); auto od2=SelectObject(dc,dp);
     Ellipse(dc,22,206,32,216);
     SelectObject(dc,od1); SelectObject(dc,od2); DeleteObject(db); DeleteObject(dp);
    }
-  // футер + переключатель языка справа
+  // footer + language switcher on the right
   SelectObject(dc,g_fSmall); SetTextColor(dc,g_theme.dim);
   RECT fr={20,306,600,326};
    {
@@ -905,8 +905,8 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     DrawTextW(dc,LoaderUtil::SW(L"Только локальный сервер (-insecure) • логи: %TEMP%\\ZenWare.Loader.log",L"Local server only (-insecure) • logs: %TEMP%\\ZenWare.Loader.log",L"Nur lokaler Server (-insecure) • Logs: %TEMP%\\ZenWare.Loader.log",L"Solo servidor local (-insecure) • registros: %TEMP%\\ZenWare.Loader.log",L"Somente servidor local (-insecure) • logs: %TEMP%\\ZenWare.Loader.log",L"Tylko serwer lokalny (-insecure) • logi: %TEMP%\\ZenWare.Loader.log",L"Serveur local uniquement (-insecure) • journaux : %TEMP%\\ZenWare.Loader.log",L"仅本地服务器 (-insecure) • 日志: %TEMP%\\ZenWare.Loader.log"),-1,&frT,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
    }
    {
-    // Пилюля обновлений: только открывает страницу релизов в браузере.
-    // Ничего не качает и не запускает — проект source-only by design.
+    // Updates pill: only opens the releases page in the browser.
+    // Downloads and runs nothing - the project is source-only by design.
     wchar_t szUpd[64]={}; swprintf_s(szUpd,L"v%ls \u00B7 %ls",ZENWARE_VER_WSTR,LoaderUtil::SW(L"обновления",L"updates",L"Updates",L"novedades",L"atualizações",L"aktualizacje",L"mises à jour",L"更新"));
     RECT ur={rc.right-232,304,rc.right-80,326}; g_rcUpdate=ur;
     COLORREF ufill=g_bUpdHov?Mix2(g_theme.ctl,Acc(),60):g_theme.bg;
@@ -933,7 +933,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
    } else {
     BitBlt(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right-ps.rcPaint.left,ps.rcPaint.bottom-ps.rcPaint.top,mem,ps.rcPaint.left,ps.rcPaint.top,SRCCOPY);
    }
-   // ИЗМЕНЕНО: PaintGlass удалён - бэкдроп теперь системный (Glass::EnableSystemBackdrop).
+   // CHANGED: PaintGlass removed - the backdrop is now system-provided (Glass::EnableSystemBackdrop).
   SelectObject(mem,oldBmp); DeleteObject(bmp); DeleteDC(mem);
   EndPaint(h,&ps);
   break;
@@ -971,10 +971,10 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  return 0;
 }
 int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
- LoaderUtil::g_nLang=1; // Английский по умолчанию.
- LoadLang(); // выбор из реестра поверх системного, если язык уже переключали
+ LoaderUtil::g_nLang=1; // English by default.
+ LoadLang(); // registry choice on top of the default, if the language was switched before
  LoaderUtil::InitFileLog();
- LoaderUtil::CleanupOldTempExtracts(); // подчистить старые распаковки из %TEMP%
+ LoaderUtil::CleanupOldTempExtracts(); // clean up old %TEMP% extractions
  WNDCLASSEXW wc{sizeof(wc),CS_HREDRAW|CS_VREDRAW,WndProc,0,0,hi,LoadIconW(hi,MAKEINTRESOURCEW(IDI_MAINICON)),LoadCursorW(nullptr,IDC_ARROW),nullptr,nullptr,L"Zw3Wnd",(HICON)LoadImageW(hi,MAKEINTRESOURCEW(IDI_MAINICON),IMAGE_ICON,GetSystemMetrics(SM_CXSMICON),GetSystemMetrics(SM_CYSMICON),0)};
  RegisterClassExW(&wc);
  WNDCLASSEXW ws{sizeof(ws),CS_HREDRAW|CS_VREDRAW,SplashProc,0,0,hi,LoadIconW(hi,MAKEINTRESOURCEW(IDI_MAINICON)),LoadCursorW(nullptr,IDC_ARROW),nullptr,nullptr,L"ZwSplash",nullptr};
@@ -982,7 +982,7 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  RunSplash(hi);
  RECT rc{0,0,WINDOW_W,WINDOW_H}; AdjustWindowRect(&rc,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN,FALSE);
  int ww=rc.right-rc.left, wh=rc.bottom-rc.top;
- // главное окно открывается ровно там же, где был сплэш — бесшовный переход
+ // the main window opens exactly where the splash was - seamless transition
  int wx=(GetSystemMetrics(SM_CXSCREEN)-ww)/2, wy=(GetSystemMetrics(SM_CYSCREEN)-wh)/2;
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
  HWND hw=CreateWindowExW(Zen2D::ProbeComposition()?WS_EX_NOREDIRECTIONBITMAP:(Glass::IsAvailable()?0:WS_EX_LAYERED),wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
@@ -991,11 +991,12 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
   HWND hb1=GetDlgItem(hw,IDC_LAUNCH), hb2=GetDlgItem(hw,IDC_INJECT), hs=GetDlgItem(hw,IDC_STATUS);
   if(hb1) ShowWindow(hb1,SW_HIDE);
   if(hb2) ShowWindow(hb2,SW_HIDE);
-  if(hs)  ShowWindow(hs,SW_HIDE); } // интерфейс рисует D2D, дочерние окна только дублировали его
+  if(hs)  ShowWindow(hs,SW_HIDE); } // D2D draws the UI, the child windows only duplicated it
  if(!Zen2D::R().IsUsingComposition()){
-  // Окно могло быть создано с WS_EX_NOREDIRECTIONBITMAP под ProbeComposition,
-  // но композиция не поднялась: без redirection bitmap не видно ни GDI-рисование,
-  // ни ID2D1HwndRenderTarget. Снимаем стиль, иначе окно останется пустым стеклом.
+  // The window may have been created with WS_EX_NOREDIRECTIONBITMAP for
+  // ProbeComposition, but composition failed to come up: without a redirection
+  // bitmap neither GDI drawing nor ID2D1HwndRenderTarget is visible. Drop the
+  // style, otherwise the window stays an empty pane of glass.
   LONG_PTR ex=GetWindowLongPtrW(hw,GWL_EXSTYLE);
   SetWindowLongPtrW(hw,GWL_EXSTYLE,ex&~WS_EX_NOREDIRECTIONBITMAP);
   SetWindowPos(hw,nullptr,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_FRAMECHANGED);

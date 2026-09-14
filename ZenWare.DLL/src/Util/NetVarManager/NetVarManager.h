@@ -6,8 +6,8 @@ class CUtil_NetVarManager
 {
 public:
 	int Get(const char* const szClass, const char* const szVar);
-	// nExpectSize = sizeof(типа) из M_NETVAR: сверяется с реальным размером
-	// пропа из RECVINFO, расхождение пишется в лог (мусорное чтение соседей).
+	// nExpectSize = sizeof(type) from M_NETVAR: checked against the real prop
+	// size from RECVINFO; a mismatch is written to the log (garbage reads of neighbors).
 	int Get(const char* const szClass, const char* const szVar, int nExpectSize);
 };
 

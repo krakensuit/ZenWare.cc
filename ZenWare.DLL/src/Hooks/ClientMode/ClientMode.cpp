@@ -37,9 +37,9 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 	U::Log.Crumb("CreateMove");
 	PASSIVE_IF_SHUTDOWN(Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd));
 
-	//Оригинал вызывается ровно один раз: двойной прогон за тик дублировал
-	//движение/выбор оружия движком и ломал учёт предикта.
-	//cmd проверяем ДО оригинала: при null оригинал уже мог упасть внутри.
+	//The original is called exactly once: a double run per tick duplicated
+	//engine movement/weapon switching and broke prediction accounting.
+	//cmd is checked BEFORE the original: with null the original may already have crashed inside.
 	if (!cmd || !cmd->command_number)
 		return Table.Original<FN>(Index)(ecx, edx, input_sample_frametime, cmd);
 
@@ -61,14 +61,14 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 
 	if (pLocal && !pLocal->deadflag())
 	{
-		// Движение и бой — на собственном предикте движка, как в референсах
-		// (CSGOSimple, l4d2-internal-base): сущность в CreateMove = конец
-		// cmd N-1, самый свежий предикт. Ручной SetupMove/ProcessMovement/
-		// FinishMove внутри CreateMove симулировал cmd дважды (наш прогон +
-		// предикт движка) и оставлял половину состояния продвинутой
-		// (m_hGroundEntity, m_flFallVelocity, ducktime не восстанавливались) —
-		// рассинхрон ground-entity с флагами рвал CheckJumpButton, бхоп прыгал
-		// криво или не прыгал вовсе.
+		// Movement and combat run on the engine's own prediction, as in the
+		// references (CSGOSimple, l4d2-internal-base): an entity in CreateMove =
+		// the tail of cmd N-1, the freshest prediction. Manual SetupMove/
+		// ProcessMovement/FinishMove inside CreateMove simulated cmd twice
+		// (our run + engine prediction) and left half the state advanced
+		// (m_hGroundEntity, m_flFallVelocity, ducktime were not restored) —
+		// the ground-entity desync with flags broke CheckJumpButton, bhop
+		// jumped crookedly or not at all.
 		const int nRawMouseX = cmd->mousedx;
 		F::BunnyHop.Run(pLocal, cmd);
 		F::AutoStrafe.Run(pLocal, cmd);
@@ -78,26 +78,26 @@ bool __fastcall ClientMode::CreateMove::Detour(void* ecx, void* edx, float input
 		const float flAppliedSide = cmd->sidemove;
 		F::JumpStats.OnTick(pLocal, cmd, flAppliedSide, nRawMouseX);
 
-		//Только стволы: меле/пила/гренник — сиблинги C_BaseCombatWeapon,
-		//каст к C_TerrorWeapon дал бы виртуалки по чужому слоту vtable.
+		//Guns only: melee/chainsaw/grenade launcher are siblings of
+		//C_BaseCombatWeapon; a cast to C_TerrorWeapon would call vfuncs on a foreign vtable slot.
 		C_BaseCombatWeapon* pBaseWeapon = pLocal->GetActiveWeapon();
 		C_TerrorWeapon* pWeapon = (pBaseWeapon && G::Util.IsGunEntity(pBaseWeapon)) ? pBaseWeapon->As<C_TerrorWeapon*>() : nullptr;
 
 		if (pWeapon)
 		{
-			//Порядок load-bearing: NoSpread видит IN_ATTACK, форсированный
-			//аимом/триггером в этом же тике, только при этом порядке.
+			//Order is load-bearing: NoSpread sees IN_ATTACK forced by
+			//aimbot/trigger in the same tick only with this ordering.
 			F::Aimbot.Run(pLocal, pWeapon, cmd);
 			F::TriggerBot.Run(pLocal, pWeapon, cmd);
 			F::AutoPistol.Run(pWeapon, cmd);
 			F::NoSpread.Run(pLocal, pWeapon, cmd);
 		}
-		//Шов последним: ставит свои углы на атакующего, Aimbot выше
-		//перезаписал бы их своим снапом — шов уходил бы мимо.
+		//Shove last: it sets its own angles on the attacker; Aimbot above
+		//would overwrite them with its snap — the shove would miss.
 		F::AutoShove.Run(pLocal, cmd);
 
-		// Фронт IN_ATTACK для точности сессии: сэмпл ПОСЛЕ фич, иначе
-		// выстрелы аима/триггера (форс кнопок) не считались хитмаркером.
+		//IN_ATTACK front edge for session accuracy: sample AFTER features,
+		//otherwise aimbot/trigger shots (forced buttons) were not counted by the hitmarker.
 		static bool s_bPrevAtk = false;
 		const bool bAtk = (cmd->buttons & IN_ATTACK) != 0;
 		if (bAtk && !s_bPrevAtk)
@@ -112,8 +112,8 @@ void __fastcall ClientMode::DoPostScreenSpaceEffects::Detour(void* ecx, void* ed
 {
 	PASSIVE_IF_SHUTDOWN(Table.Original<FN>(Index)(ecx, edx, pSetup));
 
-	//Чистый экран: пропуск оригинала режет рвоту/блюр/стан целиком.
-	//Дефолт true = прежнее поведение (детур и так никогда не вызывал оригинал).
+	//Clean screen: skipping the original removes vomit/blur/stun entirely.
+	//Default true = previous behavior (the detour never called the original anyway).
 	if (Vars::Visuals::bNoScreenFx || !I::EngineClient || !I::EngineClient->IsInGame())
 		return;
 

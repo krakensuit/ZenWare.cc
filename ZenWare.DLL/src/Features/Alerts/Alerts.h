@@ -2,8 +2,8 @@
 
 #include "../../SDK/SDK.h"
 
-// Баннеры угроз: танк заспавнился / ведьма рядом (+дистанция).
-// Только чтение сущностей, вызывается из Paint.
+// Threat banners: tank spawned / witch nearby (+distance).
+// Read-only entity access, called from Paint.
 class CFeatures_Alerts
 {
 public:

@@ -4,6 +4,24 @@ All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
 ## [Unreleased]
+## [3.13.3] - 2026-09-14
+
+### Changed / Изменено
+- All Russian code comments across the DLL, the loader and the external overlay
+  are translated to English (~420 comments in 70 files). User-facing strings are
+  untouched: the menu still ships its 8 languages, loader UI and hotkey labels
+  keep their translations. No functional changes.
+  Все русские комментарии в коде DLL, лоадера и внешнего оверлея переведены на
+  английский (~420 комментариев в 70 файлах). Пользовательские строки не тронуты:
+  меню по-прежнему на 8 языках, UI лоадера и подписи хоткеев не изменились.
+  Функциональных изменений нет.
+
+### Fixed / Исправлено
+- The in-menu version badge/watermark (`Vars::Menu::kVersion`) follows
+  `resource.h` again: it stayed on v3.13.1 through the 3.13.2 release.
+  Версия в бейдже/водяном знаке меню (`Vars::Menu::kVersion`) снова следует за
+  `resource.h`: она осталась v3.13.1 после релиза 3.13.2.
+
 ## [3.13.2] - 2026-09-14
 
 ### Fixed / Исправлено

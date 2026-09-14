@@ -57,7 +57,7 @@ void __fastcall EngineVGui::Paint::Detour(void* ecx, void* edx, int mode)
 
 	s_bPrevF11 = bF11;
 
-	//ESP panic key: быстрое вкл/выкл всего ESP без меню.
+	//ESP panic key: quickly toggles the whole ESP without the menu.
 	static bool s_bPrevPanic = false;
 	const int nPanic = Vars::ESP::nPanicKey;
 	const bool bPanic = (nPanic && (GetAsyncKeyState(nPanic) & 0x8000) != 0);

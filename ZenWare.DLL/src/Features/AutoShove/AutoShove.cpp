@@ -19,7 +19,7 @@ void CFeatures_AutoShove::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		if (!pEntity || pEntity->IsDormant())
 			continue;
 
-		// Свои: выжившие и боты (IsValidTarget тут не подходит — он режет свою команду).
+		// Own team: survivors and bots (IsValidTarget does not fit here — it cuts our own team).
 		ClientClass* pCC = pEntity->GetClientClass();
 		if (!pCC || !U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot))
 			continue;
@@ -43,9 +43,9 @@ void CFeatures_AutoShove::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		//Aim at the attacker and shove.
 		C_BaseEntity* pAttBase = bTongued ? pMate->m_tongueOwner().Get() : pMate->m_pounceAttacker().Get();
 
-		//Владелец языка — всегда курильщик, пина — всегда охотник: это классы
-		//СИ, а не игроки. Старый гейт IsPlayerEntity резал их всех — шов
-		//никогда не срабатывал. Проверяем класс явно, дальше только нетвары.
+		//The tongue owner is always a Smoker, the pounce attacker always a Hunter:
+		//these are SI classes, not players. The old IsPlayerEntity gate cut them
+		//all — the shove never fired. Check the class explicitly, netvars only beyond that.
 		if (!pAttBase)
 			continue;
 		ClientClass* pAttCC = pAttBase->GetClientClass();

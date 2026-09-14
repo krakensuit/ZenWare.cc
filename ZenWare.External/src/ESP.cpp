@@ -99,7 +99,7 @@ void ESP::Collect(const Memory& mem, uintptr_t client, const Snap& snap, std::ve
 		if (team == 2 || team == 3)
 		{
 			int cls = 0;
-			// Танк красим отдельно (zombieClass 7-8 по данным референса).
+			// Tanks get their own color (zombieClass 7-8 per the reference data).
 			if (team == 3 && Off::offZombieClass && mem.Read(ent + Off::offZombieClass, cls) && cls >= 7)
 				color = RGB(170, 60, 255);
 			else
@@ -107,8 +107,8 @@ void ESP::Collect(const Memory& mem, uintptr_t client, const Snap& snap, std::ve
 		}
 		else
 		{
-			// team 0 + живое: возможно обычная заражённая / ведьма.
-			// Проверяем имя модели (ent+0x10 -> строка), как в референсе.
+			// team 0 + alive: probably a common infected / witch.
+			// Check the model name (ent+0x10 -> string), like the reference does.
 			uintptr_t modelPtr = 0;
 			if (!mem.Read(ent + 0x10, modelPtr) || !modelPtr)
 				continue;
@@ -133,7 +133,7 @@ void ESP::Collect(const Memory& mem, uintptr_t client, const Snap& snap, std::ve
 		out.push_back(d);
 	}
 
-	// Дистанция отдельным проходом (дешевле, чем внутри фильтра).
+	// Distance in a separate pass (cheaper than inside the filter).
 	for (auto& d : out)
 	{
 		float dx = d.org.x - snap.localOrg.x, dy = d.org.y - snap.localOrg.y;

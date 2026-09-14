@@ -9,8 +9,8 @@
 
 namespace
 {
-	// Уголки вместо полного прямоугольника: читается чище на мелких боксах,
-	// чёрная подложка под цветными уголками держит контраст на светлых картах.
+	// Corners instead of a full rectangle: reads cleaner on small boxes;
+	// the black backing under the colored corners keeps contrast on bright maps.
 	static void CornerLines(int x, int y, int w, int h, int cl, const Color& clr)
 	{
 		G::Draw.Line(x, y, x + cl, y, clr);
@@ -29,8 +29,8 @@ namespace
 			G::Draw.OutlinedRect(x, y, w, h, clr);
 			return;
 		}
-		//Мягкое свечение: два внешних контура с падающей альфой — глубина
-		//без дорогих полигонов, поверх чёрной подложки читается на любом фоне.
+		//Soft glow: two outer outlines with falling alpha — depth without
+		//expensive polygons; over the black backing it reads on any background.
 		G::Draw.OutlinedRect(x - 2, y - 2, w + 4, h + 4, { clr.r(), clr.g(), clr.b(), 40 });
 		G::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, { clr.r(), clr.g(), clr.b(), 85 });
 		int cl = (w < h ? w : h) / 4;
@@ -51,7 +51,7 @@ void CFeatures_ESP::Render()
 	if (nLocalIndex < 1 || !I::ClientEntityList)
 		return;
 
-	// Локал: только проверенные игроки, никаких viewmodel/прокси.
+	// Local: verified players only, no viewmodels/proxies.
 	IClientEntity* pLocalEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
 	if (!G::Util.IsPlayerEntity(pLocalEnt))
 		return;
@@ -75,7 +75,7 @@ void CFeatures_ESP::Render()
 		if (!pCC)
 			continue;
 
-		// Дистанция: ап-каст к C_BaseEntity безопасен для любой сущности (нетвары).
+		// Distance: an up-cast to C_BaseEntity is safe for any entity (netvars).
 		if (flMaxM > 0.5f)
 		{
 			C_BaseEntity* pBaseD = pEntity->As<C_BaseEntity*>();
@@ -89,7 +89,7 @@ void CFeatures_ESP::Render()
 			case SurvivorBot:
 			{
 				C_TerrorPlayer* pPlayer = pEntity->As<C_TerrorPlayer*>();
-				if (!G::Util.IsPlayerEntity(pEntity)) // защита на случай сдвинутых ID
+				if (!G::Util.IsPlayerEntity(pEntity)) // guard in case IDs shifted
 					break;
 
 				if (G::Util.IsValidTarget(pLocal, pPlayer, false))
@@ -140,7 +140,7 @@ void CFeatures_ESP::Render()
 			}
 			default:
 			{
-				// Бумер и сдвинутые ID: опознаём по имени класса.
+				// Boomer and shifted IDs: identify by class name.
 				if (Vars::ESP::bSpecialBoxes && pCC->m_pNetworkName)
 					DrawUnknown(pLocal, pEntity->As<C_BaseEntity*>(), pCC->m_pNetworkName);
 				break;
@@ -154,8 +154,8 @@ void CFeatures_ESP::Render()
 
 void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, const int nEntityIndex)
 {
-	// Защита от краша ESP::Render (0x12DF9 / 0x12D09): проверяем полный валид
-	// перед ЛЮБЫМ чтением виртуалок или нетваров на pPlayer.
+	// Crash guard for ESP::Render (0x12DF9 / 0x12D09): full validity check
+	// before ANY virtual or netvar read on pPlayer.
 	if (!pPlayer || !G::Util.IsPlayerEntity(pPlayer)) return;
 	ClientClass* pCC = pPlayer->GetClientClass();
 	if (!pCC) return;
@@ -183,8 +183,8 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 	if (Vars::ESP::bSnaplines)
 		G::Draw.Line(G::Draw.m_nScreenW / 2, G::Draw.m_nScreenH, x + (w / 2), y + h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 110 });
 
-	// ХП-бар слева: чёрная обводка + заливка снизу вверх по доле от max HP
-	// (не от 100 — у СИ больше).
+	// HP bar on the left: black outline + fill from the bottom up as a share of
+	// max HP (not of 100 — SI has more).
 	if (Vars::ESP::bHealthBar)
 	{
 		const int nBarX = x - 5;
@@ -196,8 +196,8 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 
 			if (nFillH > 0)
 			{
-				//Вертикальный градиент поверх чёрной подложки: низ ярче —
-				//полоса читается объёмной, а не плоской заливкой.
+				//Vertical gradient over the black backing: brighter at the bottom —
+				//the bar reads as volumetric, not a flat fill.
 				const Color clrHp = G::Util.GetHealthColor(nHealth, nMaxHp);
 				G::Draw.GradientRect(nBarX, y + h - nFillH, nBarX + 4, y + h,
 					clrHp, { clrHp.r(), clrHp.g(), clrHp.b(), 110 }, false);
@@ -208,7 +208,7 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			G::Draw.String(EFonts::ESP, nBarX - 4, y + (h / 2), Color(255, 255, 255, 255), TXT_CENTERXY, "%d", nHealth);
 	}
 
-	// Ник жёлтым над боксом как у space (не цветом команды).
+	// Name in yellow above the box, like space (not team-colored).
 	if (Vars::ESP::bName)
 	{
 		player_info_t pi = { };
@@ -225,7 +225,7 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 		}
 	}
 
-	// Низ бокса сверху вниз как у space: дистанция, под ней оружие+патроны.
+	// Below the box top-down like space: distance, then weapon+ammo.
 	int nBelow = y + h + 8;
 
 	if (Vars::ESP::bDistance)
@@ -234,16 +234,16 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 		nBelow += 13;
 	}
 
-	// Оружие в руках — через netvar m_hActiveWeapon (надёжнее виртуалки).
-	// Блок НЕ вложен в bName: раньше текст оружия пропадал вместе с ником.
+	// Held weapon via the m_hActiveWeapon netvar (more reliable than the virtual).
+	// The block is NOT nested inside bName: the weapon text used to vanish together with the name.
 	if (Vars::ESP::bWeaponText)
 	{
 		EHANDLE hActive = pPlayer->m_hActiveWeapon();
 		C_BaseEntity* pEntActive = nullptr;
 
-		//Хендл в первом кадре после инжекта/смены оружия может указывать на
-		//viewmodel/руки/протухший слот: каст только после проверки класса,
-		//иначе виртуалка GetWeaponID идёт по чужой таблице (краш при инжекте).
+		//In the first frame after inject/weapon switch the handle can point at a
+		//viewmodel/hands/a stale slot: cast only after the class check, otherwise
+		//the GetWeaponID virtual goes through a foreign vtable (crash on inject).
 		if (hActive.IsValid())
 		{
 			IClientEntity* pViaHandle = I::ClientEntityList->GetClientEntityFromHandle(hActive);
@@ -271,8 +271,8 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 
 			if (!bHasName)
 			{
-				// pActive из хендла без проверки класса: виртуалку дёргаем
-				// только если класс известен, иначе статичная строка.
+				// pActive comes from a handle without a class check: call the
+				// virtual only if the class is known, otherwise a static string.
 				ClientClass* pWCC = pActive->GetClientClass();
 				const char* szName = (pWCC && pWCC->m_pNetworkName) ? pWCC->m_pNetworkName : "weapon";
 
@@ -292,8 +292,8 @@ void CFeatures_ESP::DrawPlayer(C_TerrorPlayer* pLocal, C_TerrorPlayer* pPlayer, 
 			{
 				wchar_t wszLine[80] = { };
 
-				// Патроны как у space: только m_iClip1 активного оружия.
-				// Оффсет 0 (нетвар не снялся) читал бы vtable — отсекаем sanity.
+				// Ammo like space: only m_iClip1 of the active weapon.
+				// Offset 0 (netvar not resolved) would read the vtable — sanity cutoff.
 				if (Vars::ESP::bAmmo)
 				{
 					const int nClip = pActive->m_iClip1();
@@ -338,9 +338,9 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 		return;
 	}
 
-	// m_weaponID/GetWeaponID существуют ТОЛЬКО у CWeaponSpawn. Таблетки,
-	// аптечки, bile и прочие пикапы — другие серверные классы с другой
-	// таблицей виртуалок: дёргать их методы = вылет. Им только имя класса.
+	// m_weaponID/GetWeaponID exist ONLY on CWeaponSpawn. Pills, medkits, bile
+	// and other pickups are different server classes with a different vtable:
+	// calling their methods = crash. Class name only for them.
 	const Color clrItemNone(200, 200, 200, 255);
 	if (pCC->m_ClassID != CWeaponSpawn)
 	{
@@ -353,7 +353,7 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 			swprintf_s(wszD, L" [%.0fm]", G::Util.GetEyePosition(pLocal).DistTo(pEntity->m_vecOrigin()) / 52.5f);
 			wcscat_s(wszCls, wszD);
 		}
-		// Как у space: предметам бокс не рисуем вообще, только текст по центру.
+		// Like space: no box for items at all, just centered text.
 		G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItemNone, TXT_CENTERXY, L"%ls", wszCls);
 		return;
 	}
@@ -398,7 +398,7 @@ void CFeatures_ESP::DrawItem(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity)
 		wcscat_s(wszLine, wszDist);
 	}
 
-	// Как у space: оружию на земле бокс не рисуем, только цветной текст по центру.
+	// Like space: no box for ground weapons, only colored centered text.
 	G::Draw.String(EFonts::ESP, x + (w / 2), y + (h / 2), clrItem, TXT_CENTERXY, L"%ls", wszLine);
 }
 
@@ -423,11 +423,11 @@ void CFeatures_ESP::DrawCommon(C_BaseEntity* pEntity)
 		G::Draw.Rect(x, y, w, h, { 170, 60, 60, 40 });
 	DrawEspBox(x, y, w, h, clrCommon);
 
-	// Имя обычного заражённого (Infected / Common).
+	// Common infected name (Infected / Common).
 	if (Vars::ESP::bName)
 		G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrCommon, TXT_CENTERXY, "COMMON");
 
-	// Полоса здоровья через базовые виртуалки (C_BaseEntity).
+	// Health bar via base virtuals (C_BaseEntity).
 	if (Vars::ESP::bHealthBar && x - 6 >= 0)
 	{
 		const int nMaxHp = U::Math.Clamp(pEntity->GetMaxHealth() > 0 ? pEntity->GetMaxHealth() : 150, 1, 600);
@@ -484,7 +484,7 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	if (Vars::ESP::bFilled)
 		G::Draw.Rect(x, y, w, h, { clrTeam.r(), clrTeam.g(), clrTeam.b(), 40 });
 	DrawEspBox(x, y, w, h, clrTeam);
-	//HP-бар слева как у игроков: доля от max HP (у танка 6000, не 100).
+	//HP bar on the left like players: share of max HP (tank is 6000, not 100).
 	if (Vars::ESP::bHealthBar && x - 5 >= 0)
 	{
 		C_TerrorPlayer* pTP = pEntity->As<C_TerrorPlayer*>();
@@ -498,7 +498,7 @@ void CFeatures_ESP::DrawSpecial(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	}
 	G::Draw.String(EFonts::ESP_NAME, x + (w / 2), y - G::Draw.GetFontHeight(EFonts::ESP_NAME), clrTeam, TXT_CENTERXY, "%s", szName);
 
-	//HP и дистанция для спец-заражённых
+	//HP and distance for specials
 	if (Vars::ESP::bHealthText || Vars::ESP::bDistance)
 	{
 		char szInfo[32] = { };
@@ -532,7 +532,7 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	if (!pLocal || !pEntity || !szNetworkName || !szNetworkName[0])
 		return;
 
-	// Имя класса в нижний регистр, ищем подстроку (переживает префиксы типа CBoomer).
+	// Lowercase the class name and search a substring (survives prefixes like CBoomer).
 	char szLower[64] = { };
 	for (int i = 0; i < 63 && szNetworkName[i]; i++)
 		szLower[i] = (char)tolower((unsigned char)szNetworkName[i]);
@@ -557,9 +557,9 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 	if (!GetBounds(pEntity, x, y, w, h) || w <= 0 || h <= 0)
 		return;
 
-	// Обычные: team=0, жизненный цикл не как у игроков — только бокс.
-	// Ведьма тоже идёт сюда: она C_Infected, а не C_BasePlayer — каст ниже
-	// читал бы чужой оффсет. Проверка живости как у DrawBoss.
+	// Commons: team=0, lifecycle unlike players — box only.
+	// The witch also lands here: it is C_Infected, not C_BasePlayer — the cast
+	// below would read a foreign offset. Aliveness check like DrawBoss.
 	if (pFound->bCommon || !strcmp(szShow, "WITCH"))
 	{
 		if (!strcmp(szShow, "WITCH"))
@@ -580,7 +580,7 @@ void CFeatures_ESP::DrawUnknown(C_TerrorPlayer* pLocal, C_BaseEntity* pEntity, c
 		return;
 	}
 
-	// Лёгкие проверки как у DrawSpecial (раскладка СИ shared с CTerrorPlayer).
+	// Light checks like DrawSpecial (SI layout shared with CTerrorPlayer).
 	C_BasePlayer* pPl = pEntity->As<C_BasePlayer*>();
 	if (!pPl || pPl->m_lifeState() != 0)
 		return;
@@ -600,9 +600,9 @@ bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w,
 	if (!pBaseEntity)
 		return false;
 
-	// Как у space: проекция всех 8 углов AABB (origin+mins/maxs), только нетвары.
-	// Старая проекция 2 точек (ступни/голова по центру + ширина 0.55 от высоты)
-	// врала ширину и центр на близких и на краях экрана — боксы "отставали".
+	// Like space: project all 8 AABB corners (origin+mins/maxs), netvars only.
+	// The old 2-point projection (feet/head centered + width 0.55 of height)
+	// got the width and center wrong up close and at screen edges — boxes "lagged".
 	if ((pBaseEntity->m_vecMaxs().z - pBaseEntity->m_vecMins().z) < 2.0f)
 		return false;
 
@@ -632,8 +632,8 @@ bool CFeatures_ESP::GetBounds(C_BaseEntity* pBaseEntity, int& x, int& y, int& w,
 		if (vS.y > flMaxY) flMaxY = vS.y;
 	}
 
-	//Часть углов за кадром (в упор/на краю экрана): бокс не дропаем, а клиппим.
-	//Best-effort: проекция из-за спины камеры всё равно режется финальной проверкой.
+	//Some corners off-frame (point blank / at the screen edge): clip the box instead of dropping it.
+	//Best-effort: a projection behind the camera is still cut by the final check.
 	if (!nHit)
 		return false;
 
@@ -682,14 +682,14 @@ void CFeatures_ESP::DrawTeam(C_TerrorPlayer* pLocal)
 		C_TerrorPlayer* pT = pEntity->As<C_TerrorPlayer*>();
 		if (!pT || pT->GetTeamNumber() != nLocalTeam)
 			continue;
-		//Сначала дешёвые нетвары, виртуалка GetHealth — после гейта.
+		//Cheap netvars first; the GetHealth virtual comes after the gate.
 		if (pT->deadflag() || pT->m_lifeState() != 0)
 			continue;
 		const int nHp = U::Math.Clamp(pT->GetHealth(), 0, 200);
 		if (nHp <= 0)
 			continue;
 		player_info_t pi = { };
-		//GetPlayerInfo ждёт клиент-слот: индексы выше maxclients не подаём.
+		//GetPlayerInfo expects a client slot: do not pass indices above maxclients.
 		if (n > I::EngineClient->GetMaxClients() || !I::EngineClient->GetPlayerInfo(n, &pi) || !pi.name[0])
 			continue;
 		pi.name[31] = '\0';
@@ -706,10 +706,10 @@ void CFeatures_ESP::DrawTeam(C_TerrorPlayer* pLocal)
 
 void CFeatures_ESP::DrawThrowables()
 {
-	static std::map<int, float> s_mSeen; // entindex -> curtime первого кадра
+	static std::map<int, float> s_mSeen; // entindex -> curtime of the first frame
 	if (!I::EngineClient || !I::EngineClient->IsInGame())
 	{
-		// Карта сменилась/выход: часы curtime сбросятся, старые метки врут.
+		// Map change/exit: the curtime clock resets, old stamps lie.
 		if (!s_mSeen.empty())
 			s_mSeen.clear();
 		return;
@@ -736,8 +736,8 @@ void CFeatures_ESP::DrawThrowables()
 			continue;
 
 		const char* szLabel = nullptr;
-		float flFuse = 0.0f; // 0 = без таймера (ломается о землю)
-		bool bBurnAge = false; // показывать возраст пожара вместо обратного отсчёта
+		float flFuse = 0.0f; // 0 = no timer (breaks on the ground)
+		bool bBurnAge = false; // show the fire's age instead of a countdown
 		switch (pCC->m_ClassID)
 		{
 			case CPipeBombProjectile: szLabel = "PIPE"; flFuse = 6.0f; break;
@@ -758,7 +758,7 @@ void CFeatures_ESP::DrawThrowables()
 		float flAge = flNow - s_mSeen[n];
 		if (flAge < 0.0f)
 		{
-			// Часы отмотало назад (смена карты без выхода): метка stale, обновляем.
+			// The clock was rolled back (map change without exit): the stamp is stale, refresh it.
 			s_mSeen[n] = flNow;
 			mNow[n] = flNow;
 			flAge = 0.0f;
@@ -780,7 +780,7 @@ void CFeatures_ESP::DrawThrowables()
 			sprintf_s(sz, "%s", szLabel);
 		G::Draw.String(EFonts::ESP_NAME, (int)vS.x, (int)vS.y, Color(255, 220, 0, 255), TXT_CENTERXY, "%s", sz);
 
-		// Кольцо растёт пока горит запал пайпа.
+		// The ring grows while the pipe fuse burns.
 		if (flFuse > 0.0f)
 		{
 			const float flGrow = flAge * 4.0f;

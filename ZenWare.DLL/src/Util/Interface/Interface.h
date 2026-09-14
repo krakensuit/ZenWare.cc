@@ -26,8 +26,8 @@ public:
 		}
 	}
 
-	// Тихий граб без попапа: для перебора нескольких модулей (cvar живёт
-	// то в engine, то в vstdlib в зависимости от билда игры).
+	// Silent grab without a popup: for probing several modules (cvar lives
+	// sometimes in engine, sometimes in vstdlib depending on the game build).
 	template<typename T>
 	inline T TryGet(const char* const szModule, const char* const szObject)
 	{

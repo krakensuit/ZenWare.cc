@@ -1,10 +1,10 @@
 #pragma once
 
-// Языки всего чита: 0 EN, 1 RU, 2 DE, 3 ES, 4 PT, 5 PL, 6 FR, 7 ZH. Индекс живёт в Vars::Menu::nLang
-// (сохраняется в конфиг как menu.lang), T() переводит подписи меню по
-// EN-оригиналу. Внутренние ID везде остаются английскими: помощь, анимации
-// и конфиг от языка не зависят. IsRu() оставлен для хелпов, у них только RU/EN.
-// Файл в UTF-8, проект компилируется с /utf-8, DrawManager конвертит из CP_UTF8.
+// Cheat languages: 0 EN, 1 RU, 2 DE, 3 ES, 4 PT, 5 PL, 6 FR, 7 ZH. The index lives in Vars::Menu::nLang
+// (saved to the config as menu.lang); T() translates menu labels against the
+// EN original. Internal IDs stay English everywhere: help, animations
+// and config do not depend on the language. IsRu() is kept for the help texts, they only have RU/EN.
+// The file is UTF-8, the project builds with /utf-8, DrawManager converts from CP_UTF8.
 
 #include "../Vars.h"
 

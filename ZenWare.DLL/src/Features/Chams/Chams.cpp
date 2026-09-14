@@ -51,12 +51,12 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 	if (!pIClient || pIClient->IsDormant())
 		return false;
 
-	// Чамсы свои: выжившие, боты и ВСЕ особые + танк.
-	// IsValidTarget не подходит: он режет свою команду и классы СИ.
+	// Chams for our side: survivors, bots and ALL specials + tank.
+	// IsValidTarget does not fit: it cuts our own team and SI classes.
 	ClientClass* pCC = pIClient->GetClientClass();
 	if (!pCC)
 		return false;
-	//Бумер: ID нет в дампе — ловим по имени класса как ESP::DrawUnknown.
+	//Boomer: no ID in the dump — catch by class name like ESP::DrawUnknown.
 	if (!U::Math.CompareGroup(pCC->m_ClassID,
 		CTerrorPlayer, SurvivorBot, Hunter, Smoker, Jockey, Spitter, Charger, Tank)
 		&& !G::Util.IsSpecialByName(pCC->m_pNetworkName))
@@ -88,9 +88,9 @@ bool CFeatures_Chams::OnDrawModel(const ModelRenderInfo_t& pInfo)
 	C_BasePlayer* pBasePlayer = pIClient->As<C_BasePlayer*>();
 	if (pBasePlayer->deadflag() || pBasePlayer->m_lifeState() != 0)
 		return false;
-	//GetHealth — виртуалка базового слота, но m_isGhost — нетвар CTerrorPlayer:
-	//на СИ/танке он читал бы мусор и мог тихо гасить чамсы. Живость СИ уже
-	//проверена выше по deadflag/lifeState, виртуалка им не нужна.
+	//GetHealth is a base-slot virtual, but m_isGhost is a CTerrorPlayer netvar:
+	//on SI/tank it would read garbage and could silently turn chams off. SI
+	//aliveness is already checked above via deadflag/lifeState, they need no virtual.
 	const bool bIsRealPlayer = U::Math.CompareGroup(pCC->m_ClassID, CTerrorPlayer, SurvivorBot);
 	if (bIsRealPlayer && pPlayer->GetHealth() <= 0)
 		return false;
@@ -154,8 +154,8 @@ void CFeatures_Chams::ApplyPalette()
 
 	Vars::Chams::nPalette = U::Math.Clamp(Vars::Chams::nPalette, 0, nCount - 1);
 
-	//Палитра применяется только при смене: иначе каждый DrawModel затирал
-	//ручные свотчи (ESP enemy/ally, Chams tank) значениями палитры.
+	//The palette is applied only on change: otherwise every DrawModel overwrote
+	//the manual swatches (ESP enemy/ally, Chams tank) with palette values.
 	static int s_nLastPalette = Vars::Chams::nPalette;
 	if (s_nLastPalette == Vars::Chams::nPalette)
 		return;

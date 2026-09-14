@@ -1,11 +1,11 @@
-// ZenWare Loader - рендерер: DirectComposition с фолбэком на HwndRenderTarget.
+// ZenWare Loader - renderer: DirectComposition with a fallback to HwndRenderTarget.
 
 #include "Renderer2D.h"
 #include "resource.h"
 #include "Glass.h"
 
 #include <math.h>
-#include <stdio.h>   // swprintf_s для лога диагностики
+#include <stdio.h>   // swprintf_s for the diagnostics log
 #include <d2d1helper.h>
 #include <dcomp.h>
 
@@ -29,8 +29,8 @@ namespace
 		return D2D1::ColorF(rgb, alpha);
 	}
 
-	// Диагностика для отладки: пишем в OutputDebugString, чтобы было видно,
-	// на каком именно шаге падает инициализация (по просьбе из ТЗ).
+	// Debug diagnostics: write to OutputDebugString so it is visible at which
+	// exact step the initialization fails (requested in the spec).
 	void LogDbg(const wchar_t* wszMsg, HRESULT hr)
 	{
 		wchar_t buf[160]{};
@@ -49,7 +49,7 @@ namespace Zen2D
 
 	bool ProbeComposition()
 	{
-		// Пробуем поднять D3D11 + DComp без окна: от результата зависит стиль окна.
+		// Try to bring up D3D11 + DComp without a window: the result decides the window style.
 		ID3D11Device* d3d = nullptr;
 		ID3D11DeviceContext* ctx = nullptr;
 		IDCompositionDevice* dcomp = nullptr;
@@ -174,7 +174,7 @@ namespace Zen2D
 			return false;
 		}
 
-		// D2D-устройство поверх DXGI.
+		// D2D device on top of DXGI.
 		hr = D2D1CreateDevice(dxgiDevice, nullptr, &m_d2dDevice);
 		dxgiDevice->Release();
 
@@ -193,14 +193,14 @@ namespace Zen2D
 		}
 
 		m_d2dContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-		// ClearType рассчитан на непрозрачный фон: на premultiplied-альфе swapchain
-		// даёт цветные ореолы вокруг букв, поэтому в композиции — grayscale.
+		// ClearType assumes an opaque background: on the swapchain's premultiplied
+		// alpha it produces colored fringes around letters, hence grayscale in composition.
 		m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
 
 		if (!CreateTargetBitmapFromBackBuffer())
 			return false;
 
-		// Связка с DComp и окном.
+		// Bind to DComp and the window.
 		IDXGIDevice* dxgiDevice2 = nullptr;
 
 		if (FAILED(m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**>(&dxgiDevice2))) || !dxgiDevice2)
@@ -278,7 +278,7 @@ namespace Zen2D
 			return false;
 		}
 
-		// SetTarget строго до первого BeginDraw.
+		// SetTarget strictly before the first BeginDraw.
 		m_d2dContext->SetTarget(m_targetBitmap);
 		m_d2dContext->SetDpi(static_cast<FLOAT>(m_dpi), static_cast<FLOAT>(m_dpi));
 		return true;
@@ -325,7 +325,7 @@ namespace Zen2D
 
 		RECT rc{};
 		GetClientRect(hwnd, &rc);
-		// Swapchain живёт в ФИЗИЧЕСКИХ пикселях, вёрстка - в логических (96 dpi).
+		// The swapchain lives in PHYSICAL pixels, layout is in logical ones (96 dpi).
 		m_wPx = rc.right > 0 ? rc.right : 620;
 		m_hPx = rc.bottom > 0 ? rc.bottom : 334;
 		m_dpi = 96;
@@ -357,7 +357,7 @@ namespace Zen2D
 			IID_PPV_ARGS(&m_wic))))
 			m_wic = nullptr;
 
-		// Сначала композиция; при любой ошибке - прежний путь (плоский кадр).
+		// Composition first; on any error fall back to the old path (flat frame).
 		if (!CreateCompositionTarget())
 		{
 			LogDbg(L"composition path failed, falling back to HwndRenderTarget", E_FAIL);
@@ -376,7 +376,7 @@ namespace Zen2D
 			return false;
 		}
 
-		LoadLogoFromResource(hInst); // не критично: при неудаче останется текст
+		LoadLogoFromResource(hInst); // not critical: on failure only the text remains
 
 		m_bReady = true;
 		return true;
@@ -418,7 +418,7 @@ namespace Zen2D
 	{
 		ReleaseComposition();
 
-		// Логотип принадлежал старой цели — годен только пересоздать.
+		// The logo belonged to the old target - it can only be re-created.
 		if (m_logo) { m_logo->Release(); m_logo = nullptr; }
 
 		if (CreateCompositionTarget())
@@ -432,7 +432,7 @@ namespace Zen2D
 			return m_brush != nullptr;
 		}
 
-		// Композиция больше не поднимается: откат на HwndRenderTarget.
+		// Composition no longer comes up: fall back to HwndRenderTarget.
 		ReleaseComposition();
 
 		if (!CreateLegacyTarget())
@@ -441,7 +441,7 @@ namespace Zen2D
 			return false;
 		}
 
-		// Без redirection bitmap HwndRenderTarget невидим — снимаем стиль с окна.
+		// Without a redirection bitmap HwndRenderTarget is invisible - drop the window style.
 		const LONG_PTR ex = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
 		SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, ex & ~WS_EX_NOREDIRECTIONBITMAP);
 		SetWindowPos(m_hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
@@ -549,7 +549,7 @@ namespace Zen2D
 		return ok;
 	}
 
-	// ------------------------------- примитивы -------------------------------
+	// ------------------------------- primitives -------------------------------
 
 	void Renderer2D::FillRect(const D2D1_RECT_F& rc, DWORD rgb, float alpha)
 	{
@@ -604,7 +604,7 @@ namespace Zen2D
 			D2D1_DRAW_TEXT_OPTIONS_CLIP, DWRITE_MEASURING_MODE_NATURAL);
 	}
 
-	// --------------------------------- кадр ---------------------------------
+	// --------------------------------- frame ---------------------------------
 
 	void Renderer2D::RenderFrame(const FrameState_t& st, const Theme_t& th,
 		const wchar_t* wszStatus, const wchar_t* wszVersion, const wchar_t* wszLang)
@@ -614,10 +614,10 @@ namespace Zen2D
 
 		m_theme = th;
 
-		// Полупрозрачный слой поверх бэкдропа: сквозь него видно Acrylic,
-		// но текст остаётся читаемым. Без бэкдропа (старая ОС) под кадром
-		// просто чёрная пустота — там почти непрозрачный фон.
-		// В фолбэке - непрозрачный фон.
+		// Semi-transparent layer on top of the backdrop: Acrylic shows through,
+		// but the text stays readable. Without a backdrop (old OS) there is just
+		// black emptiness under the frame - so an almost opaque background there.
+		// In the fallback - an opaque background.
 		const float flBgAlpha = m_bComposition ? (Glass::IsAvailable() ? 0.45f : 0.92f) : 1.0f;
 
 		m_target->BeginDraw();
@@ -637,7 +637,7 @@ namespace Zen2D
 
 		if (hr == D2DERR_RECREATE_TARGET && !m_bComposition && m_hwndRT)
 		{
-			// Прежний путь: пересоздаём цель того же типа.
+			// Old path: re-create the target of the same type.
 			ReleaseLegacy();
 
 			if (CreateLegacyTarget())
@@ -657,7 +657,7 @@ namespace Zen2D
 			LogDbg(L"EndDraw failed", hr);
 
 			if (m_bComposition)
-				RecreateAfterDeviceLost(); // иначе кадр навсегда замирает после TDR
+				RecreateAfterDeviceLost(); // otherwise the frame freezes forever after a TDR
 
 			return;
 		}
@@ -674,14 +674,14 @@ namespace Zen2D
 	void Renderer2D::DrawBackground(const FrameState_t& st)
 	{
 		(void)st;
-		// Никаких сплошных заливок: фон даёт бэкдроп + Clear с альфой.
+		// No solid fills here: the backdrop + Clear with alpha provide the background.
 	}
 
 	void Renderer2D::DrawHeader(const FrameState_t& st)
 	{
 		const float w = static_cast<float>(m_w);
 
-		// Шапка - полупрозрачная поверхность: стекло видно через неё.
+		// Header - a semi-transparent surface: the glass shows through.
 		FillRect(RectF(0.0f, 0.0f, w, 66.0f), m_theme.surface, 0.35f);
 
 		const float pulse = 0.30f + 0.20f * (0.5f + 0.5f * sinf(st.elapsed * 1.4f));
@@ -722,13 +722,13 @@ namespace Zen2D
 	{
 		const float w = static_cast<float>(m_w);
 
-		// Вторичная кнопка: стекло становится плотнее при наведении.
+		// Secondary button: the glass gets denser on hover.
 		const D2D1_RECT_F b1 = RectF(24.0f, 92.0f, w - 24.0f, 128.0f);
 		FillRound(b1, 8.0f, m_theme.surface, 0.55f + 0.15f * st.hoverLaunch);
 		StrokeRound(b1, 8.0f, m_theme.border, 0.40f, 1.0f);
 		Text(L"LAUNCH GAME", b1, m_theme.textPrimary, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
 
-		// Основная кнопка: мятная, текст тёмный - читается и на стекле.
+		// Primary button: mint with dark text - readable even on glass.
 		const D2D1_RECT_F b2 = RectF(24.0f, 136.0f, w - 24.0f, 188.0f);
 		FillRound(b2, 8.0f, m_theme.accent, 0.85f);
 		StrokeRound(b2, 8.0f, m_theme.accent, 1.0f, 1.0f);

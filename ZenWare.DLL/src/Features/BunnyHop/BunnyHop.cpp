@@ -16,9 +16,9 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	if (!Vars::BunnyHop::bEnabled || !pLocal || !cmd || !cmd->command_number)
 		return;
 
-	//Статики живут здесь (до ранних return): иначе смерть/лестница/спектатор
-	//оставляют stale-значения: ложный EdgeJump после респауна, снятый чужой
-	//IN_DUCK после смерти в JB-окне, заблокированный первый бхоп новой карты.
+	//Statics live here (before the early returns): otherwise death/ladder/spectator
+	//leave stale values: a false EdgeJump after respawn, a leftover IN_DUCK
+	//after dying in a JB window, the first bhop on a new map blocked.
 	static bool s_bWasOnGround = true;
 	static bool s_bJbDuck = false;
 	static int s_nLastJumpTick = 0;
@@ -54,9 +54,9 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		return;
 	}
 
-	//В воде и в инкапе движком не рулим: бхоп-спам всплытия, трейсы багов
-	//под водой и EdgeJump с подводного уступа. Гейт толерантен к дрейфу
-	//оффсета: валидный water level — 0..3, всё остальное = мусор, не гейтим.
+	//No movement control in water or while incapped: bhop swim-up spam, buggy
+	//traces underwater and EdgeJump from an underwater ledge. The gate tolerates
+	//offset drift: a valid water level is 0..3, everything else = garbage, no gate.
 	{
 		const unsigned char nWater = pLocal->m_nWaterLevel();
 
@@ -70,7 +70,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		}
 	}
 
-	//Смена карты: tick_count начался заново, старые статики — в будущем.
+	//Map change: tick_count restarted, old statics are in the future.
 	if (s_nLastJumpTick != 0 && cmd->tick_count < s_nLastJumpTick)
 	{
 		s_bWasOnGround = false;
@@ -109,8 +109,8 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 				CTraceFilterHitAll filter(pLocal);
 				G::Util.Trace(origin, down, MASK_PLAYERSOLID, &filter, &tr);
 
-				//fraction>0: при дохлом EngineTrace структура нулевая и
-				//иначе баг выстрелил бы без земли под ногами (fail-open).
+				//fraction>0: with a dead EngineTrace the struct is zeroed, and
+				//otherwise the bug would fire with no ground below (fail-open).
 				if (tr.fraction > 0.0f && tr.fraction < 1.0f && !tr.startsolid)
 				{
 					//Duck only inside the real bug window (~2 ticks to impact),
@@ -143,7 +143,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 
 	//Perfect style accepts any jump source (space / wheel / bound key);
 	//legit style only honors the game's own IN_JUMP bit for this tick.
-	//При открытом меню физическую клаву не читаем: иначе прыжки при печати в чат/консоль.
+	//Do not read the physical keys while the menu is open: otherwise jumps fire while typing in chat/console.
 	const bool bPhysicalJump = !Vars::Menu::bOpen
 		&& ((GetAsyncKeyState(VK_SPACE) & 0x8000) || (GetAsyncKeyState(VK_XBUTTON1) & 0x8000));
 	const bool bWantJump = (Vars::BunnyHop::nBhopStyle == 0)
@@ -161,9 +161,9 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		ZTRACE_FIRST("BunnyHop:edgejump");
 	}
 
-	//Временная диагностика (v3.8.12): ТОЛЬКО переходы земля/воздух, объём
-	//крошечный. Показывает: приходит ли IN_JUMP в cmd на посадке, какие флаги
-	//видит фича и как далеко друг от друга тики. Убрать после локализации.
+	//Temporary diagnostics (v3.8.12): ground/air transitions ONLY, tiny volume.
+	//Shows whether IN_JUMP reaches the cmd on landing, which flags the feature
+	//sees, and how far apart the ticks are. Remove after localization.
 	const bool bPrevGround = s_bWasOnGround;
 	s_bWasOnGround = bOnGround;
 	if (bPrevGround != bOnGround)
@@ -180,15 +180,15 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 			cmd->forwardmove = 450.0f;
 	}
 
-	// Классический авто-бхоп для Source:
-	// На земле (FL_ONGROUND) + IN_JUMP в cmd -> оставляем IN_JUMP (прыжок).
-	// В воздухе + IN_JUMP нажата -> убираем IN_JUMP (cmd->buttons &= ~IN_JUMP),
-	// чтобы при следующем приземлении можно было сразу прыгнуть снова.
+	// Classic Source auto-bhop:
+	// On ground (FL_ONGROUND) + IN_JUMP in cmd -> keep IN_JUMP (jump).
+	// In air + IN_JUMP held -> clear IN_JUMP (cmd->buttons &= ~IN_JUMP),
+	// so the next landing allows jumping again right away.
 	if (bWantJump)
 	{
 		if (bOnGround)
 		{
-			// Задержка: пропускаем только сам прыжок, EdgeBug/FastStop ниже всё равно работают.
+			// Delay: skip only the jump itself; EdgeBug/FastStop below still work.
 			const bool bDelayed = (Vars::BunnyHop::nJumpDelayTicks > 0 && s_nLastJumpTick != 0 &&
 				(cmd->tick_count - s_nLastJumpTick) < Vars::BunnyHop::nJumpDelayTicks);
 
@@ -210,8 +210,8 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 		else
 		{
 			//In air - release jump so next landing can be perfect.
-			//Держим всегда (и при bEdgeBug): иначе held-jump перефайрит
-			//в тик приземления и убьёт EB-утку в том же тике.
+			//Keep it always (also with bEdgeBug): otherwise held-jump refires
+			//on the landing tick and kills the EB duck in the same tick.
 			if (!bEdgeJumped)
 				cmd->buttons &= ~IN_JUMP;
 		}

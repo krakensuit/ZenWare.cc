@@ -10,8 +10,8 @@ class CFeatures_JumpStats
 public:
 	void OnTick(C_TerrorPlayer* pLocal, CUserCmd* cmd, float flAppliedSide, int nRawMouseX);
 	void Draw();
-	// Текущий синхрон незавершённого полёта (скользящее окно тиков).
-	// -1 = не в воздухе / нечего считать.
+	// Live sync of the in-flight jump (sliding tick window).
+	// -1 = not in the air / nothing to count.
 	int LiveSyncPct() const
 	{
 		if (!m_bAir || m_nMoveTicks <= 0)
@@ -38,8 +38,8 @@ private:
 
 	bool m_bAir = false;
 	Vector m_vTakeoff;
-	Vector m_vGroundOrigin;   // origin последнего наземного тика (точка взлёта)
-	float m_fGroundSpeed = 0.0f; // 2D-скорость последнего наземного тика (престрейф)
+	Vector m_vGroundOrigin;   // origin of the last ground tick (takeoff point)
+	float m_fGroundSpeed = 0.0f; // 2D speed of the last ground tick (prestrafe)
 	float m_fTakeSpeed = 0.0f;
 	float m_fMaxSpeed = 0.0f;
 	float m_fMaxFall = 0.0f;
@@ -52,7 +52,7 @@ private:
 	int m_nLastSide = 0;
 	bool m_bDuckAtLand = false;
 	int m_nLastGroundTick = 0;
-	bool m_bSeenGround = false; // takeoff только после живого наземного тика
+	bool m_bSeenGround = false; // takeoff only after a live ground tick
 	int m_nShowUntil = 0;
 
 	Jump_t m_last = { };

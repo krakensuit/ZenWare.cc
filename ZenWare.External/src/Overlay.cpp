@@ -29,7 +29,7 @@ bool Overlay::Create()
 	m_mem = CreateCompatibleDC(scr);
 	ReleaseDC(nullptr, scr);
 
-	// Кастомные шрифты у пользователя: берём первый реально существующий.
+	// Custom fonts on the user's machine: take the first one that actually exists.
 	const wchar_t* face = L"Consolas";
 	{
 		HDC dc = GetDC(nullptr);
@@ -45,7 +45,7 @@ bool Overlay::Create()
 			SelectObject(mm, o);
 			DeleteObject(f);
 			if (!_wcsicmp(real, cand)) { face = cand; break; }
-			face = cand; // хоть что-то
+			face = cand; // at least something
 		}
 		DeleteDC(mm);
 		ReleaseDC(nullptr, dc);
@@ -82,7 +82,7 @@ void Overlay::FollowGame()
 	int w = rc.right - rc.left, h = rc.bottom - rc.top;
 	if (w != m_w || h != m_h)
 	{
-		// Пересоздаём бэкбуфер под новый размер
+		// Recreate the backbuffer for the new size
 		if (m_oldBmp) { SelectObject(m_mem, m_oldBmp); m_oldBmp = nullptr; }
 		if (m_bmp) { DeleteObject(m_bmp); m_bmp = nullptr; }
 		HDC scr = GetDC(nullptr);
@@ -103,7 +103,7 @@ void Overlay::FollowGame()
 			SetBkMode(m_mem, TRANSPARENT);
 			m_w = w; m_h = h;
 		}
-		// Позиция оверлея = позиция окна игры (рамка в windowed-режиме входит)
+		// Overlay position = game window position (includes the frame in windowed mode)
 		SetWindowPos(m_hwnd, HWND_TOPMOST, rc.left, rc.top, w, h, SWP_NOACTIVATE | SWP_SHOWWINDOW);
 	}
 }
@@ -113,8 +113,8 @@ void Overlay::BeginFrame()
 	if (!m_mem || !m_bmp)
 		return;
 	RECT rc = { 0, 0, m_w, m_h };
-	// Ключ прозрачности: этот цвет вырезается в EndFrame через ULW_COLORKEY.
-	// Контент таким цветом не рисуем.
+		// Transparency key: this color is cut out in EndFrame via ULW_COLORKEY.
+		// We never draw content in this color.
 	HBRUSH clear = CreateSolidBrush(RGB(1, 2, 3));
 	FillRect(m_mem, &rc, clear);
 	DeleteObject(clear);

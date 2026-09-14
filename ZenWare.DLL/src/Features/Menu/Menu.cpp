@@ -31,8 +31,8 @@ CFeatures_Menu::MouseState_t GetMouse(){
  static bool s_bPrevDown=false;
  CFeatures_Menu::MouseState_t s; GetCursorPos(&s.pt);
  if(Hooks::WndProc::hwGame) ScreenToClient(Hooks::WndProc::hwGame,&s.pt);
- //Клик по чужому окну (второй монитор/оверлей) при открытом меню
- //не должен переключать чекбоксы: давим bDown вне игры.
+ //A click on a foreign window (second monitor/overlay) while the menu is open
+ //must not toggle checkboxes: force bDown off outside the game window.
  s.bDown=(GetAsyncKeyState(VK_LBUTTON)&0x8000)!=0
   && (!Hooks::WndProc::hwGame || GetForegroundWindow()==Hooks::WndProc::hwGame);
  s.bClicked=(s.bDown && !s_bPrevDown); s_bPrevDown=s.bDown; return s;
@@ -166,9 +166,9 @@ bool Hovered(const POINT& p,int x,int y,int w,int h){ return p.x>=x&&p.x<=x+w&&p
 	static const char* HelpText(const HelpEntry_t* he){ return (he&&Lang::IsRu()&&he->ruText)?he->ruText:(he?he->text:""); }
 }
 static std::map<std::string,float> s_tog;
-static std::map<std::string,float> s_hover; // плавный hover-отклик строк
-static std::map<std::string,float> s_press; // тактильный press-отклик
-static float s_menuDt=0.016f; // обновляется в Render
+static std::map<std::string,float> s_hover; // smooth hover response for rows
+static std::map<std::string,float> s_press; // tactile press response
+static float s_menuDt=0.016f; // refreshed in Render
 static float HoverAnim(const char* szKey,bool bTarget){
  float& fl=s_hover[szKey];
  fl=Anim::Approach(fl,bTarget?1.0f:0.0f,s_menuDt,18.0f);
@@ -222,8 +222,8 @@ void DrawRgbLogo(int x, int y){
 }
 void CFeatures_Menu::PollMenuKey(){
  if(Vars::Menu::nKey==0) return;
- //Пока ловим клавишу для бинда — тоггл меню заморожен, иначе INSERT
- //в режиме capture закроет меню, а capture останется висеть.
+ //While a bind is capturing a key, the menu toggle is frozen, otherwise INSERT
+ //in capture mode would close the menu and the capture would stay stuck.
  if(s_bKeyCapture) return;
  static bool s_bPrev=false;
  const bool bDown=(GetAsyncKeyState(Vars::Menu::nKey)&0x8000)!=0;
@@ -236,9 +236,9 @@ bool CFeatures_Menu::HandleOpenState(){
 }
 void CFeatures_Menu::Render(){
 	U::Log.Crumb("Menu::Render");
-	//F7 вслепую переключает RU/EN (обработчик в WndProc::Detour, работает и при закрытом меню).
-	//Дефолт языка уже системный (Vars::Menu::bRussian), конфиг его перекрывает — не затираем.
- // анимация появления (fade-in) - не блокирует логику открытия
+	//F7 blindly toggles RU/EN (handler in WndProc::Detour, works while the menu is closed too).
+	//The language default is already system-based (Vars::Menu::bRussian), the config overrides it — do not overwrite.
+ // appear animation (fade-in) - does not block the open logic
  static float s_alpha = 0.0f;
  bool bOpen = HandleOpenState();
  float dt = I::GlobalVars ? I::GlobalVars->frametime : 0.016f;
@@ -246,12 +246,12 @@ void CFeatures_Menu::Render(){
  m_flDt = dt; s_menuDt = dt;
  m_flAnim = s_alpha;
  s_alpha = Anim::Approach(s_alpha, bOpen ? 1.0f : 0.0f, dt, 9.0f);
- //F11 работает и при открытом меню (раньше футер врал: опрос был только закрытым).
+ //F11 works while the menu is open too (the footer used to lie: polling only happened when closed).
  {
   static bool s_p=false; const bool bF11=(GetAsyncKeyState(VK_F11)&0x8000)!=0; if(bF11&&!s_p) G::ModuleEntry.RequestUnload(); s_p=bF11;
  }
   if(s_alpha < 0.01f){
-   ClipCursor(nullptr); // на всякий: отпускаем мышь, пока меню закрыто
+   ClipCursor(nullptr); // just in case: release the mouse while the menu is closed
   m_szHelpId=nullptr; m_szHelpTitle=nullptr; m_szHelpText=nullptr;
   if(!Vars::Menu::bOpen && Vars::Menu::bWatermark && G::Draw.m_nScreenW > 0){
     char szWm[80]={};
@@ -270,25 +270,25 @@ void CFeatures_Menu::Render(){
   if(!G::Draw.m_nScreenW||!G::Draw.m_nScreenH||!Hooks::WndProc::hwGame) return;
   if(I::VGuiSurface) I::VGuiSurface->UnlockCursor();
   if(I::MatSystemSurface) I::MatSystemSurface->UnlockCursor();
-  // Забираем мышь у игры, пока меню открыто: курсор свободно ходит по окну,
-  // камера не крутится (сырой ввод глушим в WndProc), клики в игру не уходят.
-  // ESC для этого больше не нужен.
+  // Take the mouse away from the game while the menu is open: the cursor moves freely in the window,
+  // the camera does not spin (raw input is muted in WndProc), clicks do not reach the game.
+  // ESC is no longer needed for this.
   if(GetForegroundWindow()==Hooks::WndProc::hwGame){
    RECT rcC; GetClientRect(Hooks::WndProc::hwGame,&rcC);
    POINT lt{rcC.left,rcC.top}, rb{rcC.right,rcC.bottom};
    ClientToScreen(Hooks::WndProc::hwGame,&lt); ClientToScreen(Hooks::WndProc::hwGame,&rb);
    RECT rcClip{lt.x,lt.y,rb.x,rb.y}; ClipCursor(&rcClip);
    } else ClipCursor(nullptr);
-   // Курсор ОС насильно показываем каждый кадр, пока меню открыто: движок
-   // прячет его сам, без этого курсора нет и приходится жать ESC/консоль
-   // (а там клики уже уходят в игровое меню — можно случайно нажать не то).
+   // Force-show the OS cursor every frame while the menu is open: the engine
+   // hides it itself, without this there is no cursor and you have to press ESC/console
+   // (and there clicks already go into the game menu — easy to hit the wrong thing).
    while(ShowCursor(TRUE) < 0);
  const MouseState_t mouse=GetMouse();
  constexpr int HEADER_H=46, FOOTER_H=22;
  if(!m_bPosInit){ m_nPosX=(G::Draw.m_nScreenW-PANEL_W)/2; m_nPosY=(G::Draw.m_nScreenH-PANEL_H)/3; m_bPosInit=true; }
  if(mouse.bDown && !m_bDragging && Hovered(mouse.pt,m_nPosX,m_nPosY,PANEL_W,HEADER_H)){ m_bDragging=true; m_nDragOffX=mouse.pt.x-m_nPosX; m_nDragOffY=mouse.pt.y-m_nPosY; }
  if(!mouse.bDown) m_bDragging=false;
- //Панель нельзя увезти за экран навсегда: клампим с запасом 60px на захват.
+ //The panel must not be dragged off-screen forever: clamp with a 60px margin to keep a grab spot.
  if(m_bDragging){ m_nPosX=mouse.pt.x-m_nDragOffX; m_nPosY=mouse.pt.y-m_nDragOffY;
   if(G::Draw.m_nScreenW>0&&G::Draw.m_nScreenH>0){
    if(m_nPosX<-(PANEL_W-60)) m_nPosX=-(PANEL_W-60); if(m_nPosX>G::Draw.m_nScreenW-60) m_nPosX=G::Draw.m_nScreenW-60;
@@ -297,10 +297,10 @@ void CFeatures_Menu::Render(){
  }
  Vars::Aimbot::flFOV=Vars::Aimbot::nFOVSlider/10.0f; Vars::Aimbot::flSmoothing=(float)Vars::Aimbot::nSmoothSlider; Vars::Visuals::flViewFOV=Vars::Visuals::nViewFOVSlider/100.0f; Vars::Visuals::flVmFOV=Vars::Visuals::nVmFOVSlider/100.0f; Vars::Visuals::flEspMaxDist=(float)Vars::Visuals::nEspMaxDistS;
  m_rc.nX=m_nPosX; m_rc.nY=m_nPosY;
- //красивое открытие/закрытие: fade + scale от центра панели + лёгкий подъем при открытии
+ //pretty open/close: fade + scale from the panel center + a slight lift when opening
  {
   const float flA=Anim::EaseOutCubic(s_alpha);
-  const float flScale=0.85f+0.15f*flA;       //0.85 при закрытии -> 1.0 при открытии
+  const float flScale=0.85f+0.15f*flA;       //0.85 when closed -> 1.0 when open
   const int nShrinkW=(int)(PANEL_W*(1.0f-flScale)*0.5f);
   const int nShrinkH=(int)(PANEL_H*(1.0f-flScale)*0.5f);
   m_rc.nX+=nShrinkW;
@@ -503,7 +503,7 @@ void CFeatures_Menu::Render(){
    m_nItemY+=26; break;
    }
   }
-  // Замер контента вкладки для скролла + тонкая полоса прокрутки.
+  // Measure tab content for scrolling + thin scrollbar.
   {
    const int nTabC=U::Math.Clamp(m_nTab,0,4);
    const int nStartY=m_rc.nY+HEADER_H+34;
@@ -548,9 +548,9 @@ void CFeatures_Menu::Render(){
 }
 bool CFeatures_Menu::ShouldBlockInput(unsigned int uMsg){
  if(!Vars::Menu::bOpen) return false;
- // Пока меню открыто игра не получает мышь вообще: ни кнопки, ни движение,
- // ни колесо, ни сырой ввод (иначе крутится камера и клики уходят в игру).
- // Наше меню опрашивает GetCursorPos/GetAsyncKeyState напрямую — ему сообщения не нужны.
+ // While the menu is open the game gets no mouse input at all: no buttons, no motion,
+ // no wheel, no raw input (otherwise the camera spins and clicks reach the game).
+ // Our menu polls GetCursorPos/GetAsyncKeyState directly — it does not need window messages.
  switch(uMsg){case WM_LBUTTONDOWN:case WM_LBUTTONUP:case WM_RBUTTONDOWN:case WM_RBUTTONUP:case WM_MBUTTONDOWN:case WM_MBUTTONUP:case WM_XBUTTONDOWN:case WM_XBUTTONUP:case WM_XBUTTONDBLCLK:case WM_MOUSEMOVE:case WM_MOUSEWHEEL:return true; default:return false;}
 }
 bool CFeatures_Menu::HelpMark(const MouseState_t& mouse,const char* const szId,const char* const szTitle,const char* const szText,int nX,int nY){
@@ -641,9 +641,9 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
  for(int i=0;i<10;i++){
   bool bHov=Hovered(mouse.pt,nX+i*20,m_nItemY+5,16,14);
   bool bSel=(cr==kSw[i].r()&&cg==kSw[i].g()&&cb==kSw[i].b());
-  int nLift=bHov?1:0; // свотч приподнимается под курсором
+  int nLift=bHov?1:0; // swatch lifts up under the cursor
   G::Draw.Rect(nX+i*20,m_nItemY+5-nLift,16,14,kSw[i]);
-  G::Draw.Rect(nX+i*20,m_nItemY+5-nLift,16,14,Color(0,0,0,60)); // мягкая рамка-тень
+  G::Draw.Rect(nX+i*20,m_nItemY+5-nLift,16,14,Color(0,0,0,60)); // soft shadow frame
   G::Draw.Rect(nX+i*20,m_nItemY+6-nLift,16,13,kSw[i]);
   if(bSel) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5-nLift,16,14,Color(255,255,255,255));
   else if(bHov) G::Draw.OutlinedRect(nX+i*20,m_nItemY+5-nLift,16,14,CLR_ACCENT);
@@ -652,14 +652,14 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
  m_nItemY+=nRowH;
 }
 void CFeatures_Menu::DrawPanel(){
- //виньетка: тонкие затемнения сверху/снизу панели для глубины
+ //vignette: thin darkening at the top/bottom of the panel for depth
  G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,4,Color(255,255,255,10));
  G::Draw.Rect(m_rc.nX,(m_rc.nY+m_rc.nH)-4,m_rc.nW,4,Color(0,0,0,40));
  {
 		const int nPanelA=U::Math.Clamp(Vars::Menu::nPanelAlpha,120,255);
 		G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(19,22,21,nPanelA),Color(10,12,11,nPanelA),false);
 	}
- //тонкая внутренняя рамка-акцент по периметру (премиальная глубина)
+ //thin inner accent frame along the perimeter (premium depth)
  G::Draw.OutlinedRect(m_rc.nX+2,m_rc.nY+2,m_rc.nW-4,m_rc.nH-4,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),28));
  G::Draw.Rect(m_rc.nX,m_rc.nY,2,m_rc.nH,CLR_ACCENT_SOFT);
  G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,40,CLR_HEADER);
@@ -739,7 +739,7 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
  Color trackClr=LerpC(CLR_OUTLINE,CLR_ACCENT,flTog);
  G::Draw.Rect(nTogX,nTogY,nTogW,nTogH,trackClr);
  G::Draw.OutlinedRect(nTogX,nTogY,nTogW,nTogH,LerpC(CLR_OUTLINE_SOFT,CLR_ACCENT,flTog));
- // knob (сжимается при клике)
+ // knob (shrinks on click)
  int nKnobX=nTogX+7+(int)((nTogW-14)*flTog);
  int nKnobR=(int)(5.0f-1.5f*flPress);
  if(flTog>0.3f) G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR+3,14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(35*flTog)));
@@ -765,7 +765,7 @@ void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*
   G::Draw.Rect(nRowX,m_nItemY,nRowW,nRowH,Color(255,255,255,(int)(8*flHov)));
   G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
  }
- // фон кнопки: hover подсвечивает, клик вспыхивает акцентом
+ // button background: hover highlights, a click flashes the accent
  Color bg=CLR_HEADER;
  if(flHov>0.01f) bg=LerpC(CLR_HEADER,CLR_ACCENT,0.07f*flHov);
  if(flPress>0.01f) bg=LerpC(bg,CLR_ACCENT,0.5f*flPress);
@@ -829,7 +829,7 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
  bool bOnTrack=Hovered(mouse.pt,nX-8,m_nItemY-8,nW+16,nTrackH+16);
  bool bDrag=(mouse.bDown&&bOnTrack);
  float flHov=HoverAnim(szLabel,bOnTrack);
- float flDrag=PressAnim(szLabel,bDrag); // растёт при drag, плавно спадает
+ float flDrag=PressAnim(szLabel,bDrag); // grows while dragging, decays smoothly
  float flFrac=((*pValue-nMin)/static_cast<float>(nMax-nMin)); int nFillW=int(nW*flFrac);
  G::Draw.Rect(nX,m_nItemY,nW,nTrackH,CLR_HEADER);
  if(nFillW>0){
@@ -837,7 +837,7 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
   G::Draw.GradientRect(nX,m_nItemY,nX+nFillW,m_nItemY+nTrackH,clrFill,CLR_ACCENT,true);
  }
  if(nFillW>2) G::Draw.Rect(nX+nFillW-6,m_nItemY,6,nTrackH,Color(200,255,240,255));
- // glow и knob растут при drag
+ // glow and knob grow while dragging
  float flKnobR=nKnobR+1.5f*flDrag;
  G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,(int)(nKnobR+4+4*flDrag),14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(35+50*flDrag)));
  if(flHov>0.01f) G::Draw.Circle(nX+nFillW,m_nItemY+nTrackH/2,(int)(nKnobR+3),14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(30*flHov)));

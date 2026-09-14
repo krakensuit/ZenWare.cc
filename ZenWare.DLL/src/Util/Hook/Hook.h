@@ -33,8 +33,8 @@ namespace Hook
 
 			m_pBase = (unsigned int**)(pTable);
 
-			//Движковые vtable не null-terminated: скан без капа уходит
-			//в немаппленные страницы на инжекте. 512 слотов с запасом.
+			//Engine vtables are not null-terminated: an uncapped scan walks
+			//into unmapped pages on injection. 512 slots to be safe.
 			while (m_nSize < 512u && reinterpret_cast<unsigned int*>(*m_pBase)[m_nSize])
 				m_nSize += 1u;
 

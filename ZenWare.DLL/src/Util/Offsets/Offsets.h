@@ -26,7 +26,7 @@ public:
 	DWORD m_dwSetPredictionRandomSeed = 0x0;
 	DWORD m_dwGetSurvivorSet = 0x0;
 
-	bool m_bCacheUsed = false; // true если адреса взяты из ZenWare.offsets, а не из скана
+	bool m_bCacheUsed = false; // true if the addresses came from ZenWare.offsets, not from a scan
 };
 
 namespace U { inline CUtil_Offsets Offsets; }

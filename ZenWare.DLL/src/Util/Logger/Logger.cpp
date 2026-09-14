@@ -21,8 +21,8 @@ void CUtil_Logger::Init()
 
 	Open(szPath);
 
-	// TEMP занят/залочен (второй процесс, зависший хендл) — пишем в свой файл,
-	// иначе run вообще без лога и потом не понять, что произошло.
+	// TEMP is busy/locked (second process, stuck handle) — write to our own file,
+	// otherwise the run has no log at all and there is no way to tell what happened.
 	if (!m_pFile)
 	{
 		sprintf_s(szPath, "%sZenWare_%lu.log", szTempDir, GetCurrentProcessId());
@@ -31,7 +31,7 @@ void CUtil_Logger::Init()
 
 	char szMod[MAX_PATH] = { };
 	{
-		// Адрес нашего глобального логгера лежит в .data этой DLL.
+		// The address of our global logger lives in the .data of this DLL.
 		HMODULE hSelf = nullptr;
 		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
 			(LPCWSTR)this, &hSelf);
@@ -120,9 +120,9 @@ void CUtil_Logger::Open(const char* const szPath)
 	//Caller holds the critical section (or is single-threaded during Init).
 	strncpy_s(m_szPath, szPath, _TRUNCATE);
 
-	//_SH_DENYWR: файл остаётся читаемым другими процессами ПОКА игра пишет —
-	//fopen_s держал лог эксклюзивно, и живая диагностика во время сессии
-	//была невозможна (файл не читался даже на чтение).
+	//_SH_DENYWR: the file stays readable by other processes WHILE the game writes —
+	//fopen_s held the log exclusively, making live diagnostics during a session
+	//impossible (the file could not even be opened for reading).
 	m_pFile = _fsopen(m_szPath, "a", _SH_DENYWR);
 
 	if (!m_pFile)
@@ -193,7 +193,7 @@ void CUtil_Logger::WriteNoLock(const char* const szFormat, ...)
 
 	strcat_s(szLine, szBody);
 
-	//Отладчик первым: переживёт даже смерть прямо на файловом IO ниже.
+	//Debugger first: survives even dying right on the file IO below.
 	OutputDebugStringA(szLine);
 
 	__try

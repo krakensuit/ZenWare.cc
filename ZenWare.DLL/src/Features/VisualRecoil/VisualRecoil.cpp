@@ -18,8 +18,8 @@ void CFeatures_VisualRecoil::FrameStageNotify(ClientFrameStage_t curStage)
 		IClientEntity* pEnt = I::ClientEntityList->GetClientEntity(nLocalIndex);
 		if (pEnt)
 		{
-			// Пишем 12 байт по оффсету: убеждаемся что это правда игрок,
-			// иначе молча выходим (NetVarManager мог вернуть 0).
+			// Writing 12 bytes at an offset: make sure this is really a player,
+			// otherwise bail out silently (NetVarManager may have returned 0).
 			ClientClass* pCC = pEnt->GetClientClass();
 			if (!pCC || (pCC->m_ClassID != CTerrorPlayer && pCC->m_ClassID != SurvivorBot))
 				return;
