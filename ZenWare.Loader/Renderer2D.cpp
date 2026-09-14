@@ -322,6 +322,9 @@ namespace Zen2D
 
 		m_rt->BeginDraw();
 
+		// ИЗМЕНЕНО: явная очистка кадра фоном палитры (иначе поверхность может остаться прежней/светлой).
+		m_rt->Clear(ColorOf(m_theme.background, 1.0f));
+
 		DrawBackground(st);
 		DrawHeader(st);
 		DrawLogo(st);

@@ -94,7 +94,7 @@ static void SetWinAlpha(HWND h, BYTE a)
 		SetLayeredWindowAttributes(h, 0, a, LWA_ALPHA);
 }
 void RefreshTheme(){
- g_theme=MakeTheme(IsSystemDark());
+ g_theme=MakeTheme(true); // РЕШЕНИЕ: лоадер всегда тёмный, светлая тема Windows его заливала
  DestroyGdi();
  g_brBg=CreateSolidBrush(g_theme.bg);
  g_brCtl=CreateSolidBrush(g_theme.ctl);

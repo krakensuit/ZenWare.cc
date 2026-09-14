@@ -3,7 +3,24 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.11.1] - 2026-09-14
+
+### Fixed / Исправлено
+- The loader is dark in every code path now: the Windows light theme no longer
+  switches the palette (a light-theme run produced a pale background with
+  unreadable text - visible on a real screenshot). `RefreshTheme` always builds
+  the dark theme.
+  Лоадер теперь тёмный в любом пути исполнения: светлая тема Windows больше не
+  переключает палитру (на светлой теме окно получалось бледным, текст
+  нечитаемым — это видно на реальном скриншоте). `RefreshTheme` всегда собирает
+  тёмную тему.
+- The Direct2D frame now calls `Clear` with the palette background before drawing,
+  so the surface can never keep or show a stale light background.
+  Кадр Direct2D теперь явно очищается фоном палитры перед отрисовкой, поэтому
+  поверхность не может сохранить или показать прежний светлый фон.
+
+
 ## [3.11] - 2026-09-14
 
 ### Changed / Изменено
