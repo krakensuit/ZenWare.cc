@@ -163,6 +163,41 @@ namespace
 
 namespace Glass
 {
+	// -------------------------- системный материал Win11 --------------------------
+	DWORD OsBuild()
+	{
+		// RtlGetVersion не врёт, в отличие от GetVersionEx с манифестом.
+		typedef LONG(WINAPI* PFN_RtlGetVersion)(PRTL_OSVERSIONINFOW);
+
+		const HMODULE hNt = GetModuleHandleW(L"ntdll.dll");
+		if (!hNt)
+			return 0;
+
+		PFN_RtlGetVersion pfn = reinterpret_cast<PFN_RtlGetVersion>(GetProcAddress(hNt, "RtlGetVersion"));
+		if (!pfn)
+			return 0;
+
+		RTL_OSVERSIONINFOW vi{};
+		vi.dwOSVersionInfoSize = sizeof(vi);
+
+		return pfn(&vi) == 0 ? vi.dwBuildNumber : 0;
+	}
+
+	bool EnableSystemBackdrop(HWND hwnd)
+	{
+		if (!hwnd || OsBuild() < 22000)
+			return false;
+
+		// DWMWA_SYSTEMBACKDROP_TYPE = 38, DWMSBT_MAINWINDOW = 2 (Win11 22H2+).
+		INT material = 2;
+
+		if (FAILED(DwmSetWindowAttribute(hwnd, 38, &material, sizeof(material))))
+			return false;
+
+		g_bGlass = true;
+		g_nAccentState = 0xFFFF; // материал, а не акрил: тинт не нужен
+		return true;
+	}
 	bool IsAvailable()
 	{
 		EnsureProbe();

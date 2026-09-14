@@ -3,7 +3,22 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.10.2] - 2026-09-14
+
+### Added / Добавлено
+- Windows 11 system backdrop for the loader (`DWMWA_SYSTEMBACKDROP_TYPE` =
+  `DWMSBT_MAINWINDOW`), tried before the acrylic path; the OS build is read
+  through `RtlGetVersion` because `GetVersionEx` lies under a manifest. The
+  order is now: system material (Win11 22H2+) -> acrylic blur -> plain blur ->
+  the previous layered window.
+  Системный материал Windows 11 для загрузчика (`DWMWA_SYSTEMBACKDROP_TYPE` =
+  `DWMSBT_MAINWINDOW`) — пробуется раньше акрила; сборка ОС читается через
+  `RtlGetVersion`, потому что `GetVersionEx` врёт при манифесте. Порядок теперь:
+  системный материал (Win11 22H2+) -> акрил -> обычный блюр -> прежнее
+  layered-окно.
+
+
 ## [3.10.1] - 2026-09-14
 
 ### Added / Добавлено

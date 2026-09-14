@@ -32,6 +32,12 @@ namespace Glass
 	// Выключить блюр (перед уничтожением окна / при смене темы).
 	void Disable(HWND hwnd);
 
+	// Системный материал Windows 11 (DWMSBT_MAINWINDOW) - главный путь из ТЗ.
+	// Возвращает true, если DWM принял материал (build >= 22000).
+	bool EnableSystemBackdrop(HWND hwnd);
+	// Номер сборки Windows через RtlGetVersion (GetVersionEx врёт при манифесте).
+	DWORD OsBuild();
+
 	// Закругление углов: DWM (Win11), иначе регион окна.
 	void RoundCorners(HWND hwnd, int radius = kCornerRadius);
 

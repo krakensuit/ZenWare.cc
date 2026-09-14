@@ -682,7 +682,7 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
  switch(m){
   case WM_CREATE:{
    g_hMain=h; InitFonts(h); RefreshTheme();
-   if(!Glass::Enable(h,Glass::kMint,0)) SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // старт почти прозрачным для fade-in
+   if(!Glass::EnableSystemBackdrop(h) && !Glass::Enable(h,Glass::kMint,0)) SetLayeredWindowAttributes(h,0,1,LWA_ALPHA); // старт почти прозрачным для fade-in
    g_ullLastTick=GetTickCount64();
     CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(L"ЗАПУСТИТЬ ИГРУ",L"LAUNCH GAME",L"SPIEL STARTEN",L"INICIAR JUEGO",L"INICIAR JOGO",L"URUCHOM GRĘ",L"LANCER LE JEU",L"启动游戏"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,92,580,36,h,(HMENU)IDC_LAUNCH,nullptr,nullptr);
     g_hInject=CreateWindowExW(0,L"BUTTON",LoaderUtil::SW(g_bExternal?L"ЗАПУСК EXTERNAL":L"ИНЖЕКТ",g_bExternal?L"LAUNCH EXTERNAL":L"INJECT",g_bExternal?L"EXTERNAL STARTEN":L"INJECT",g_bExternal?L"INICIAR EXTERNAL":L"INYECTAR",g_bExternal?L"INICIAR EXTERNAL":L"INJETAR",g_bExternal?L"URUCHOM EXTERNAL":L"WSTRZYKIJ",g_bExternal?L"LANCER EXTERNAL":L"INJECTER",g_bExternal?L"启动 EXTERNAL":L"注入"),WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,20,136,580,52,h,(HMENU)IDC_INJECT,nullptr,nullptr);
