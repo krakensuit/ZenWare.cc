@@ -794,7 +794,8 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     POINT cpt{0,0}; GetCursorPos(&cpt); ScreenToClient(h,&cpt); fst.cursor=cpt;
     wchar_t wszStatus2[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszStatus2,127);
     wchar_t wszVer2[32]={}; swprintf_s(wszVer2,L"v%ls",ZENWARE_VER_WSTR);
-    Zen2D::R().RenderFrame(fst, g_theme.dark?Zen2D::Dark():Zen2D::Light(), wszStatus2, wszVer2, L"");
+    wchar_t wszLang2[32]={}; swprintf_s(wszLang2,L"%ls",LoaderUtil::LangCode());
+    Zen2D::R().RenderFrame(fst, Zen2D::Dark(), wszStatus2, wszVer2, wszLang2);
     EndPaint(h,&ps); break;
    }
    RECT rc; GetClientRect(h,&rc);
@@ -962,7 +963,7 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
  HWND hw=CreateWindowExW(Glass::IsAvailable()?0:WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
- Zen2D::R().Init(hw);
+ Zen2D::R().Init(hw,hi);
 
  ShowWindow(hw,cmd); UpdateWindow(hw);
  //NOTE: no auto-updater by design (source-only project, no binary releases).

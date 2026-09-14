@@ -3,7 +3,42 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.10.3] - 2026-09-14
+
+### Fixed / Исправлено
+- Direct2D loader UI: the light theme is gone for good - it flooded the window
+  with mint and made the text unreadable. The frame now always renders with
+  `Dark()`; `Light()` no longer exists, so it cannot be called by accident.
+  Убрана светлая тема D2D-интерфейса: она заливала окно мятным и делала текст
+  нечитаемым. Кадр всегда рисуется `Dark()`; `Light()` больше не существует,
+  поэтому вызвать её случайно нельзя.
+- Rounded corners everywhere: buttons 8 px, mode pill 6 px, status dot and
+  progress track are rounded as well
+  (`FillRoundedRectangle` / `DrawRoundedRectangle`).
+  Скругления везде: кнопки 8 px, пилюля режима 6 px, точка статуса и трек
+  прогресса тоже скруглены.
+- Accent calmed down from the acid `#7FFFD4` to `#6EE7B7`; `accentDim` is
+  `#3DB88F`, the rest of the palette is unchanged.
+  Акцент стал спокойным: `#7FFFD4` → `#6EE7B7`; `accentDim` — `#3DB88F`,
+  остальная палитра без изменений.
+- The footer language now comes from `LoaderUtil::LangCode()` instead of an
+  empty string.
+  Язык в футере берётся из `LoaderUtil::LangCode()` вместо пустой строки.
+- The main window logo is the real PNG from the resource (WIC decoder into an
+  `ID2D1Bitmap`, 40x40) with the title next to it; the text stays as a fallback
+  when the bitmap is unavailable.
+  Логотип в главном окне — настоящий PNG из ресурса (WIC-декодер в
+  `ID2D1Bitmap`, 40×40), название рядом; текст остался фолбэком, если битмап
+  недоступен.
+- The mint sine bands in the background are gone: a solid near-black base plus a
+  single very soft vertical gradient (surface 0.25 -> background 0), built once
+  as an `ID2D1LinearGradientBrush` and refreshed on theme change.
+  Мятные синусоидные полосы убраны: чистый near-black фон плюс один очень
+  мягкий вертикальный градиент (surface 0.25 -> background 0), создаётся один
+  раз как `ID2D1LinearGradientBrush` и обновляется при смене темы.
+
+
 ## [3.10.2] - 2026-09-14
 
 ### Added / Добавлено
