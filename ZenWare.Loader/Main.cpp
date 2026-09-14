@@ -756,6 +756,12 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   break;
  }
   case WM_LBUTTONDOWN:{
+  if(Zen2D::R().Enabled()){
+   RECT rb{0,0,0,0}; GetClientRect(h,&rb);
+   POINT mp{GET_X_LPARAM(l),GET_Y_LPARAM(l)};
+   RECT r1{24,92,rb.right-24,128}, r2{24,136,rb.right-24,188};
+   if(PtInRect(&r1,mp)){ HWND b=GetDlgItem(h,IDC_LAUNCH); if(b) SendMessageW(b,BM_CLICK,0,0); return 0; }
+   if(PtInRect(&r2,mp)){ HWND b=GetDlgItem(h,IDC_INJECT); if(b) SendMessageW(b,BM_CLICK,0,0); return 0; } }
    int x=GET_X_LPARAM(l), y=GET_Y_LPARAM(l);
    POINT cp{x,y};
     if(PtInRect(&g_rcMode,cp)){ g_flPressMode=1.0f; ToggleMode(); }
@@ -783,6 +789,10 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
   case WM_PAINT:{
    PAINTSTRUCT ps; HDC hdc=BeginPaint(h,&ps);
    if(Zen2D::R().Enabled()){
+   { RECT rd{0,0,0,0}; GetClientRect(h,&rd);
+     g_rcMode  ={rd.right-150,20,rd.right-24,46};
+     g_rcLang  ={rd.right-220,rd.bottom-40,rd.right-24,rd.bottom-20};
+     g_rcUpdate={24,rd.bottom-40,220,rd.bottom-20}; }
     Zen2D::FrameState_t fst{};
     fst.dt=0.016f;
     fst.elapsed=(float)(GetTickCount64()%100000)/1000.0f;
@@ -963,7 +973,11 @@ int WINAPI wWinMain(HINSTANCE hi,HINSTANCE, PWSTR,int cmd){
  wchar_t wszTitle[64]={}; swprintf_s(wszTitle,L"ZenWare.cc Loader v%ls",ZENWARE_VER_WSTR);
  HWND hw=CreateWindowExW(Glass::IsAvailable()?0:WS_EX_LAYERED,wc.lpszClassName,wszTitle,WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN, wx,wy, WINDOW_W, WINDOW_H, nullptr,nullptr,hi,nullptr);
  SetWindowPos(hw,nullptr,0,0,ww,wh,SWP_NOMOVE|SWP_NOZORDER);
- Zen2D::R().Init(hw,hi);
+ Zen2D::R().Init(hw,hi); if(Zen2D::R().Ready()){ Zen2D::R().SetEnabled(true);
+  HWND hb1=GetDlgItem(hw,IDC_LAUNCH), hb2=GetDlgItem(hw,IDC_INJECT), hs=GetDlgItem(hw,IDC_STATUS);
+  if(hb1) ShowWindow(hb1,SW_HIDE);
+  if(hb2) ShowWindow(hb2,SW_HIDE);
+  if(hs)  ShowWindow(hs,SW_HIDE); } // интерфейс рисует D2D, дочерние окна только дублировали его
 
  ShowWindow(hw,cmd); UpdateWindow(hw);
  //NOTE: no auto-updater by design (source-only project, no binary releases).

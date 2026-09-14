@@ -3,7 +3,40 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.11] - 2026-09-14
+
+### Changed / Изменено
+- The Direct2D loader interface is now the default: after `Init`, the renderer is
+  enabled and the old child controls that duplicated it (the two BS_OWNERDRAW
+  buttons and the status static) are hidden. Clicks on the D2D buttons are routed
+  from the parent's `WM_LBUTTONDOWN` through `BM_CLICK` to the same `IDC_*`
+  controls, so the injection logic is untouched.
+  Интерфейс на Direct2D теперь основной: после `Init` рендерер включается, а
+  старые дочерние элементы, которые его дублировали (две кнопки BS_OWNERDRAW и
+  статик статуса), скрываются. Нажатия по D2D-кнопкам передаются из
+  `WM_LBUTTONDOWN` родителя через `BM_CLICK` тем же `IDC_*`, поэтому логика
+  инжекта не тронута.
+- The mode pill, the language pill and the update pill stay clickable in the D2D
+  path: their rectangles are published from the D2D frame (mode pill top-right,
+  language bottom-right, version/updates bottom-left) and the existing mouse
+  handlers keep working.
+  Пилюли режима, языка и обновлений остаются кликабельными в D2D-режиме: их
+  прямоугольники выставляются из D2D-кадра (режим — справа сверху, язык — справа
+  снизу, версия/обновления — слева снизу), а прежние обработчики мыши работают.
+
+### Known gap / Известный пробел
+- The D2D frame paints an opaque background, so the acrylic/system backdrop of
+  3.10 is not visible while the D2D path is active. Bringing the frosted backdrop
+  to the D2D path needs a DirectComposition swapchain with per-pixel alpha
+  (window with `WS_EX_NOREDIRECTIONBITMAP`); until then the loader shows the flat
+  dark interface.
+  D2D-кадр рисует непрозрачный фон, поэтому акрил/системный материал из 3.10 в
+  D2D-режиме не виден. Чтобы вернуть frosted-фон в D2D, нужен swapchain
+  DirectComposition со сквозной альфой (окно с `WS_EX_NOREDIRECTIONBITMAP`);
+  до этого лоадер показывает плоский тёмный интерфейс.
+
+
 ## [3.10.3] - 2026-09-14
 
 ### Fixed / Исправлено

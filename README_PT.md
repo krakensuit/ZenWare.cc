@@ -15,7 +15,7 @@
 
 ## Português
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.10.3`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.11`
 
 ### Sobre o projeto
 
