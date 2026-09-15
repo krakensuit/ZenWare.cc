@@ -3,6 +3,22 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.19.0] - 2026-09-15
+
+### Added
+- Stage 5 of the menu rework: icons. The tab strip now carries a glyph per tab (eye / runner / crosshairs / bolt / sliders), taken from the embedded Font Awesome 6 Free face and drawn through `EFonts::MENU_ICONS` next to the label.
+  Этап 5 переработки меню: иконки. Полоса вкладок теперь несёт глиф на каждую вкладку (глаз / бегун / прицел / молния / ползунки) из вшитого начертания Font Awesome 6 Free, рисуется через `EFonts::MENU_ICONS` рядом с подписью.
+
+### Fixed
+- The icon face could not actually render anything: `SetFontGlyphSet` was called with the default glyph range `0, 0` (basic Latin), so VGUI never built the Font Awesome private-use glyphs and any icon would have come out blank. `Init()` now re-registers the icon font with the range `0xF000-0xF8FF` and logs the result, so the failure mode is visible in `ZenWare.log` instead of showing as empty boxes.
+  Шрифт иконок физически не мог ничего нарисовать: `SetFontGlyphSet` вызывался с диапазоном глифов по умолчанию `0, 0` (базовая латиница), поэтому VGUI вообще не строил глифы из приватной области Font Awesome, и любая иконка вышла бы пустой. Теперь `Init()` перерегистрирует шрифт иконок с диапазоном `0xF000-0xF8FF` и пишет результат в лог, то есть отказ видно в `ZenWare.log`, а не в виде пустых квадратов.
+- Tab icons are matched by the internal tab id, not by the localized caption, so switching the menu language cannot scramble the icons.
+  Иконки вкладок сопоставляются по внутреннему идентификатору вкладки, а не по локализованной подписи, поэтому смена языка меню не может перепутать иконки.
+
+### Note
+- The bundled icon header currently defines only six Font Awesome glyphs, so the tab set (five) consumes almost all of them. Rows, toggles and section headers keep text-only labels until the header is extended with more glyphs.
+  Вшитый заголовок иконок сейчас определяет всего шесть глифов Font Awesome, поэтому набор вкладок (пять) забирает почти все. Строки, тумблеры и заголовки секций остаются без иконок, пока в заголовок не добавят остальные глифы.
+
 ## [3.18.0] - 2026-09-15
 
 ### Changed
