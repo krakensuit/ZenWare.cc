@@ -206,6 +206,26 @@ Color HsvToColor(float h, float s, float v){
  return Color((int)((r+m)*255.0f),(int)((g+m)*255.0f),(int)((b+m)*255.0f),255);
 }
 
+// Shared wrapped hue phase: the delta comes from the tick counter and is added to
+// a small float that is wrapped every frame. The previous form kept tick/38 itself
+// inside that float, which loses resolution after long uptime and made the colours
+// step in visible jumps instead of sweeping smoothly.
+static float HuePhase(const int nSlot, const float flMsPerDegree)
+{
+	static ULONGLONG s_aPrev[4] = { 0, 0, 0, 0 };
+	static float s_aHue[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	const int n = nSlot & 3;
+	const ULONGLONG ullNow = GetTickCount64();
+	const float flDelta = (s_aPrev[n] == 0) ? 0.0f : (float)(ullNow - s_aPrev[n]);
+	s_aPrev[n] = ullNow;
+	s_aHue[n] += flDelta / flMsPerDegree;
+
+	while (s_aHue[n] >= 360.0f)
+		s_aHue[n] -= 360.0f;
+
+	return s_aHue[n];
+}
+
 void DrawRgbLogo(int x, int y){
  static const char* txt="ZenWare.cc";
  // The colour phase is accumulated in a small float and wrapped every frame.
@@ -533,7 +553,7 @@ void CFeatures_Menu::Render(){
     G::Draw.Rect(nSX,nThumbY,3,nThumbH,CLR_ACCENT_SOFT);
    }
   }
-  const float fhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+  const float fhue=HuePhase(2,38.0f);
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
  char szHint[160]={};
@@ -544,7 +564,7 @@ void CFeatures_Menu::Render(){
  G::Draw.String(EFonts::MENU_MONO,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+5,CLR_TEXT_OFF,TXT_CENTERXY,"%s",szFoot);
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
  {
-  const float ehue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+  const float ehue=HuePhase(3,38.0f);
   const int epulse=25+(int)(20*sinf((GetTickCount64()%6283)/1000.0f));
   Color edge=HsvToColor(ehue,0.9f,0.55f);
   edge.SetColor(edge.r(),edge.g(),edge.b(),epulse);
@@ -692,7 +712,7 @@ void CFeatures_Menu::DrawPanel(){
  {
   int hlw = (int)((m_rc.nW - 2) * m_flAnim);
   int hlx = m_rc.nX + 1 + ((m_rc.nW - 2) - hlw) / 2;
-  const float hhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+  const float hhue=HuePhase(1,38.0f);
   if (hlw > 0) G::Draw.GradientRect(hlx,m_rc.nY+Layout::kHeaderH,hlx+hlw,m_rc.nY+Layout::kHeaderH+3,HsvToColor(hhue,0.85f,1.0f),HsvToColor(hhue+40.0f,0.85f,1.0f),false);
  }
  {
