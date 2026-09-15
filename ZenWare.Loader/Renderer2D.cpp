@@ -31,6 +31,31 @@ namespace
 
 	// Debug diagnostics: write to OutputDebugString so it is visible at which
 	// exact step the initialization fails (requested in the spec).
+	// HSB -> RGB (как Hsv() в GDI-пути): h в градусах, s/v в 0..1.
+	DWORD Hsv2Rgb(float h, float s, float v)
+	{
+		float r = v, g = v, b = v;
+		const float hh = fmodf(fabsf(h), 360.0f) / 60.0f;
+		const int i = static_cast<int>(hh);
+		const float f = hh - i;
+		const float p = v * (1.0f - s);
+		const float q = v * (1.0f - s * f);
+		const float tt = v * (1.0f - s * (1.0f - f));
+
+		switch (i)
+		{
+		case 0: r = v;  g = tt; b = p;  break;
+		case 1: r = q;  g = v;  b = p;  break;
+		case 2: r = p;  g = v;  b = tt; break;
+		case 3: r = p;  g = q;  b = v;  break;
+		case 4: r = tt; g = p;  b = v;  break;
+		default: r = v; g = p;  b = q;  break;
+		}
+
+		return (static_cast<DWORD>(r * 255.0f) << 16) |
+			(static_cast<DWORD>(g * 255.0f) << 8) |
+			static_cast<DWORD>(b * 255.0f);
+	}
 	void LogDbg(const wchar_t* wszMsg, HRESULT hr)
 	{
 		wchar_t buf[160]{};
@@ -419,6 +444,7 @@ namespace Zen2D
 		ReleaseComposition();
 
 		// The logo belonged to the old target - it can only be re-created.
+		if (m_titleLayout) { m_titleLayout->Release(); m_titleLayout = nullptr; }
 		if (m_logo) { m_logo->Release(); m_logo = nullptr; }
 
 		if (CreateCompositionTarget())
@@ -480,6 +506,7 @@ namespace Zen2D
 		m_bReady = false;
 		m_target = nullptr;
 
+		if (m_titleLayout) { m_titleLayout->Release(); m_titleLayout = nullptr; }
 		if (m_logo) { m_logo->Release(); m_logo = nullptr; }
 		if (m_brush) { m_brush->Release(); m_brush = nullptr; }
 
@@ -599,6 +626,12 @@ namespace Zen2D
 
 		fmt->SetTextAlignment(align);
 
+		// CHANGED: small labels (status, footer) are anchored to the top edge -
+		// with another language the font metrics change and the text drifted up.
+		fmt->SetParagraphAlignment((rc.bottom - rc.top) <= 22.0f
+			? DWRITE_PARAGRAPH_ALIGNMENT_NEAR
+			: DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+
 		m_brush->SetColor(ColorOf(rgb, alpha));
 		m_target->DrawTextW(wsz, static_cast<UINT32>(wcslen(wsz)), fmt, rc, m_brush,
 			D2D1_DRAW_TEXT_OPTIONS_CLIP, DWRITE_MEASURING_MODE_NATURAL);
@@ -702,8 +735,42 @@ namespace Zen2D
 			textX = 24.0f + size + 10.0f;
 		}
 
-		Text(L"ZenWare.cc", RectF(textX, 14.0f, textX + 300.0f, 54.0f),
-			m_theme.textPrimary, DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
+		if (!m_titleLayout)
+			m_dwrite->CreateTextLayout(L"ZenWare.cc", 10, m_fmtTitle, 400.0f, 60.0f, &m_titleLayout);
+
+		const float hue = fmodf(static_cast<float>(GetTickCount64() % 100000) / 38.0f, 360.0f);
+		bool bDrawn = false;
+
+		if (m_titleLayout)
+		{
+			UINT32 nCount = 0;
+
+			if (SUCCEEDED(m_titleLayout->GetClusterMetrics(nullptr, 0, &nCount)) && nCount > 0 && nCount <= 32)
+			{
+				DWRITE_CLUSTER_METRICS metrics[32]{};
+
+				if (SUCCEEDED(m_titleLayout->GetClusterMetrics(metrics, 32, &nCount)))
+				{
+					const wchar_t* wszTitle = L"ZenWare.cc";
+					float cx = textX;
+
+					for (UINT32 i = 0; i < nCount; ++i)
+					{
+						wchar_t ch[2] = { wszTitle[i], 0 };
+						Text(ch, RectF(cx, 14.0f, cx + metrics[i].width + 2.0f, 54.0f),
+							Hsv2Rgb(hue + static_cast<float>(i) * 5.0f, 0.85f, 1.0f),
+							DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
+						cx += metrics[i].width;
+					}
+
+					bDrawn = true;
+				}
+			}
+		}
+
+		if (!bDrawn)
+			Text(L"ZenWare.cc", RectF(textX, 14.0f, textX + 300.0f, 54.0f),
+				m_theme.textPrimary, DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
 	}
 
 	void Renderer2D::DrawModePill(const FrameState_t& st)

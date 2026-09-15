@@ -79,6 +79,7 @@ namespace Zen2D
 		IDWriteTextFormat*    m_fmtMicro = nullptr;
 		ID2D1SolidColorBrush* m_brush = nullptr;
 		ID2D1Bitmap*          m_logo = nullptr;
+		IDWriteTextLayout*    m_titleLayout = nullptr; // для по-буквенного RGB
 
 		// Composition path.
 		ID3D11Device*         m_d3dDevice = nullptr;

@@ -3,7 +3,29 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.13.2] - 2026-09-15
+
+### Changed / Изменено
+- Direct2D title: `ZenWare.cc` is now drawn letter by letter with a rainbow hue
+  that flows smoothly (the hue advances every frame and each letter is offset by
+  5 degrees), the same effect the GDI path already had in `DrawRgbLogo`. The text
+  layout is created once and reused, so there is no per-frame allocation.
+  Заголовок в Direct2D: `ZenWare.cc` теперь рисуется по буквам с радужным
+  оттенком, который плавно течёт (оттенок прирастает каждый кадр, каждая буква
+  смещена на 5 градусов) — тот же эффект, что уже был в GDI-пути в `DrawRgbLogo`.
+  Разметка текста создаётся один раз и переиспользуется, поэтому аллокаций в
+  кадре нет.
+- Small labels (the status line and the footer version/language) are anchored to
+  the top of their rectangle instead of the vertical centre: with another language
+  the font metrics changed and the text visually drifted upward. Pills and buttons
+  keep their centred alignment.
+  Мелкие подписи (строка статуса и версия/язык в футере) выравниваются по
+  верхнему краю своего прямоугольника, а не по вертикальному центру: на другом
+  языке менялись метрики шрифта, и текст визуально уезжал вверх. Пилюли и кнопки
+  остаются выровненными по центру.
+
+
 ## [3.13.3] - 2026-09-14
 
 ### Changed / Изменено
@@ -22,7 +44,7 @@ All notable changes to ZenWare.cc are documented here.
   Версия в бейдже/водяном знаке меню (`Vars::Menu::kVersion`) снова следует за
   `resource.h`: она осталась v3.13.1 после релиза 3.13.2.
 
-## [3.13.2] - 2026-09-14
+## [3.13.4] - 2026-09-15
 
 ### Fixed / Исправлено
 - The loader window after the splash was empty frosted glass: only the native
