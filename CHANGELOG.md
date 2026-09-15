@@ -3,6 +3,16 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.17.0] - 2026-09-15
+
+### Changed
+- Stage 3 of the menu rework: panel composition. The panel moves from 320x480 to 400x560 on the 8 px grid (`Layout::kPanelW/kPanelH`), the header band grows to 48 px, the footer to 24 px, and the tab strip becomes taller pills (32 px) with the same sliding indicator, so the tab labels are no longer cramped.
+  Этап 3 переработки меню: композиция панели. Панель переходит с 320x480 на 400x560 по сетке 8 px (`Layout::kPanelW/kPanelH`), полоса шапки растёт до 48 px, футер до 24 px, а полоса вкладок становится более высокими pill-кнопками (32 px) с тем же скользящим индикатором, поэтому подписи вкладок больше не сжаты.
+- Content geometry now has a single definition: `nContentTop = header + tabs + 8` feeds both the row cursor and the scrollbar, replacing the duplicated `HEADER_H+34` magic and the hardcoded scrollbar bounds `+80 / -30`.
+  Геометрия контента получила единое определение: `nContentTop = шапка + вкладки + 8` питает и курсор строк, и полосу прокрутки, вместо продублированного «магического» `HEADER_H+34` и жёстких границ скроллбара `+80 / -30`.
+- Version metadata is real again: `ZENWARE_VER_STR` / `kVersion` were stuck at 3.14.0 while the tags moved on, so the panel badge and the watermark lied. They now read 3.17.0, and all eight READMEs were updated in the same commit.
+  Метаданные версии снова правдивы: `ZENWARE_VER_STR` / `kVersion` застряли на 3.14.0, пока теги шли вперёд, поэтому бейдж панели и ватермарк врали. Теперь там 3.17.0, и все восемь README обновлены тем же коммитом.
+
 ## [3.16.0] - 2026-09-15
 
 ### Added
