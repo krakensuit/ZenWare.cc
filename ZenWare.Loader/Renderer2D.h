@@ -81,6 +81,7 @@ namespace Zen2D
 		ID2D1SolidColorBrush* m_brush = nullptr;
 		ID2D1Bitmap*          m_logo = nullptr;
 		IDWriteTextLayout*    m_titleLayout = nullptr; // для по-буквенного RGB
+		ID2D1LinearGradientBrush* m_titleBrush = nullptr; // rainbow fallback for the title
 
 		// Composition path.
 		ID3D11Device*         m_d3dDevice = nullptr;

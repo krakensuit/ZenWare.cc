@@ -444,6 +444,7 @@ namespace Zen2D
 		ReleaseComposition();
 
 		// The logo belonged to the old target - it can only be re-created.
+		if (m_titleBrush) { m_titleBrush->Release(); m_titleBrush = nullptr; }
 		if (m_titleLayout) { m_titleLayout->Release(); m_titleLayout = nullptr; }
 		if (m_logo) { m_logo->Release(); m_logo = nullptr; }
 
@@ -506,6 +507,7 @@ namespace Zen2D
 		m_bReady = false;
 		m_target = nullptr;
 
+		if (m_titleBrush) { m_titleBrush->Release(); m_titleBrush = nullptr; }
 		if (m_titleLayout) { m_titleLayout->Release(); m_titleLayout = nullptr; }
 		if (m_logo) { m_logo->Release(); m_logo = nullptr; }
 		if (m_brush) { m_brush->Release(); m_brush = nullptr; }
@@ -716,7 +718,7 @@ namespace Zen2D
 		const float w = static_cast<float>(m_w);
 
 		// Header - a semi-transparent surface: the glass shows through.
-		FillRect(RectF(0.0f, 0.0f, w, 66.0f), m_theme.surface, 0.35f);
+		// (header band removed: it looked like a pale stripe)
 
 		const float pulse = 0.30f + 0.20f * (0.5f + 0.5f * sinf(st.elapsed * 1.4f));
 		Line(0.0f, 66.0f, w, 66.0f, m_theme.accent, pulse, 1.0f);
@@ -770,8 +772,40 @@ namespace Zen2D
 		}
 
 		if (!bDrawn)
-			Text(L"ZenWare.cc", RectF(textX, 14.0f, textX + 300.0f, 54.0f),
-				m_theme.textPrimary, DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
+		{
+			// Fallback: animated rainbow gradient brush, so the title is never plain white.
+			if (!m_titleBrush && m_target)
+			{
+				D2D1_GRADIENT_STOP stops[6]{};
+				const float hues[6] = { 0.0f, 60.0f, 120.0f, 180.0f, 240.0f, 300.0f };
+				for (int i = 0; i < 6; ++i)
+				{
+					stops[i].position = static_cast<float>(i) / 5.0f;
+					stops[i].color = ColorOf(Hsv2Rgb(hues[i], 0.85f, 1.0f), 1.0f);
+				}
+				ID2D1GradientStopCollection* coll = nullptr;
+				if (SUCCEEDED(m_target->CreateGradientStopCollection(stops, 6, &coll)) && coll)
+				{
+					m_target->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties(D2D1::Point2F(textX, 0.0f), D2D1::Point2F(textX + 150.0f, 0.0f)), coll, &m_titleBrush);
+					coll->Release();
+				}
+			}
+
+			if (m_titleBrush)
+			{
+				const float span = 150.0f;
+				const float shift = fmodf(static_cast<float>(GetTickCount64() % 100000) / 38.0f * 2.0f, span);
+				m_titleBrush->SetStartPoint(D2D1::Point2F(textX - shift, 0.0f));
+				m_titleBrush->SetEndPoint(D2D1::Point2F(textX - shift + span, 0.0f));
+
+				IDWriteTextFormat* fmt = m_fmtTitle;
+				fmt->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+				fmt->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+				m_target->DrawTextW(L"ZenWare.cc", 10, fmt, RectF(textX, 14.0f, textX + 300.0f, 54.0f), m_titleBrush, D2D1_DRAW_TEXT_OPTIONS_CLIP, DWRITE_MEASURING_MODE_NATURAL);
+			}
+			else
+				Text(L"ZenWare.cc", RectF(textX, 14.0f, textX + 300.0f, 54.0f), m_theme.textPrimary, DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
+		}
 	}
 
 	void Renderer2D::DrawModePill(const FrameState_t& st)

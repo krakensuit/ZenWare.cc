@@ -3,7 +3,16 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.13.7] - 2026-09-15
+
+### Fixed
+- Removed the pale translucent band at the top of the loader window: the header surface fill (35% alpha) read as a dull stripe over the glass, so it is gone and the header separator is now a faint hairline.
+  Убрана светлая полупрозрачная полоса вверху окна лоадера: заливка шапки с альфой 35% выглядела как мутная полоса поверх стекла, поэтому она удалена, а разделитель шапки стал едва заметной линией.
+- The rainbow title now has a real fallback: when the per-letter text layout is unavailable, the title is drawn with an animated rainbow gradient brush instead of plain white text, so the caption is never colourless.
+  У радужного заголовка появился настоящий фолбэк: если по-буквенная разметка недоступна, заголовок рисуется анимированным радужным градиентом, а не обычным белым текстом, поэтому подпись больше не бывает бесцветной.
+
+
 ## [3.13.6] - 2026-09-15
 
 ### Added
