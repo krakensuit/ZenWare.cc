@@ -518,7 +518,7 @@ void CFeatures_Menu::Render(){
     const int nThumbH=U::Math.Clamp((int)(nView*flFrac),20,nView);
     const int nMaxS=m_nContentH[nTabC]-nView;
     const int nThumbY=nTop+(nMaxS>0?(m_nScroll[nTabC]*(nView-nThumbH))/nMaxS:0);
-    const int nSX=m_rc.nX+m_rc.nW-7;
+   const int nSX=m_rc.nX+m_rc.nW-Layout::kPadding/2;
     G::Draw.Rect(nSX,nTop,3,nView,Color(255,255,255,12));
     G::Draw.Rect(nSX,nThumbY,3,nThumbH,CLR_ACCENT_SOFT);
    }
@@ -666,7 +666,10 @@ void CFeatures_Menu::DrawPanel(){
  G::Draw.Rect(m_rc.nX,m_rc.nY,2,m_rc.nH,CLR_ACCENT_SOFT);
  G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,Layout::kHeaderH,CLR_HEADER);
 	DrawRgbLogo(m_rc.nX+16,m_rc.nY+4);
-	G::Draw.String(EFonts::MENU_BODY,m_rc.nX+m_rc.nW-14-G::Draw.GetTextWidth(EFonts::MENU_BODY,Vars::Menu::kVersion),m_rc.nY+15,CLR_ACCENT,TXT_DEFAULT,"%s",Vars::Menu::kVersion);
+  const int nBadgeW=G::Draw.GetTextWidth(EFonts::MENU_SMALL,Vars::Menu::kVersion)+10;
+  G::Draw.Rect(m_rc.nX+m_rc.nW-14-nBadgeW,m_rc.nY+12,nBadgeW,18,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),26));
+  G::Draw.OutlinedRect(m_rc.nX+m_rc.nW-14-nBadgeW,m_rc.nY+12,nBadgeW,18,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),90));
+  G::Draw.String(EFonts::MENU_SMALL,m_rc.nX+m_rc.nW-9-(nBadgeW/2),m_rc.nY+15,CLR_ACCENT,TXT_CENTERXY,"%s",Vars::Menu::kVersion);
  {
   int hlw = (int)((m_rc.nW - 2) * m_flAnim);
   int hlx = m_rc.nX + 1 + ((m_rc.nW - 2) - hlw) / 2;
