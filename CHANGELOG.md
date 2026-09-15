@@ -9,6 +9,12 @@ All notable changes to ZenWare.cc are documented here.
 - The loader had four more places with the same growing-tick hue: the party accents `Acc()` and `Acc2()` plus two animated elements. All of them now use the shared wrapped phase helper, so no rainbow in the product can step with uptime any more.
   В лоадере было ещё четыре места с тем же растущим тиком: party-акценты `Acc()` и `Acc2()` плюс две анимированные элементы. Все они переведены на общий helper с завёрнутой фазой, поэтому ни одна радуга в продукте больше не может «шагать» вместе с аптаймом.
 
+## [3.21.1] - 2026-09-15
+
+### Fixed
+- The same colour-phase defect was present in three more menu elements: the rainbow line under the header, the footer gradient and the border pulse. All three now call the shared `HuePhase(slot, msPerDegree)` helper, which accumulates the tick delta in a small float and wraps it every frame.
+  Тот же дефект фазы цвета был ещё в трёх элементах меню: радужная линия под шапкой, градиент футера и пульс рамки. Все три теперь вызывают общий helper `HuePhase(слот, мс/градус)`, который копит дельту тика в небольшом float и заворачивает её каждый кадр.
+
 ## [3.21.0] - 2026-09-15
 
 ### Fixed
