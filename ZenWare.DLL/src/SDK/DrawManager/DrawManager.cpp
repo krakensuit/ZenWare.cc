@@ -61,6 +61,20 @@ void CGlobal_DrawManager::Init()
 			f.second.m_szName, f.second.m_nTall, f.second.m_nWeight, f.second.m_nFlags,
 			static_cast<int>(f.second.m_hFont), bOk ? "ok" : "FAILED");
 	}
+
+	// Stage 5: the icon face must cover the Font Awesome private-use area. Without
+	// an explicit range VGUI builds no glyphs for it, and every icon renders blank.
+	{
+		const CFont& icons = m_Fonts[EFonts::MENU_ICONS];
+
+		if (icons.m_hFont)
+		{
+			const bool bIcons = I::MatSystemSurface->SetFontGlyphSet(icons.m_hFont, icons.m_szName,
+				icons.m_nTall, icons.m_nWeight, 0, 0, icons.m_nFlags, 0xF000, 0xF8FF);
+
+			U::Log.Write("Draw: icons range 0xF000-0xF8FF on %s -> %s", icons.m_szName, bIcons ? "ok" : "FAILED");
+		}
+	}
 }
 
 void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& clr, const short align, const char* const str, ...)

@@ -681,6 +681,19 @@ void CFeatures_Menu::DrawPanel(){
   if (sbx1 > sbx0) G::Draw.Rect(sbx0, m_rc.nY, sbx1 - sbx0, Layout::kHeaderH, Color(255,255,255,10));
  }
 }
+// Stage 5: tab icons. Keyed by the internal tab id, never by the localized text.
+static const char* IconForTab(const int n)
+{
+	switch (n)
+	{
+	case 0: return ICON_FA_EYE;              // Visuals
+	case 1: return ICON_FA_PERSON_RUNNING;   // Move
+	case 2: return ICON_FA_CROSSHAIRS;       // View
+	case 3: return ICON_FA_BOLT;             // Combat
+	case 4: return ICON_FA_SLIDERS;          // Misc
+	default: return nullptr;
+	}
+}
 void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
  const char* szTabs[]={"Visuals","Move","View","Combat","Misc"};
  const int nTabW=(m_rc.nW-20)/5;
@@ -696,6 +709,9 @@ void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
   bool bActive=(m_nTab==n); bool bHover=Hovered(mouse.pt,nX,nY,nTabW-6,nH);
   Color clrText=bActive?Color(240,255,248,255):(bHover?CLR_TEXT_ON:CLR_TEXT_OFF);
   if(!bActive&&bHover){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ROW_HOVER); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
+  const char* szIcon=IconForTab(n);
+  const int nLabelW=G::Draw.GetTextWidth(EFonts::MENU_BODY,Lang::T(szTabs[n]));
+  if(szIcon) G::Draw.String(EFonts::MENU_ICONS,nX+((nTabW-6)/2)-12,nY+(nH/2)-8,clrText,TXT_DEFAULT,"%s",szIcon);
   G::Draw.String(EFonts::MENU_BODY,nX+((nTabW-6)/2),nY+(nH/2)-8,clrText,TXT_CENTERXY,"%s",Lang::T(szTabs[n]));
   if(bHover&&mouse.bClicked) m_nTab=n;
  } nTab=m_nTab;
