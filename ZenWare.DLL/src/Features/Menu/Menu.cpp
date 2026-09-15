@@ -12,18 +12,18 @@
 #include <cmath>
 #include <map>
 #include <string>
-static const Color CLR_SHADOW(0,0,0,80);
-static const Color CLR_BG(14,16,15,248);
-static const Color CLR_HEADER(18,21,20,255);
-static const Color CLR_FOOTER(11,12,12,255);
-static const Color CLR_ROW_HOVER(255,255,255,8);
-static Color CLR_ACCENT(0,255,171,255);
+static const Color CLR_SHADOW = Theme::Clr::shadow;
+static const Color CLR_BG = Theme::Clr::bg;
+static const Color CLR_HEADER = Theme::Clr::header;
+static const Color CLR_FOOTER = Theme::Clr::footer;
+static const Color CLR_ROW_HOVER = Theme::Clr::rowHover;
+static Color CLR_ACCENT = Theme::Clr::accent; // refreshed from Vars::Menu::clrAccent
 static Color CLR_ACCENT_SOFT(0,255,171,45);
-static const Color CLR_TITLE(238,252,247,255);
-static const Color CLR_TEXT_ON(235,245,240,255);
-static const Color CLR_TEXT_OFF(108,118,113,255);
-static const Color CLR_OUTLINE(40,48,44,255);
-static const Color CLR_OUTLINE_SOFT(32,38,35,255);
+static const Color CLR_TITLE = Theme::Clr::textPrimary;
+static const Color CLR_TEXT_ON = Theme::Clr::textPrimary;
+static const Color CLR_TEXT_OFF = Theme::Clr::textDim;
+static const Color CLR_OUTLINE = Theme::Clr::outline;
+static const Color CLR_OUTLINE_SOFT = Theme::Clr::outlineSoft;
 static const char* kStrafeNames[] = { "Legit", "Rage", "W-Only", "Directional" };
 static const char* kBhopNames[] = { "Perfect", "Legit" };
 
