@@ -628,7 +628,7 @@ void CFeatures_Menu::SectionLabel(const char* const szLabel){
  m_nItemY+=20;
 }
 void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const szLabel,Color* pValue){
-	const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+	const int nRowX=m_rc.nX+Layout::kPadding, nRowW=m_rc.nW-Layout::kPadding*2; constexpr int nRowH=Layout::G(3)+4;
 	if (RowClipped(m_nItemY, nRowH)) { m_nItemY += nRowH; return; }
  static Color kSw[]={ {0,255,171,255},{255,84,84,255},{255,170,0,255},{255,235,0,255},{120,255,120,255},{0,200,255,255},{90,140,255,255},{190,90,255,255},{255,90,200,255},{235,245,240,255} };
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
@@ -723,7 +723,7 @@ bool CFeatures_Menu::RowClipped(int nRowTop,int nRowH) const{
  return (nRowTop + nRowH <= nTop) || (nRowTop >= nBottom);
 }
 void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool* pValue){
- const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+ const int nRowX=m_rc.nX+Layout::kPadding, nRowW=m_rc.nW-Layout::kPadding*2; constexpr int nRowH=Layout::G(3)+4;
  if(RowClipped(m_nItemY,nRowH)){ m_nItemY+=nRowH; return; }
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  float flHov=HoverAnim(szLabel,bHover);
@@ -733,7 +733,7 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
   G::Draw.Rect(nRowX,m_nItemY,2,nRowH,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(255*flHov)));
  }
  // toggle track 32x16
- constexpr int nTogW=30, nTogH=14;
+ constexpr int nTogW=Theme::Size::toggleW, nTogH=Theme::Size::toggleH;
  int nTogX=nRowX+nRowW-nTogW-10;
  int nTogY=m_nItemY+(nRowH-nTogH)/2;
  float &flTog=s_tog[szLabel];
@@ -742,22 +742,22 @@ void CFeatures_Menu::Checkbox(const MouseState_t& mouse,const char* szLabel,bool
  G::Draw.Rect(nTogX,nTogY,nTogW,nTogH,trackClr);
  G::Draw.OutlinedRect(nTogX,nTogY,nTogW,nTogH,LerpC(CLR_OUTLINE_SOFT,CLR_ACCENT,flTog));
  // knob (shrinks on click)
- int nKnobX=nTogX+7+(int)((nTogW-14)*flTog);
- int nKnobR=(int)(5.0f-1.5f*flPress);
+ int nKnobX=nTogX+(Theme::Size::knobR+1)+(int)((nTogW-(Theme::Size::knobR*2+2))*flTog);
+ int nKnobR=(int)((float)(Theme::Size::knobR-1)-1.5f*flPress);
  if(flTog>0.3f) G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR+3,14,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),(int)(35*flTog)));
  G::Draw.Circle(nKnobX,nTogY+nTogH/2,nKnobR,16,Color(245,255,250,255));
  const char* szShow=Lang::T(szLabel);
- G::Draw.String(EFonts::MENU_BODY,nRowX+12+(int)(2*flHov),m_nItemY+6+(int)(1*flPress),*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,"%s",szShow);
+ G::Draw.String(EFonts::MENU_BODY,nRowX+12+(int)(2*flHov),m_nItemY+7+(int)(1*flPress),*pValue?CLR_TEXT_ON:CLR_TEXT_OFF,TXT_DEFAULT,"%s",szShow);
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
   const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_BODY,szShow)+7;
-  bHelp=HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,m_nItemY+5);
+  bHelp=HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,m_nItemY+7);
  }
  if(bHover&&mouse.bClicked&&!bHelp) *pValue=!(*pValue);
  m_nItemY+=nRowH;
 }
 void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*pfnAction)()){
- const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=26;
+ const int nRowX=m_rc.nX+Layout::kPadding, nRowW=m_rc.nW-Layout::kPadding*2; constexpr int nRowH=Layout::G(3)+4;
  if(RowClipped(m_nItemY,nRowH)){ m_nItemY+=nRowH; return; }
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  bool bClick=(bHover&&mouse.bClicked);
@@ -783,7 +783,7 @@ void CFeatures_Menu::Button(const MouseState_t& mouse,const char* szLabel,void(*
 bool CFeatures_Menu::s_bKeyCapture = false;
 void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* pValue){
  static int* s_pCapturing=nullptr;
- const int nRowX=m_rc.nX+10, nRowW=m_rc.nW-20; constexpr int nRowH=24;
+ const int nRowX=m_rc.nX+Layout::kPadding, nRowW=m_rc.nW-Layout::kPadding*2; constexpr int nRowH=Layout::G(3)+4;
  if(RowClipped(m_nItemY,nRowH)){ m_nItemY+=nRowH; return; }
  bool bHover=Hovered(mouse.pt,nRowX,m_nItemY,nRowW,nRowH);
  float flHov=HoverAnim(szLabel,bHover);
@@ -805,7 +805,7 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
  bool bHelp=false;
  if(const HelpEntry_t* he=FindHelp(szLabel)){
   const int nQX=nRowX+12+G::Draw.GetTextWidth(EFonts::MENU_BODY,Lang::T(szLabel))+7;
-  bHelp=HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,m_nItemY+5);
+  bHelp=HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,m_nItemY+7);
  }
  if(bHover&&mouse.bClicked&&s_pCapturing!=pValue&&!bHelp) s_pCapturing=pValue;
  m_nItemY+=nRowH;
@@ -813,7 +813,7 @@ void CFeatures_Menu::BindRow(const MouseState_t& mouse,const char* szLabel,int* 
 void CFeatures_Menu::LabelInt(const char* szLabel,const int nValue,int nRightPad){
 	const int nLblH=G::Draw.GetFontHeight(EFonts::MENU_BODY)+5;
 	if (RowClipped(m_nItemY, nLblH)) { m_nItemY += nLblH; return; }
-	G::Draw.String(EFonts::MENU_BODY,m_rc.nX+20,m_nItemY,CLR_TEXT_ON,TXT_DEFAULT,"%s",Lang::T(szLabel));
+	G::Draw.String(EFonts::MENU_BODY,m_rc.nX+Layout::kPadding+4,m_nItemY,CLR_TEXT_ON,TXT_DEFAULT,"%s",Lang::T(szLabel));
  char szVal[16]={}; sprintf_s(szVal,"%i",nValue);
  G::Draw.String(EFonts::MENU_BODY,m_rc.nX+m_rc.nW-44-nRightPad,m_nItemY,CLR_ACCENT,TXT_DEFAULT,"%s",szVal);
  m_nItemY+=G::Draw.GetFontHeight(EFonts::MENU_BODY)+5;
@@ -824,10 +824,10 @@ void CFeatures_Menu::SliderInt(const MouseState_t& mouse,const char* szLabel,int
  const int nLblY=m_nItemY;
  LabelInt(szLabel,*pValue);
  if(const HelpEntry_t* he=FindHelp(szLabel)){
-  const int nQX=m_rc.nX+20+G::Draw.GetTextWidth(EFonts::MENU_BODY,Lang::T(szLabel))+7;
+  const int nQX=m_rc.nX+Layout::kPadding+4+G::Draw.GetTextWidth(EFonts::MENU_BODY,Lang::T(szLabel))+7;
   HelpMark(mouse,he->label,HelpTitle(he),HelpText(he),nQX,nLblY-1);
  }
- int nX=m_rc.nX+20, nW=m_rc.nW-40; constexpr int nTrackH=4, nKnobR=5;
+ int nX=m_rc.nX+Layout::kPadding+4, nW=m_rc.nW-(Layout::kPadding+4)*2; constexpr int nTrackH=4, nKnobR=Theme::Size::knobR-1;
  bool bOnTrack=Hovered(mouse.pt,nX-8,m_nItemY-8,nW+16,nTrackH+16);
  bool bDrag=(mouse.bDown&&bOnTrack);
  float flHov=HoverAnim(szLabel,bOnTrack);
