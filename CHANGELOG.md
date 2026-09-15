@@ -3,6 +3,12 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.14.0] - 2026-09-15
+
+### Added
+- Release helper `tools/release.ps1` together with `tools/release-notes-template.md`: one command bumps the version in `resource.h`, `Vars.h` and all READMEs, inserts the CHANGELOG section, builds the solution and the single-file loader, commits, tags, pushes and creates the GitHub release in the repository's reference format. `-DryRun` prints the plan without changing anything. Before this, a release took five or six manual steps.
+  Помощник релиза `tools/release.ps1` вместе с шаблоном `tools/release-notes-template.md`: одной командой поднимает версию в `resource.h`, `Vars.h` и всех README, вставляет секцию в CHANGELOG, собирает решение и однофайловый лоадер, делает коммит, тег, пуш и создаёт релиз на GitHub в эталонном формате. Режим `-DryRun` печатает план, ничего не меняя. До этого релиз занимал пять-шесть ручных шагов.
+
 ## [Unreleased]
 ## [3.13.7] - 2026-09-15
 
