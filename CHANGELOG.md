@@ -3,6 +3,24 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.20.1] - 2026-09-15
+
+### Fixed
+- The frosted backdrop from 3.20.0 shipped without its drawing code: the flag existed but nothing read it, because the helper that inserted the block failed on a PowerShell type error while the script still reported success. The backdrop is now actually wired in `DrawPanel` and the commit states the correction plainly.
+  Подложка из 3.20.0 вышла без кода отрисовки: флаг был, но его никто не читал — вставка блока упала на ошибке типов PowerShell, а скрипт всё равно отчитался об успехе. Сейчас подложка действительно встроена в `DrawPanel`, и коммит прямо говорит об исправлении.
+
+## [3.20.0] - 2026-09-15
+
+### Added
+- Stage 6 of the menu rework: a frosted backdrop behind the panel, gated by `Vars::Menu::bEnableBlur` (on by default, one constant to turn off). It draws three nested translucent layers that fade outward plus a vertical depth gradient, so the menu reads as a surface above the game instead of a flat rectangle on top of it.
+  Этап 6 переработки меню: морозная подложка за панелью под флагом `Vars::Menu::bEnableBlur` (по умолчанию включена, выключение — одна константа). Она рисует три вложенных полупрозрачных слоя, затухающих наружу, плюс вертикальный градиент глубины, поэтому меню читается как поверхность над игрой, а не как плоский прямоугольник сверху.
+- Stage 7 polish: the version label became a proper pill badge (accent tint, accent outline, `MENU_SMALL` face) instead of bare text, and the scrollbar moved onto the 8 px grid (`Layout::kPadding/2` from the right edge) instead of the old magic 7 px.
+  Полировка этапа 7: подпись версии стала полноценным бейджем-пилюлей (акцентная заливка, акцентная обводка, начертание `MENU_SMALL`) вместо голого текста, а полоса прокрутки переехала на сетку 8 px (`Layout::kPadding/2` от правого края) вместо старого «магического» 7 px.
+
+### Note
+- The backdrop is an honest approximation, not a gaussian blur: `ISurface` exposes no UV textured rect, so a real blur still needs the material route (`dev/blurfilterx|y` over a render target copied through `IMatRenderContext`). That remains the open item; the flag and the layer structure are in place so the real implementation can slot in without touching the layout.
+  Подложка — честное приближение, а не гауссово размытие: у `ISurface` нет текстурного прямоугольника с UV, поэтому настоящему размытию всё ещё нужен путь через material system (`dev/blurfilterx|y` по render target, скопированному через `IMatRenderContext`). Это остаётся открытым пунктом; флаг и структура слоёв уже на месте, чтобы реальная реализация встала без правок разметки.
+
 ## [3.19.0] - 2026-09-15
 
 ### Added
