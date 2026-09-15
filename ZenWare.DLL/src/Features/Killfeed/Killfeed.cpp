@@ -1,4 +1,5 @@
 #include "Killfeed.h"
+#include "../../Util/Logger/Logger.h"
 #include "../Lang/Lang.h"
 #include "../Vars.h"
 #include "../../SDK/DrawManager/DrawManager.h"
@@ -104,6 +105,7 @@ bool CFeatures_Killfeed::PinKillerName(C_TerrorPlayer* pVictim, char* szOut, siz
 
 void CFeatures_Killfeed::OnTick()
 {
+	U::Log.Crumb("Killfeed::OnTick");
     if (!Vars::Killfeed::bEnabled || !I::EngineClient || !I::EngineClient->IsInGame())
     {
         if (!m_alive.empty() || !m_aEntries.empty()) { m_alive.clear(); m_aEntries.clear(); }

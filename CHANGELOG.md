@@ -3,7 +3,22 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.13.6] - 2026-09-15
+
+### Added
+- Crash breadcrumbs for the first uninstrumented calls in the Paint path:
+  `Visuals::UpdateThirdPerson`, `Visuals::UpdateFullbright`,
+  `Visuals::UpdateHideHands` and `Killfeed::OnTick`. A real crash log showed
+  `EXCEPTION 0xC0000005 at ZenWare.dll+0x0001C5ED` with the last breadcrumb
+  `Paint` - the fault is inside the module but before the first crumb-carrying
+  call, so these four calls are the narrowed candidate set. The next crash will
+  name the exact function.
+
+### Note
+- The faulting offset is not in the previously known list of crash offsets.
+
+
 ## [3.13.5] - 2026-09-15
 
 ### Changed / Изменено

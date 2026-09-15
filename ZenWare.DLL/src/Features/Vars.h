@@ -171,7 +171,7 @@ namespace Vars
 		inline bool bWatermarkFps = true;   // include the fps counter in the watermark
 		inline int nAccentPreset = 0;       // 0..4 preset palette, 5 = custom swatch
 		inline int nPanelAlpha = 244;       // panel opacity, 120..255
-		inline constexpr const char* kVersion = "v3.13.5"; // header badge + watermark
+		inline constexpr const char* kVersion = "v3.13.6"; // header badge + watermark
 		// Menu language: 0 EN, 1 RU, 2 DE... English by default
 		// (before Config.Load), stored in the config, switched by button and F7.
 		inline int nLang = 0;

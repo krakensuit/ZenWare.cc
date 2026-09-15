@@ -1,4 +1,5 @@
 #include "Visuals.h"
+#include "../../Util/Logger/Logger.h"
 
 #include "../Vars.h"
 #include "../Hitmarker/Hitmarker.h"
@@ -11,6 +12,7 @@ static const Color CLR_TEXT_HINT(140, 160, 152, 255);
 
 void CFeatures_Visuals::UpdateThirdPerson()
 {
+	U::Log.Crumb("Visuals::UpdateThirdPerson");
 	static bool s_bWasOn = false;
 	static int s_nLastDist = -1;
 	const bool bWant = Vars::Visuals::bThirdPerson && I::EngineClient && I::EngineClient->IsInGame();
@@ -46,6 +48,7 @@ void CFeatures_Visuals::UpdateThirdPerson()
 
 void CFeatures_Visuals::UpdateFullbright()
 {
+	U::Log.Crumb("Visuals::UpdateFullbright");
 	// Like 3rd person: ICvar only, never touch the console. On disable we
 	// set 0 back, otherwise fullbright sticks until the map restarts.
 	static bool s_bWasOn = false;
@@ -63,6 +66,7 @@ void CFeatures_Visuals::UpdateFullbright()
 
 void CFeatures_Visuals::UpdateHideHands()
 {
+	U::Log.Crumb("Visuals::UpdateHideHands");
 	// Like fullbright: ICvar only, never touch the console. On disable we
 	// set 1 back, otherwise the hands vanish until the map restarts.
 	static bool s_bWasOn = false;
