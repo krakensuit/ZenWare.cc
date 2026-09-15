@@ -105,6 +105,7 @@
     <ClCompile Include="src\Util\Interface\Interface.cpp" />
     <ClCompile Include="src\Util\Logger\Logger.cpp" />
     <ClCompile Include="src\Util\Fonts\FontLoader.cpp" />
+    <ResourceCompile Include="res\fonts.rc" />
     <ClCompile Include="src\Util\Math\Math.cpp" />
     <ClCompile Include="src\Util\NetVarManager\NetVarManager.cpp" />
     <ClCompile Include="src\Util\Offsets\Offsets.cpp" />

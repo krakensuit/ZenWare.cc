@@ -1,4 +1,5 @@
 #include "Menu.h"
+#include "../../Styles/Theme.h"
 #include "../Vars.h"
 #include "../../Util/Logger/Logger.h"
 #include "../Lang/Lang.h"

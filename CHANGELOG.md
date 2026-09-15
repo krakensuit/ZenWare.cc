@@ -3,6 +3,22 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.16.0] - 2026-09-15
+
+### Added
+- Embedded fonts are in the build now: the five provided faces (Inter Regular / Medium / SemiBold, JetBrains Mono Regular, Font Awesome 6 Free Solid) are compiled into `ZenWare.DLL` as RCDATA resources through `res\fonts.rc` (ids 300-304), so `Fonts::LoadAll` registers the real faces at startup instead of falling back. The DLL grows by ~2.5 MB.
+  Встроенные шрифты теперь в сборке: пять предоставленных начертаний (Inter Regular / Medium / SemiBold, JetBrains Mono Regular, Font Awesome 6 Free Solid) компилируются внутрь `ZenWare.DLL` как RCDATA-ресурсы через `res\fonts.rc` (идентификаторы 300-304), поэтому `Fonts::LoadAll` при запуске регистрирует настоящие начертания, а не уходит в фолбэк. Размер DLL растёт примерно на 2.5 МБ.
+- Stage 2 of the menu rework: style tokens. New `ZenWare.DLL\src\Styles\Theme.h` holds the palette (`bg`, `surface`, `surfaceHover`, `border`, `borderAccent`, `textPrimary`, `textSecondary`, `textDim`, `accent`, `accentDim`, `accentSoft`, `danger`, `success`), metrics (radii 6/8/12/16, spacing 4/8/12/16/24, font sizes 11/13/14/18/22) and timings (hover 150 ms, press 80 ms, tab 200 ms, stagger 30 ms per row, spring k=180 c=20).
+  Этап 2 переработки меню: токены стиля. Новый файл `ZenWare.DLL\src\Styles\Theme.h` содержит палитру (`bg`, `surface`, `surfaceHover`, `border`, `borderAccent`, `textPrimary`, `textSecondary`, `textDim`, `accent`, `accentDim`, `accentSoft`, `danger`, `success`), метрики (радиусы 6/8/12/16, отступы 4/8/12/16/24, размеры шрифтов 11/13/14/18/22) и тайминги (hover 150 мс, press 80 мс, вкладка 200 мс, stagger 30 мс на строку, пружина k=180 c=20).
+- New `ZenWare.DLL\src\Styles\Layout.h`: the 8 px grid (`Layout::G(units)`), target panel geometry 400x560 with header 48 / tabs 40 / footer 24, plus `Scale` for the upcoming HiDPI factor and `ClampX/ClampY` so the panel cannot be dragged off screen.
+  Новый `ZenWare.DLL\src\Styles\Layout.h`: сетка 8 px (`Layout::G(units)`), целевая геометрия панели 400x560 с шапкой 48 / табами 40 / футером 24, а также `Scale` под будущий множитель HiDPI и `ClampX/ClampY`, чтобы панель нельзя было утащить за пределы экрана.
+- `Menu.cpp` palette aliases now come from `Theme` instead of local literals, so the accent has a single definition path (the live value still follows `Vars::Menu::clrAccent`).
+  Псевдонимы палитры в `Menu.cpp` теперь берутся из `Theme`, а не из локальных литералов, поэтому у акцента один путь определения (живое значение по-прежнему следует за `Vars::Menu::clrAccent`).
+
+### Note
+- The panel size stays 320x480 in this stage on purpose: switching to 400x560 belongs to the composition stage, so nothing jumps visually in the meantime.
+  Размер панели на этом этапе сознательно остаётся 320x480: переход на 400x560 относится к этапу композиции, поэтому визуально ничего не «прыгает».
+
 ## [3.15.0] - 2026-09-15
 
 ### Added
