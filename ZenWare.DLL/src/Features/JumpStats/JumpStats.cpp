@@ -205,7 +205,7 @@ void CFeatures_JumpStats::Draw()
 			const int cx = G::Draw.m_nScreenW / 2;
 			const int cy = G::Draw.m_nScreenH / 2 - 60;
 			const Color clr = (nLive >= 90) ? Color(0, 255, 171, 255) : Color(235, 245, 240, 255);
-			G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy, clr, TXT_CENTERXY, "sync %d%%", nLive);
+			G::Draw.String(EFonts::MENU_MONO, cx, cy, clr, TXT_CENTERXY, "sync %d%%", nLive);
 		}
 	}
 
@@ -220,11 +220,11 @@ void CFeatures_JumpStats::Draw()
 
 	//ShowTick 0 = never fired: without the check the banner burns at spawn.
 	if (Vars::BunnyHop::nJbShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nJbShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nJbShowTick + 66)
-		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 18, Color(0, 255, 171, 255), TXT_CENTERXY, "JUMPBUG");
+		G::Draw.String(EFonts::MENU_MONO, cx, cy - 18, Color(0, 255, 171, 255), TXT_CENTERXY, "JUMPBUG");
 	if (Vars::BunnyHop::nEbShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nEbShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nEbShowTick + 66)
-		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 34, Color(255, 220, 0, 255), TXT_CENTERXY, "EDGEBUG");
+		G::Draw.String(EFonts::MENU_MONO, cx, cy - 34, Color(255, 220, 0, 255), TXT_CENTERXY, "EDGEBUG");
 	if (Vars::BunnyHop::nEjShowTick != 0 && I::GlobalVars->tickcount >= Vars::BunnyHop::nEjShowTick && I::GlobalVars->tickcount < Vars::BunnyHop::nEjShowTick + 66)
-		G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy - 50, Color(0, 200, 255, 255), TXT_CENTERXY, "EDGEJUMP");
+		G::Draw.String(EFonts::MENU_MONO, cx, cy - 50, Color(0, 200, 255, 255), TXT_CENTERXY, "EDGEJUMP");
 
 	const Color clrGood(0, 255, 171, 255);
 	const bool bGood = (m_last.syncPct >= 90 && m_last.strafes > 0);
@@ -244,17 +244,17 @@ void CFeatures_JumpStats::Draw()
 	char szMain[64] = { };
 	sprintf_s(szMain, sizeof(szMain), "%.0fu  pre %.0f  max %.0f  fall %.0f",
 		m_last.dist, m_last.pre, m_last.max, m_last.fall);
-	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy, Color(235, 245, 240, 255), TXT_CENTERXY, "%s", szMain);
+	G::Draw.String(EFonts::MENU_MONO, cx, cy, Color(235, 245, 240, 255), TXT_CENTERXY, "%s", szMain);
 
 	char szSub[64] = { };
 	sprintf_s(szSub, sizeof(szSub), "%d %s  %d%% %s%s%s",
 		m_last.strafes, Lang::T("strafes"), m_last.syncPct, Lang::T("sync"),
 		m_last.edge ? "  [edge]" : "",
 		m_last.eb ? "  [eb]" : "");
-	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy + 16, clrVerdict, TXT_CENTERXY, "%s", szSub);
+	G::Draw.String(EFonts::MENU_MONO, cx, cy + 16, clrVerdict, TXT_CENTERXY, "%s", szSub);
 
 	char szExtra[64] = { };
 	sprintf_s(szExtra, sizeof(szExtra), "H %.0fu  air %.2fs  |  jb %d  eb %d",
 		m_last.height, m_last.airSec, Vars::BunnyHop::nJbCount, Vars::BunnyHop::nEbCount);
-	G::Draw.String(EFonts::MENU_CONSOLAS, cx, cy + 32, Color(140, 160, 152, 255), TXT_CENTERXY, "%s", szExtra);
+	G::Draw.String(EFonts::MENU_MONO, cx, cy + 32, Color(140, 160, 152, 255), TXT_CENTERXY, "%s", szExtra);
 }

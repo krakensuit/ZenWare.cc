@@ -423,7 +423,7 @@ void CFeatures_Visuals::DrawOverlay()
 
 	if (Vars::Visuals::bOverlay)
 	{
-		G::Draw.String(EFonts::MENU_CONSOLAS, 8, G::Draw.m_nScreenH - 34,
+		G::Draw.String(EFonts::MENU_MONO, 8, G::Draw.m_nScreenH - 34,
 			CLR_TEXT_HINT, TXT_DEFAULT, "fps %4.0f | pos %.0f %.0f %.0f | hp %i",
 			s_flFpsAvg, vPos.x, vPos.y, vPos.z, pLocal->GetHealth());
 	}
@@ -452,7 +452,7 @@ void CFeatures_Visuals::DrawOverlay()
 				continue;
 			nCommons++;
 		}
-		G::Draw.String(EFonts::MENU_CONSOLAS, 8, G::Draw.m_nScreenH - 74,
+		G::Draw.String(EFonts::MENU_MONO, 8, G::Draw.m_nScreenH - 74,
 			(nCommons > 0) ? Color(255, 220, 0, 255) : CLR_TEXT_HINT, TXT_DEFAULT, "commons %d", nCommons);
 	}
 
@@ -462,7 +462,7 @@ void CFeatures_Visuals::DrawOverlay()
 		Color clrSpd = { 255, 255, 255, 255 };
 		if (flSpeed > 300) clrSpd = { 0, 255, 171, 255 };
 		if (flSpeed > 400) clrSpd = { 255, 220, 0, 255 };
-		G::Draw.String(EFonts::MENU_CONSOLAS, 8, G::Draw.m_nScreenH - 54,
+		G::Draw.String(EFonts::MENU_MONO, 8, G::Draw.m_nScreenH - 54,
 			clrSpd, TXT_DEFAULT, "speed %.0f u/s", flSpeed);
 	}
 
@@ -476,10 +476,10 @@ void CFeatures_Visuals::DrawOverlay()
 		const bool bAim = !Vars::Aimbot::nKey || (GetAsyncKeyState(Vars::Aimbot::nKey) & 0x8000);
 		const bool bHop = (GetAsyncKeyState(VK_SPACE) & 0x8000) != 0;
 		const int nBX = G::Draw.m_nScreenW - 228;
-		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 280, Color(140, 160, 152, 255), TXT_DEFAULT, "binds");
-		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 296, bAim ? Color(0, 255, 171, 255) : Color(120, 130, 126, 255), TXT_DEFAULT, "aimbot [%s]", szAim);
-		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 312, bHop ? Color(0, 255, 171, 255) : Color(120, 130, 126, 255), TXT_DEFAULT, "bhop [Space]");
-		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 328, Color(120, 130, 126, 255), TXT_DEFAULT, "menu [%s]", szMenu);
-		G::Draw.String(EFonts::MENU_CONSOLAS, nBX, 344, Color(120, 130, 126, 255), TXT_DEFAULT, "panic [%s]", szPanic);
+		G::Draw.String(EFonts::MENU_MONO, nBX, 280, Color(140, 160, 152, 255), TXT_DEFAULT, "binds");
+		G::Draw.String(EFonts::MENU_MONO, nBX, 296, bAim ? Color(0, 255, 171, 255) : Color(120, 130, 126, 255), TXT_DEFAULT, "aimbot [%s]", szAim);
+		G::Draw.String(EFonts::MENU_MONO, nBX, 312, bHop ? Color(0, 255, 171, 255) : Color(120, 130, 126, 255), TXT_DEFAULT, "bhop [Space]");
+		G::Draw.String(EFonts::MENU_MONO, nBX, 328, Color(120, 130, 126, 255), TXT_DEFAULT, "menu [%s]", szMenu);
+		G::Draw.String(EFonts::MENU_MONO, nBX, 344, Color(120, 130, 126, 255), TXT_DEFAULT, "panic [%s]", szPanic);
 	}
 }

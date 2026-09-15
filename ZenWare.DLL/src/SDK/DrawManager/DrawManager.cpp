@@ -1,4 +1,5 @@
 #include "DrawManager.h"
+#include "../../Util/Logger/Logger.h"
 
 namespace {
 	// Our literals are valid UTF-8 (/utf-8). Nicknames from the engine are ANSI.
@@ -16,18 +17,50 @@ void CGlobal_DrawManager::Init()
 {
 	if (!I::MatSystemSurface)
 		return;
-	m_Fonts[EFonts::DEBUG]         = { "Consolas",  16, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::ESP]           = { "Tahoma",    11, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::ESP_NAME]      = { "Arial",     14, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::ESP_WEAPON]    = { "Verdana",   12, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::MENU_TAHOMA]   = { "Tahoma",    12, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::MENU_CONSOLAS] = { "Consolas",  12, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::MENU_VERDANA]  = { "Verdana",   12, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::MENU_ARIAL]    = { "Arial",     12, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
-	m_Fonts[EFonts::MENU_TAB]      = { "Verdana",   30, FW_HEAVY   , EFontFlags::FONTFLAG_OUTLINE | EFontFlags::FONTFLAG_ANTIALIAS };
+		// Development and ESP faces stay on system fonts: they must always exist.
+	m_Fonts[EFonts::DEBUG]      = { "Consolas", 16, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
+	m_Fonts[EFonts::ESP]        = { "Tahoma",   11, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
+	m_Fonts[EFonts::ESP_NAME]   = { "Arial",    14, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
+	m_Fonts[EFonts::ESP_WEAPON] = { "Verdana",  12, FW_DONTCARE, EFontFlags::FONTFLAG_OUTLINE };
+
+	// Menu faces: Inter / JetBrains Mono / Font Awesome with antialiasing and a
+	// soft drop shadow instead of the old outline, which made the menu look dated.
+	const int nMenuFlags = EFontFlags::FONTFLAG_ANTIALIAS | EFontFlags::FONTFLAG_DROPSHADOW;
+
+	m_Fonts[EFonts::MENU_BODY]   = { "Inter",               13, FW_MEDIUM,   nMenuFlags };
+	m_Fonts[EFonts::MENU_SMALL]  = { "Inter",               11, FW_DONTCARE, nMenuFlags };
+	m_Fonts[EFonts::MENU_HEADER] = { "Inter",               18, FW_SEMIBOLD, nMenuFlags };
+	m_Fonts[EFonts::MENU_MONO]   = { "JetBrains Mono",      12, FW_DONTCARE, nMenuFlags };
+	m_Fonts[EFonts::MENU_ICONS]  = { "Font Awesome 6 Free", 12, FW_DONTCARE, nMenuFlags };
+	m_Fonts[EFonts::MENU_TAB]    = { "Inter",               30, FW_HEAVY,    nMenuFlags };
+
+	// Fallback chain: if a family cannot be created, retry with system fonts so the
+	// menu never renders without text.
+	const char* aFallback[3] = { "Segoe UI Variable", "Segoe UI", "Tahoma" };
 
 	for (std::pair<const EFonts, CFont>& f : m_Fonts)
-		I::MatSystemSurface->SetFontGlyphSet(f.second.m_hFont = I::MatSystemSurface->CreateFont(), f.second.m_szName, f.second.m_nTall, f.second.m_nWeight, 0, 0, f.second.m_nFlags, 0, 0);
+	{
+		f.second.m_hFont = I::MatSystemSurface->CreateFont();
+
+		bool bOk = I::MatSystemSurface->SetFontGlyphSet(f.second.m_hFont, f.second.m_szName,
+			f.second.m_nTall, f.second.m_nWeight, 0, 0, f.second.m_nFlags, 0, 0);
+
+		if (!bOk)
+		{
+			for (int i = 0; i < 3 && !bOk; ++i)
+			{
+				bOk = I::MatSystemSurface->SetFontGlyphSet(f.second.m_hFont, aFallback[i],
+					f.second.m_nTall, f.second.m_nWeight, 0, 0, f.second.m_nFlags, 0, 0);
+
+				if (bOk)
+					U::Log.Write("Draw: %s -> fallback %s", f.second.m_szName, aFallback[i]);
+			}
+		}
+
+		U::Log.Write("Draw: font %s h=%d w=%d flags=0x%X hFont=%d %s",
+			f.second.m_szName, f.second.m_nTall, f.second.m_nWeight, f.second.m_nFlags,
+			static_cast<int>(f.second.m_hFont), bOk ? "ok" : "FAILED");
+	}
 }
 
 void CGlobal_DrawManager::String(const EFonts& font, int x, int y, const Color& clr, const short align, const char* const str, ...)
@@ -206,4 +239,39 @@ void CGlobal_DrawManager::Triangle(Vector2D* v, const Color clr)
 	I::MatSystemSurface->DrawSetTexture(s_nTexture);
 	I::MatSystemSurface->DrawSetColor(clr);
 	I::MatSystemSurface->DrawTexturedPolygon(3, Vertices, true);
+}
+
+void CGlobal_DrawManager::SetTexture(const int nTextureId)
+{
+	if (!I::MatSystemSurface)
+		return;
+
+	I::MatSystemSurface->DrawSetTexture(nTextureId);
+}
+
+void CGlobal_DrawManager::DrawTexturedRect(const int x, const int y, const int w, const int h)
+{
+	if (!I::MatSystemSurface)
+		return;
+
+	I::MatSystemSurface->DrawTexturedRect(x, y, x + w, y + h);
+}
+
+void CGlobal_DrawManager::ResetTexture()
+{
+	if (!I::MatSystemSurface)
+		return;
+
+	I::MatSystemSurface->DrawSetTexture(0);
+}
+
+void CGlobal_DrawManager::GetTextureSize(const int nTextureId, int& nWide, int& nTall)
+{
+	nWide = 0;
+	nTall = 0;
+
+	if (!I::MatSystemSurface)
+		return;
+
+	I::MatSystemSurface->DrawGetTextureSize(nTextureId, nWide, nTall);
 }

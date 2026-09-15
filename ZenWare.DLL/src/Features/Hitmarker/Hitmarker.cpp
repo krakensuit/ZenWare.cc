@@ -374,9 +374,9 @@ void CFeatures_Hitmarker::Draw()
 		const int nAcc = (m_nShots > 0) ? (m_nHits * 100 / m_nShots) : 0;
 		const int nX = G::Draw.m_nScreenW - 228;
 		const int nY0 = G::Draw.m_nScreenH - 130;
-		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, "session");
-		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0 + 16, Color(235, 245, 240, 255), TXT_DEFAULT, "hits %d / shots %d", m_nHits, m_nShots);
-		G::Draw.String(EFonts::MENU_CONSOLAS, nX, nY0 + 32, Color(0, 255, 171, 255), TXT_DEFAULT, "acc %d%%  kills %d", nAcc, m_nKills);
+		G::Draw.String(EFonts::MENU_MONO, nX, nY0, Color(140, 160, 152, 255), TXT_DEFAULT, "session");
+		G::Draw.String(EFonts::MENU_MONO, nX, nY0 + 16, Color(235, 245, 240, 255), TXT_DEFAULT, "hits %d / shots %d", m_nHits, m_nShots);
+		G::Draw.String(EFonts::MENU_MONO, nX, nY0 + 32, Color(0, 255, 171, 255), TXT_DEFAULT, "acc %d%%  kills %d", nAcc, m_nKills);
 	}
 
 	// Damage log: bottom right above the session stats, entries live 4 s.
@@ -395,7 +395,7 @@ void CFeatures_Hitmarker::Draw()
 				continue;
 			const int nA = (int)(255.0f * (1.0f - flAge / 4.0f));
 			const Color& c = m_aLog[i].clr;
-			G::Draw.String(EFonts::MENU_CONSOLAS, nLX, nLY, Color(c.r(), c.g(), c.b(), nA), TXT_DEFAULT, "%s", m_aLog[i].szText);
+			G::Draw.String(EFonts::MENU_MONO, nLX, nLY, Color(c.r(), c.g(), c.b(), nA), TXT_DEFAULT, "%s", m_aLog[i].szText);
 			nLY += 16;
 		}
 	}

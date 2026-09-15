@@ -14,10 +14,13 @@ enum class EFonts {
 	ESP,
 	ESP_NAME,
 	ESP_WEAPON,
-	MENU_TAHOMA,
-	MENU_CONSOLAS,
-	MENU_VERDANA,
-	MENU_ARIAL,
+	// Menu faces: custom .ttf (Inter / JetBrains Mono / Font Awesome) with a
+	// system fallback when the resources are absent.
+	MENU_BODY,
+	MENU_SMALL,
+	MENU_HEADER,
+	MENU_MONO,
+	MENU_ICONS,
 	MENU_TAB,
 	FONT_LAST
 };
@@ -48,6 +51,13 @@ public:
 	void OutlinedCircle(const int x, const int y, const int r, const int s, const Color clr);
 	void Circle(const int x, const int y, const int r, const int s, const Color clr);
 	void Triangle(Vector2D* v, const Color clr);
+
+	// Texture plumbing (used by the blur pass in a later step). ISurface has no
+	// UV variant, so the rect is drawn 1:1 from the bound texture.
+	void SetTexture(const int nTextureId);
+	void DrawTexturedRect(const int x, const int y, const int w, const int h);
+	void ResetTexture();
+	void GetTextureSize(const int nTextureId, int& nWide, int& nTall);
 
 public:
 	int GetFontHeight(const EFonts& font) const;

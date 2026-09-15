@@ -104,6 +104,7 @@
     <ClCompile Include="src\Util\Hook\MinHook\trampoline.c" />
     <ClCompile Include="src\Util\Interface\Interface.cpp" />
     <ClCompile Include="src\Util\Logger\Logger.cpp" />
+    <ClCompile Include="src\Util\Fonts\FontLoader.cpp" />
     <ClCompile Include="src\Util\Math\Math.cpp" />
     <ClCompile Include="src\Util\NetVarManager\NetVarManager.cpp" />
     <ClCompile Include="src\Util\Offsets\Offsets.cpp" />
@@ -208,6 +209,7 @@
     <ClInclude Include="src\Util\Hook\MinHook\trampoline.h" />
     <ClInclude Include="src\Util\Interface\Interface.h" />
     <ClInclude Include="src\Util\Logger\Logger.h" />
+    <ClInclude Include="src\Util\Fonts\FontLoader.h" />
     <ClInclude Include="src\Util\Math\Math.h" />
     <ClInclude Include="src\Util\Math\Vector\Vector.h" />
     <ClInclude Include="src\Util\Math\Vector\Vector2D.h" />

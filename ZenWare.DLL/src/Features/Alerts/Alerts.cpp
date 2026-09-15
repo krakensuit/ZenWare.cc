@@ -113,7 +113,7 @@ void CFeatures_Alerts::Render()
 			const float flPulse = 0.6f + 0.4f * sinf((float)(GetTickCount64() % 6283) / 1000.0f * 6.0f);
 			Color clr(255, (int)(60 + 40 * (1.0f - flPulse)), (int)(60 + 40 * (1.0f - flPulse)), 255);
 			nY += Pill(EFonts::MENU_TAB, szPinTitle, clr, Color(255, 70, 70, 255), nCX, nY) + 4;
-			nY += Pill(EFonts::MENU_CONSOLAS, Lang::T("wriggle WASD+mouse"), Color(235, 245, 240, 255), Color(0, 255, 171, 255), nCX, nY) + 6;
+			nY += Pill(EFonts::MENU_MONO, Lang::T("wriggle WASD+mouse"), Color(235, 245, 240, 255), Color(0, 255, 171, 255), nCX, nY) + 6;
 		}
 	}
 	if (bTank)
@@ -135,7 +135,7 @@ void CFeatures_Alerts::Render()
 			G::Draw.OutlinedRect(nBX, nY, nBW, 10, Color(0, 0, 0, 180));
 			char szHp[32] = { };
 			sprintf_s(szHp, "%d", nHp > 0 ? nHp : 0);
-			G::Draw.String(EFonts::MENU_CONSOLAS, nCX, nY - 1, Color(255, 255, 255, 255), TXT_CENTERXY, "%s", szHp);
+			G::Draw.String(EFonts::MENU_MONO, nCX, nY - 1, Color(255, 255, 255, 255), TXT_CENTERXY, "%s", szHp);
 			nY += 16;
 		}
 	}
@@ -293,9 +293,9 @@ void CFeatures_Alerts::Render()
 			G::Draw.GradientRect(nX, nSY0, nX + nPW, nSY0 + nPH, Color(20, 22, 21, 215), Color(10, 11, 10, 215), false);
 			G::Draw.OutlinedRect(nX, nSY0, nPW, nPH, Color(0, 0, 0, 200));
 			G::Draw.Rect(nX + 1, nSY0 + 1, 3, nPH - 2, Color(0, 255, 171, 255));
-			G::Draw.String(EFonts::MENU_CONSOLAS, nX + 12, nSY0 + 6, Color(140, 160, 152, 255), TXT_DEFAULT, "%s", "SI NEARBY");
+			G::Draw.String(EFonts::MENU_MONO, nX + 12, nSY0 + 6, Color(140, 160, 152, 255), TXT_DEFAULT, "%s", "SI NEARBY");
 			for (int i = 0; i < nRows; i++)
-				G::Draw.String(EFonts::MENU_CONSOLAS, nX + 12, nSY0 + 24 + i * nLH, Color(255, 120, 80, 255), TXT_DEFAULT, "%s %.0fm", aSI[i].szName, (double)aSI[i].flD);
+				G::Draw.String(EFonts::MENU_MONO, nX + 12, nSY0 + 24 + i * nLH, Color(255, 120, 80, 255), TXT_DEFAULT, "%s %.0fm", aSI[i].szName, (double)aSI[i].flD);
 		}
 	}
 }

@@ -1,4 +1,5 @@
 #include "Entry.h"
+#include "../Util/Fonts/FontLoader.h"
 
 #include <csignal>
 #include <exception>
@@ -282,6 +283,9 @@ void CGlobal_ModuleEntry::Load()
 	}
 
 	U::Log.Write("[*] Initializing draw manager (fonts) ...");
+	// Custom .ttf faces must be registered before the VGUI fonts are created.
+	Fonts::LoadAll();
+
 	G::Draw.Init();
 	U::Log.Write("[+] Draw manager ready.");
 
