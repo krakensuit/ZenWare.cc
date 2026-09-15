@@ -3,6 +3,18 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.21.0] - 2026-09-15
+
+### Fixed
+- The RGB "ZenWare.cc" wordmark no longer throws its colour. The hue used to be recomputed as `float(GetTickCount64()) / 38`, i.e. a value that starts near zero and grows for the whole uptime of the machine while sitting inside a `float`. A float keeps roughly seven significant digits, so the step between representable values grows with the magnitude: after long uptime the hue advances in visible jumps instead of a smooth sweep, and the cycle never looks endless. The phase is now accumulated frame by frame in a small float that is wrapped every frame, so it stays in `0..360` with full precision forever.
+  RGB-надпись «ZenWare.cc» больше не «бросает» цвет. Раньше оттенок пересчитывался как `float(GetTickCount64()) / 38`, то есть величина, которая начинается около нуля и растёт всё время аптайма машины, находясь внутри `float`. Float хранит примерно семь значащих цифр, поэтому шаг между представимыми значениями растёт вместе с величиной: при большом аптайме оттенок идёт видимыми ступеньками вместо плавного хода, и цикл перестаёт выглядеть вечным. Теперь фаза накапливается покадрово в небольшом float и заворачивается каждый кадр, поэтому всегда остаётся в диапазоне `0..360` с полной точностью.
+- The same defect existed in the loader window wordmark, which is drawn with GDI; both implementations now share the wrapped-phase approach.
+  Тот же дефект был в надписи окна лоадера, которая рисуется через GDI; теперь обе реализации используют один подход с завёрнутой фазой.
+
+### Note
+- Everything else about the logo is unchanged on purpose: 38 ms per degree, the 5-degree drift per letter, the dark glow at value 0.35, and the eight offset copies around the text.
+  Всё остальное в логотипе намеренно не менялось: 38 мс на градус, дрейф 5 градусов на букву, тёмное свечение со значением 0.35 и восемь смещённых копий вокруг текста.
+
 ## [3.20.1] - 2026-09-15
 
 ### Fixed
