@@ -3,6 +3,16 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.18.0] - 2026-09-15
+
+### Changed
+- Stage 4 of the menu rework: the controls now read their geometry from the style tokens instead of local magic numbers. Checkbox and action-button rows take their padding from `Layout::kPadding` (16 px, the same gutter as the header and footer) and a uniform height of `Layout::G(3)+4` (28 px), so rows line up with the panel grid like the tabs do.
+  Этап 4 переработки меню: контролы берут геометрию из токенов стиля, а не из локальных «магических» чисел. Строки чекбоксов и кнопок-действий получают отступ из `Layout::kPadding` (16 px, тот же гаттер, что у шапки и футера) и единую высоту `Layout::G(3)+4` (28 px), поэтому строки выравниваются по сетке панели так же, как вкладки.
+- The toggle is now 32x18 (`Theme::Size::toggleW/toggleH`) instead of 30x14, i.e. a bigger and easier click target, and the knob travel is computed from the knob radius (`knobR+1` start, `toggleW-(knobR*2+2)` travel) so the knob stays inside the track at both ends instead of relying on a hardcoded 14.
+  Тумблер теперь 32x18 (`Theme::Size::toggleW/toggleH`) вместо 30x14 — цель для клика крупнее, а ход кноба считается из радиуса кноба (старт `knobR+1`, ход `toggleW-(knobR*2+2)`), поэтому кноб остаётся внутри дорожки на обоих концах, а не держится на зашитом 14.
+- Slider and label rows express their 20 px indent and 40 px width inset through `Layout::kPadding+4`, and the slider knob radius and track height come from `Theme::Size`, so the whole control set now shares one source of numbers.
+  Строки слайдера и подписи выражают отступ 20 px и сужение ширины 40 px через `Layout::kPadding+4`, а радиус кноба и высота дорожки слайдера берутся из `Theme::Size`, поэтому весь набор контролов теперь делит один источник чисел.
+
 ## [3.17.0] - 2026-09-15
 
 ### Changed
