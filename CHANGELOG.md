@@ -3,6 +3,22 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.15.0] - 2026-09-15
+
+### Added
+- Stage 1 of the in-game menu rework: custom fonts. New module `ZenWare.DLL/src/Util/Fonts/FontLoader.h|.cpp` registers embedded `.ttf` faces from RCDATA resources through `AddFontMemResourceEx` (with the `nFonts > 0` check) and releases them with `RemoveFontMemResourceEx` on unload. Resource ids live in `Fonts::EResource` (300-304), so nothing breaks while the font files are not in the repository yet - a missing resource is logged and the renderer falls back.
+  Этап 1 переработки внутриигрового меню: кастомные шрифты. Новый модуль `ZenWare.DLL/src/Util/Fonts/FontLoader.h|.cpp` регистрирует встроенные `.ttf` из RCDATA-ресурсов через `AddFontMemResourceEx` (с проверкой `nFonts > 0`) и освобождает их через `RemoveFontMemResourceEx` при выгрузке. Идентификаторы ресурсов живут в `Fonts::EResource` (300-304), поэтому ничего не ломается, пока файлы шрифтов не добавлены в репозиторий: отсутствующий ресурс логируется, а рендер уходит на запасной шрифт.
+- Menu faces replaced: `MENU_TAHOMA / MENU_CONSOLAS / MENU_VERDANA / MENU_ARIAL` are gone, replaced by `MENU_BODY` (Inter Medium 13), `MENU_SMALL` (Inter Regular 11), `MENU_HEADER` (Inter SemiBold 18), `MENU_MONO` (JetBrains Mono Regular 12), `MENU_ICONS` (Font Awesome 6 Free 12); `MENU_TAB` moved to Inter. All call sites across five feature files were updated.
+  Шрифты меню заменены: `MENU_TAHOMA / MENU_CONSOLAS / MENU_VERDANA / MENU_ARIAL` удалены, вместо них `MENU_BODY` (Inter Medium 13), `MENU_SMALL` (Inter Regular 11), `MENU_HEADER` (Inter SemiBold 18), `MENU_MONO` (JetBrains Mono Regular 12), `MENU_ICONS` (Font Awesome 6 Free 12); `MENU_TAB` переведён на Inter. Обновлены все места вызова в пяти файлах фич.
+- `FONTFLAG_OUTLINE` is replaced by `FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW` for the menu faces, with a fallback chain Inter -> Segoe UI Variable -> Segoe UI -> Tahoma and one log line per font at init, so it is immediately visible which face was used.
+  `FONTFLAG_OUTLINE` заменён на `FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW` для шрифтов меню, добавлена цепочка фолбэков Inter -> Segoe UI Variable -> Segoe UI -> Tahoma и по одной строке лога на шрифт при инициализации, чтобы сразу видеть, какой шрифт использован.
+- Texture plumbing in `G::Draw` for the future blur pass: `SetTexture`, `DrawTexturedRect`, `ResetTexture`, `GetTextureSize` over `ISurface`. Note: `ISurface` has no UV variant, so the rect is drawn 1:1 - UV support would need the material system (stage 6).
+  Подготовка текстур в `G::Draw` для будущего blur: `SetTexture`, `DrawTexturedRect`, `ResetTexture`, `GetTextureSize` поверх `ISurface`. Замечание: у `ISurface` нет варианта с UV, поэтому прямоугольник рисуется 1:1 - для UV понадобится material system (этап 6).
+
+### Note
+- The `.ttf` files are not in the repository yet; the mechanism is complete and safe without them (fallback is active). To enable the new faces, place the files under `ZenWare.DLL\res\fonts\` and add them to `resource.rc` with ids 300-304.
+  Файлы `.ttf` в репозитории пока нет; механизм полон и безопасен без них (работает фолбэк). Чтобы включить новые начертания, положи файлы в `ZenWare.DLL\res\fonts\` и добавь их в `resource.rc` с идентификаторами 300-304.
+
 ## [3.14.0] - 2026-09-15
 
 ### Added
