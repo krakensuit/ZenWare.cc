@@ -7,9 +7,9 @@
 // THE single place holding the release version. Change it here and it is picked up
 // automatically by the window title, the splash and the exe VERSIONINFO.
 #define ZENWARE_VER_MAJOR 3
-#define ZENWARE_VER_MINOR 20
-#define ZENWARE_VER_PATCH 1
+#define ZENWARE_VER_MINOR 21
+#define ZENWARE_VER_PATCH 0
 
-#define ZENWARE_VER_STR "3.20.1"
+#define ZENWARE_VER_STR "3.21.0"
 
 

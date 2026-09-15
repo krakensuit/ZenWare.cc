@@ -132,24 +132,35 @@ void InitFonts(HWND hwnd){
  g_fSmall=CreateFontW(h3,0,0,0,600,FALSE,FALSE,FALSE,DEFAULT_CHARSET,0,0,0,0,s_face);
 }
 // Rainbow neon logo: glow + shimmering letters
+// Rainbow neon logo: glow + shimmering letters
 void DrawRgbLogo(HDC dc, int x, int y){
  const wchar_t* txt=L"ZenWare.cc";
  SIZE sz={0,0};
  auto oldF=SelectObject(dc,g_fTitle);
  SetBkMode(dc,TRANSPARENT);
  GetTextExtentPoint32W(dc,txt,(int)wcslen(txt),&sz);
- const float hue=fmodf(GetTickCount64()/38.0f,360.0f);
+ // The colour phase is accumulated in a small float and wrapped every frame.
+ // The old tick/38 kept growing inside a float, which loses resolution after
+ // days of uptime (the ULP grows with magnitude) and made the hue step in
+ // visible jumps. A wrapped phase stays exact, so the cycle is endless.
+ static ULONGLONG s_ullPrev=0; static float s_flHue=0.0f;
+ const ULONGLONG ullNow=GetTickCount64();
+ const float flDelta=(s_ullPrev==0)?0.0f:(float)(ullNow-s_ullPrev);
+ s_ullPrev=ullNow;
+ s_flHue+=flDelta/38.0f;
+ while(s_flHue>=360.0f) s_flHue-=360.0f;
+ const float hue=s_flHue;
  // glow: 8 offset copies around, dark rainbow color
  for(int dx=-2;dx<=2;dx+=2) for(int dy=-2;dy<=2;dy+=2){
   if(!dx&&!dy) continue;
-   SetTextColor(dc,Hsv(hue,0.9f,0.35f));
+  SetTextColor(dc,Hsv(hue,0.9f,0.35f));
   TextOutW(dc,x+dx,y+dy,txt,(int)wcslen(txt));
  }
  // letters in rainbow colors
  int cx=x;
  for(const wchar_t* p=txt;*p;++p){
   int idx=(int)(p-txt);
-   SetTextColor(dc,Hsv(hue+idx*5.0f,0.85f,1.0f));
+  SetTextColor(dc,Hsv(hue+idx*5.0f,0.85f,1.0f));
   wchar_t ch[2]={*p,0};
   SIZE cs={0,0}; GetTextExtentPoint32W(dc,ch,1,&cs);
   TextOutW(dc,cx,y,ch,1);

@@ -208,7 +208,17 @@ Color HsvToColor(float h, float s, float v){
 
 void DrawRgbLogo(int x, int y){
  static const char* txt="ZenWare.cc";
- const float hue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+ // The colour phase is accumulated in a small float and wrapped every frame.
+ // The old tick/38 kept growing inside a float, which loses resolution after
+ // days of uptime (the ULP grows with magnitude) and made the hue step in
+ // visible jumps. A wrapped phase stays exact, so the cycle is endless.
+ static ULONGLONG s_ullPrev=0; static float s_flHue=0.0f;
+ const ULONGLONG ullNow=GetTickCount64();
+ const float flDelta=(s_ullPrev==0)?0.0f:(float)(ullNow-s_ullPrev);
+ s_ullPrev=ullNow;
+ s_flHue+=flDelta/38.0f;
+ while(s_flHue>=360.0f) s_flHue-=360.0f;
+ const float hue=s_flHue;
  for(int dx=-2;dx<=2;dx+=2) for(int dy=-2;dy<=2;dy+=2){
   if(!dx&&!dy) continue;
   G::Draw.String(EFonts::MENU_TAB,x+dx,y+dy,HsvToColor(hue,0.9f,0.35f),TXT_DEFAULT,"%s",txt);
