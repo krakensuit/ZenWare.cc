@@ -3,6 +3,12 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.21.2] - 2026-09-15
+
+### Fixed
+- The loader had four more places with the same growing-tick hue: the party accents `Acc()` and `Acc2()` plus two animated elements. All of them now use the shared wrapped phase helper, so no rainbow in the product can step with uptime any more.
+  В лоадере было ещё четыре места с тем же растущим тиком: party-акценты `Acc()` и `Acc2()` плюс две анимированные элементы. Все они переведены на общий helper с завёрнутой фазой, поэтому ни одна радуга в продукте больше не может «шагать» вместе с аптаймом.
+
 ## [3.21.0] - 2026-09-15
 
 ### Fixed
