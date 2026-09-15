@@ -3,7 +3,22 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
-## [Unreleased]
+## [Unreleased]
+## [3.13.5] - 2026-09-15
+
+### Changed / Изменено
+- Direct2D interface: the button captions are no longer hardcoded English. The
+  renderer now receives them from the very controls that already carry the
+  eight-language strings (`LoaderUtil::SW`), so `LAUNCH GAME` / `INJECT` /
+  `LAUNCH EXTERNAL` are localised in the D2D path exactly as they are in the GDI
+  path, and there is a single source of truth for the wording.
+  Интерфейс Direct2D: подписи кнопок больше не жёстко английские. Рендерер
+  получает их из тех же контролов, в которых уже лежат строки на восьми языках
+  (`LoaderUtil::SW`), поэтому `LAUNCH GAME` / `INJECT` / `LAUNCH EXTERNAL`
+  локализованы в D2D-пути ровно так же, как в GDI-пути, и формулировка имеет
+  один источник истины.
+
+
 ## [3.13.2] - 2026-09-15
 
 ### Changed / Изменено

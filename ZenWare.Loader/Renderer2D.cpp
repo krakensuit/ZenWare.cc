@@ -640,7 +640,8 @@ namespace Zen2D
 	// --------------------------------- frame ---------------------------------
 
 	void Renderer2D::RenderFrame(const FrameState_t& st, const Theme_t& th,
-		const wchar_t* wszStatus, const wchar_t* wszVersion, const wchar_t* wszLang)
+		const wchar_t* wszStatus, const wchar_t* wszVersion, const wchar_t* wszLang,
+		const wchar_t* wszLaunch, const wchar_t* wszInject)
 	{
 		if (!m_bReady || !m_target)
 			return;
@@ -661,7 +662,7 @@ namespace Zen2D
 		DrawHeader(st);
 		DrawLogo(st);
 		DrawModePill(st);
-		DrawButtons(st);
+		DrawButtons(st, wszLaunch, wszInject);
 		DrawProgress(st);
 		DrawStatus(st, wszStatus);
 		DrawFooter(st, wszVersion, wszLang);
@@ -785,7 +786,7 @@ namespace Zen2D
 			DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
 	}
 
-	void Renderer2D::DrawButtons(const FrameState_t& st)
+	void Renderer2D::DrawButtons(const FrameState_t& st, const wchar_t* wszLaunch, const wchar_t* wszInject)
 	{
 		const float w = static_cast<float>(m_w);
 
@@ -793,7 +794,8 @@ namespace Zen2D
 		const D2D1_RECT_F b1 = RectF(24.0f, 92.0f, w - 24.0f, 128.0f);
 		FillRound(b1, 8.0f, m_theme.surface, 0.55f + 0.15f * st.hoverLaunch);
 		StrokeRound(b1, 8.0f, m_theme.border, 0.40f, 1.0f);
-		Text(L"LAUNCH GAME", b1, m_theme.textPrimary, DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
+		Text((wszLaunch && wszLaunch[0]) ? wszLaunch : L"LAUNCH GAME", b1, m_theme.textPrimary,
+			DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_TEXT_ALIGNMENT_CENTER);
 
 		// Primary button: mint with dark text - readable even on glass.
 		const D2D1_RECT_F b2 = RectF(24.0f, 136.0f, w - 24.0f, 188.0f);

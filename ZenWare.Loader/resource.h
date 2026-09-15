@@ -8,8 +8,8 @@
 // automatically by the window title, the splash and the exe VERSIONINFO.
 #define ZENWARE_VER_MAJOR 3
 #define ZENWARE_VER_MINOR 13
-#define ZENWARE_VER_PATCH 4
+#define ZENWARE_VER_PATCH 5
 
-#define ZENWARE_VER_STR "3.13.4"
+#define ZENWARE_VER_STR "3.13.5"
 
 

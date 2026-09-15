@@ -35,7 +35,8 @@ namespace Zen2D
 		bool IsUsingComposition() const { return m_bComposition; }
 
 		void RenderFrame(const FrameState_t& st, const Theme_t& th,
-			const wchar_t* wszStatus, const wchar_t* wszVersion, const wchar_t* wszLang);
+			const wchar_t* wszStatus, const wchar_t* wszVersion, const wchar_t* wszLang,
+			const wchar_t* wszLaunch, const wchar_t* wszInject);
 
 		void SetTheme(const Theme_t& th);
 
@@ -45,7 +46,7 @@ namespace Zen2D
 		void DrawHeader(const FrameState_t& st);
 		void DrawLogo(const FrameState_t& st);
 		void DrawModePill(const FrameState_t& st);
-		void DrawButtons(const FrameState_t& st);
+		void DrawButtons(const FrameState_t& st, const wchar_t* wszLaunch, const wchar_t* wszInject);
 		void DrawProgress(const FrameState_t& st);
 		void DrawStatus(const FrameState_t& st, const wchar_t* wszText);
 		void DrawFooter(const FrameState_t& st, const wchar_t* wszVersion, const wchar_t* wszLang);

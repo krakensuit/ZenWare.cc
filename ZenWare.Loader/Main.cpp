@@ -741,7 +741,8 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
       wchar_t wszS[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszS,127);
       wchar_t wszV[32]={}; swprintf_s(wszV,L"v%ls",ZENWARE_VER_WSTR);
       wchar_t wszL[32]={}; swprintf_s(wszL,L"%ls",LoaderUtil::LangCode());
-      Zen2D::R().RenderFrame(fst2, Zen2D::Dark(), wszS, wszV, wszL);
+ wchar_t wszL1[64]={}; wchar_t wszL2[64]={}; HWND bL1=GetDlgItem(h,IDC_LAUNCH), bL2=GetDlgItem(h,IDC_INJECT); if(bL1) GetWindowTextW(bL1,wszL1,63); if(bL2) GetWindowTextW(bL2,wszL2,63);
+      Zen2D::R().RenderFrame(fst2, Zen2D::Dark(), wszS, wszV, wszL, wszL1, wszL2);
      }
     // repaint the launch button so its rainbow border animates along with the logo
     if(!Zen2D::R().Enabled()){ HWND bl=GetDlgItem(h,IDC_LAUNCH); if(bl) InvalidateRect(bl,nullptr,FALSE); }
@@ -819,7 +820,8 @@ LRESULT CALLBACK WndProc(HWND h,UINT m,WPARAM w,LPARAM l){
     wchar_t wszStatus2[128]={}; if(g_hStatus) GetWindowTextW(g_hStatus,wszStatus2,127);
     wchar_t wszVer2[32]={}; swprintf_s(wszVer2,L"v%ls",ZENWARE_VER_WSTR);
     wchar_t wszLang2[32]={}; swprintf_s(wszLang2,L"%ls",LoaderUtil::LangCode());
-    Zen2D::R().RenderFrame(fst, Zen2D::Dark(), wszStatus2, wszVer2, wszLang2);
+ wchar_t wszL1[64]={}; wchar_t wszL2[64]={}; HWND bL1=GetDlgItem(h,IDC_LAUNCH), bL2=GetDlgItem(h,IDC_INJECT); if(bL1) GetWindowTextW(bL1,wszL1,63); if(bL2) GetWindowTextW(bL2,wszL2,63);
+    Zen2D::R().RenderFrame(fst, Zen2D::Dark(), wszStatus2, wszVer2, wszLang2, wszL1, wszL2);
     EndPaint(h,&ps); break;
    }
    RECT rc; GetClientRect(h,&rc);
