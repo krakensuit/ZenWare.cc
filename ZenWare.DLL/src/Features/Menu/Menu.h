@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../SDK/SDK.h"
+#include "../../Styles/Layout.h"
 
 class CFeatures_Menu
 {
@@ -54,8 +55,8 @@ private:
 	void DrawHelpPopup(const MouseState_t& mouse);
 	int WrapHelpText(const char* szText, char aLines[][64], int nMaxLines, int nMaxChars);
 
-	static constexpr int PANEL_W = 320;
-	static constexpr int PANEL_H = 480;
+	static constexpr int PANEL_W = Layout::kPanelW;   // 400 (8px grid, stage 3)
+	static constexpr int PANEL_H = Layout::kPanelH;   // 560 (8px grid, stage 3)
 
 	Layout_t m_rc = { };
 	int m_nItemY = 0;

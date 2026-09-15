@@ -285,7 +285,7 @@ void CFeatures_Menu::Render(){
    // (and there clicks already go into the game menu — easy to hit the wrong thing).
    while(ShowCursor(TRUE) < 0);
  const MouseState_t mouse=GetMouse();
- constexpr int HEADER_H=46, FOOTER_H=22;
+ constexpr int HEADER_H=Layout::kHeaderH, FOOTER_H=Layout::kFooterH;
  if(!m_bPosInit){ m_nPosX=(G::Draw.m_nScreenW-PANEL_W)/2; m_nPosY=(G::Draw.m_nScreenH-PANEL_H)/3; m_bPosInit=true; }
  if(mouse.bDown && !m_bDragging && Hovered(mouse.pt,m_nPosX,m_nPosY,PANEL_W,HEADER_H)){ m_bDragging=true; m_nDragOffX=mouse.pt.x-m_nPosX; m_nDragOffY=mouse.pt.y-m_nPosY; }
  if(!mouse.bDown) m_bDragging=false;
@@ -317,6 +317,7 @@ void CFeatures_Menu::Render(){
  G::Draw.Rect(m_rc.nX+1,m_rc.nY+2,m_rc.nW,m_rc.nH,CLR_SHADOW);
   DrawPanel(); Tabs(mouse,m_nTab);
   ClampScroll();
+  const int nContentTop=m_rc.nY+Layout::kHeaderH+Layout::kTabsH+8; // stage 3: single content top
   m_nItemY=m_rc.nY+HEADER_H+34-m_nScroll[U::Math.Clamp(m_nTab,0,4)];
   switch(m_nTab){
   case 0:{
@@ -507,10 +508,10 @@ void CFeatures_Menu::Render(){
   // Measure tab content for scrolling + thin scrollbar.
   {
    const int nTabC=U::Math.Clamp(m_nTab,0,4);
-   const int nStartY=m_rc.nY+HEADER_H+34;
+   const int nStartY=nContentTop;
    m_nContentH[nTabC]=m_nItemY-nStartY+m_nScroll[nTabC];
    ClampScroll();
-   const int nTop=m_rc.nY+80, nBottom=m_rc.nY+m_rc.nH-30;
+   const int nTop=nContentTop, nBottom=m_rc.nY+m_rc.nH-FOOTER_H-6;
    const int nView=nBottom-nTop;
    if(m_nContentH[nTabC]>nView&&nView>0){
     const float flFrac=(float)nView/(float)m_nContentH[nTabC];
@@ -530,7 +531,7 @@ void CFeatures_Menu::Render(){
  static const char* kTabFoot[]={"Visuals","Move","View","Combat","Misc"};
  char szFoot[200]={};
  sprintf_s(szFoot,sizeof(szFoot),"%s  |  %s",Lang::T(kTabFoot[U::Math.Clamp(m_nTab,0,4)]),szHint);
- G::Draw.String(EFonts::MENU_MONO,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+4,CLR_TEXT_OFF,TXT_CENTERXY,"%s",szFoot);
+ G::Draw.String(EFonts::MENU_MONO,m_rc.nX+(m_rc.nW/2),(m_rc.nY+m_rc.nH)-FOOTER_H+5,CLR_TEXT_OFF,TXT_CENTERXY,"%s",szFoot);
  G::Draw.OutlinedRect(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH,CLR_OUTLINE);
  {
   const float ehue=fmodf((float)GetTickCount64()/38.0f,360.0f);
@@ -663,21 +664,21 @@ void CFeatures_Menu::DrawPanel(){
  //thin inner accent frame along the perimeter (premium depth)
  G::Draw.OutlinedRect(m_rc.nX+2,m_rc.nY+2,m_rc.nW-4,m_rc.nH-4,Color(CLR_ACCENT.r(),CLR_ACCENT.g(),CLR_ACCENT.b(),28));
  G::Draw.Rect(m_rc.nX,m_rc.nY,2,m_rc.nH,CLR_ACCENT_SOFT);
- G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,40,CLR_HEADER);
+ G::Draw.Rect(m_rc.nX+2,m_rc.nY,m_rc.nW-2,Layout::kHeaderH,CLR_HEADER);
 	DrawRgbLogo(m_rc.nX+16,m_rc.nY+4);
 	G::Draw.String(EFonts::MENU_BODY,m_rc.nX+m_rc.nW-14-G::Draw.GetTextWidth(EFonts::MENU_BODY,Vars::Menu::kVersion),m_rc.nY+15,CLR_ACCENT,TXT_DEFAULT,"%s",Vars::Menu::kVersion);
  {
   int hlw = (int)((m_rc.nW - 2) * m_flAnim);
   int hlx = m_rc.nX + 1 + ((m_rc.nW - 2) - hlw) / 2;
   const float hhue=fmodf((float)GetTickCount64()/38.0f,360.0f);
-  if (hlw > 0) G::Draw.GradientRect(hlx,m_rc.nY+40,hlx+hlw,m_rc.nY+43,HsvToColor(hhue,0.85f,1.0f),HsvToColor(hhue+40.0f,0.85f,1.0f),false);
+  if (hlw > 0) G::Draw.GradientRect(hlx,m_rc.nY+Layout::kHeaderH,hlx+hlw,m_rc.nY+Layout::kHeaderH+3,HsvToColor(hhue,0.85f,1.0f),HsvToColor(hhue+40.0f,0.85f,1.0f),false);
  }
  {
   float shx = fmodf((float)GetTickCount64() / 12.0f, (float)(m_rc.nW + 120)) - 60;
   int sbx0 = m_rc.nX + 2 + (int)shx, sbx1 = sbx0 + 60;
   if (sbx0 < m_rc.nX + 2) sbx0 = m_rc.nX + 2;
   if (sbx1 > m_rc.nX + m_rc.nW - 2) sbx1 = m_rc.nX + m_rc.nW - 2;
-  if (sbx1 > sbx0) G::Draw.Rect(sbx0, m_rc.nY, sbx1 - sbx0, 40, Color(255,255,255,10));
+  if (sbx1 > sbx0) G::Draw.Rect(sbx0, m_rc.nY, sbx1 - sbx0, Layout::kHeaderH, Color(255,255,255,10));
  }
 }
 void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
@@ -685,17 +686,17 @@ void CFeatures_Menu::Tabs(const MouseState_t& mouse,int& nTab){
  const int nTabW=(m_rc.nW-20)/5;
  static float s_pill=0.0f;
  s_pill=Anim::Approach(s_pill,(float)m_nTab,m_flDt,10.0f);
- const int nTabY=m_rc.nY+52; constexpr int nTabH=22;
+ const int nTabY=m_rc.nY+Layout::kHeaderH+4; constexpr int nTabH=Layout::kTabsH-8;
  const int nPillX=m_rc.nX+10+(int)(s_pill*(float)nTabW);
  G::Draw.Rect(nPillX-2,nTabY-2,nTabW-2,nTabH+4,CLR_ACCENT_SOFT);
  G::Draw.Rect(nPillX,nTabY,nTabW-6,nTabH,CLR_ACCENT);
  G::Draw.Rect(nPillX,nTabY+nTabH-2,nTabW-6,2,CLR_ACCENT_SOFT);
  for(int n=0;n<5;n++){
-  int nX=m_rc.nX+10+(n*nTabW); int nY=m_rc.nY+52; constexpr int nH=22;
+  int nX=m_rc.nX+10+(n*nTabW); int nY=nTabY; constexpr int nH=nTabH;
   bool bActive=(m_nTab==n); bool bHover=Hovered(mouse.pt,nX,nY,nTabW-6,nH);
   Color clrText=bActive?Color(240,255,248,255):(bHover?CLR_TEXT_ON:CLR_TEXT_OFF);
   if(!bActive&&bHover){ G::Draw.Rect(nX,nY,nTabW-6,nH,CLR_ROW_HOVER); G::Draw.Rect(nX,nY+nH-2,nTabW-6,2,CLR_ACCENT_SOFT); }
-  G::Draw.String(EFonts::MENU_BODY,nX+((nTabW-6)/2),nY+4,clrText,TXT_CENTERXY,"%s",Lang::T(szTabs[n]));
+  G::Draw.String(EFonts::MENU_BODY,nX+((nTabW-6)/2),nY+(nH/2)-8,clrText,TXT_CENTERXY,"%s",Lang::T(szTabs[n]));
   if(bHover&&mouse.bClicked) m_nTab=n;
  } nTab=m_nTab;
 }
