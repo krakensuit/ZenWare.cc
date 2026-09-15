@@ -6,7 +6,7 @@
 
 **Interne + externe Trainingssoftware für Left 4 Dead 2**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.21.1`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.21.2`
 
 [← Zurück zur Haupt-README](README.md)
 

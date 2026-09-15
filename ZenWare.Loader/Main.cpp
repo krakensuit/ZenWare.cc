@@ -133,6 +133,25 @@ void InitFonts(HWND hwnd){
 }
 // Rainbow neon logo: glow + shimmering letters
 // Rainbow neon logo: glow + shimmering letters
+// Shared wrapped hue phase (same contract as the in-game menu): the tick delta is
+// added to a small float that is wrapped every frame, so the precision never decays
+// with system uptime and the rainbow never steps in visible jumps.
+static float HuePhase(const int nSlot, const float flMsPerDegree)
+{
+	static ULONGLONG s_aPrev[4] = { 0, 0, 0, 0 };
+	static float s_aHue[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	const int n = nSlot & 3;
+	const ULONGLONG ullNow = GetTickCount64();
+	const float flDelta = (s_aPrev[n] == 0) ? 0.0f : (float)(ullNow - s_aPrev[n]);
+	s_aPrev[n] = ullNow;
+	s_aHue[n] += flDelta / flMsPerDegree;
+
+	while (s_aHue[n] >= 360.0f)
+		s_aHue[n] -= 360.0f;
+
+	return s_aHue[n];
+}
+
 void DrawRgbLogo(HDC dc, int x, int y){
  const wchar_t* txt=L"ZenWare.cc";
  SIZE sz={0,0};
@@ -326,8 +345,8 @@ static COLORREF LerpC2(COLORREF a,COLORREF b,float t){
  return RGB((int)(GetRValue(a)+(GetRValue(b)-GetRValue(a))*t),(int)(GetGValue(a)+(GetGValue(b)-GetGValue(a))*t),(int)(GetBValue(a)+(GetBValue(b)-GetBValue(a))*t));
 }
 static bool g_bParty=false;
-static COLORREF Acc(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.85f,1.0f); } Theme_t& th=g_theme; return LerpC2(th.accent,th.alt,g_flModeT); }
-static COLORREF Acc2(){ if(g_bParty){ float hue=fmodf((float)GetTickCount64()/38.0f,360.0f); return Hsv(hue,0.9f,0.6f); } Theme_t& th=g_theme; return LerpC2(th.accent2,th.alt2,g_flModeT); }
+static COLORREF Acc(){ if(g_bParty){ float hue=HuePhase(0,38.0f); return Hsv(hue,0.85f,1.0f); } Theme_t& th=g_theme; return LerpC2(th.accent,th.alt,g_flModeT); }
+static COLORREF Acc2(){ if(g_bParty){ float hue=HuePhase(1,38.0f); return Hsv(hue,0.9f,0.6f); } Theme_t& th=g_theme; return LerpC2(th.accent2,th.alt2,g_flModeT); }
 static void ClassifyStatus(const wchar_t* t){
  if(!t) return;
  auto has=[](const wchar_t* h,const wchar_t* n){ return wcsstr(h,n)!=nullptr; };
@@ -363,7 +382,7 @@ LRESULT DrawBtn(LPARAM lp){
    bool launch=(d->CtlID==IDC_LAUNCH);
    COLORREF rbDim=0;
    if(launch&&en){
-    float hue=fmodf(GetTickCount64()/38.0f,360.0f);
+    float hue=HuePhase(2,38.0f);
     br=Hsv(hue,0.85f,1.0f); rbDim=Hsv(hue,0.9f,0.35f);
    }
    HBRUSH b=CreateSolidBrush(fill); HPEN pen=CreatePen(PS_SOLID,1,br);
@@ -450,7 +469,7 @@ LRESULT CALLBACK SplashProc(HWND h,UINT m,WPARAM w,LPARAM l){
   ULONGLONG q0=GetTickCount64(); ULONGLONG q2mark=0;
   HBRUSH bb=CreateSolidBrush(bg); RECT rc={0,0,SPL_W,SPL_H}; FillRect(dc,&rc,bb); DeleteObject(bb);
   const float el=(GetTickCount64()-g_splashT0)/1000.0f;
-  const float hue=fmodf((float)GetTickCount64()/38.0f,360.0f);
+  const float hue=HuePhase(3,38.0f);
   // grid
   {
    int gk=(int)(SplashEase(el/1.2f)*26);
