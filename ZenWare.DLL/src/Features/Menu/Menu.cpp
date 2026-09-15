@@ -654,6 +654,15 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
  m_nItemY+=nRowH;
 }
 void CFeatures_Menu::DrawPanel(){
+
+ // Stage 6: frosted backdrop behind the panel. This is a layered scrim, not a
+ // gaussian blur: ISurface has no UV textured rect, so the real blur needs the
+ // material route (dev/blurfilterx|y over a copied render target) - still open.
+ if(Vars::Menu::bEnableBlur){
+  for(int i=3;i>=1;--i)
+   G::Draw.Rect(m_rc.nX-i*(Layout::kPadding/2),m_rc.nY-i*(Layout::kPadding/2),m_rc.nW+i*Layout::kPadding,m_rc.nH+i*Layout::kPadding,Color(6,8,7,24+i*14));
+  G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(12,16,14,200),Color(6,8,7,220),false);
+ }
  //vignette: thin darkening at the top/bottom of the panel for depth
  G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,4,Color(255,255,255,10));
  G::Draw.Rect(m_rc.nX,(m_rc.nY+m_rc.nH)-4,m_rc.nW,4,Color(0,0,0,40));
