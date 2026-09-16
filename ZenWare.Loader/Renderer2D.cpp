@@ -818,15 +818,16 @@ namespace Zen2D
 			// Fallback: animated rainbow gradient brush, so the title is never plain white.
 			if (!m_titleBrush && m_target)
 			{
-				D2D1_GRADIENT_STOP stops[6]{};
-				const float hues[6] = { 0.0f, 60.0f, 120.0f, 180.0f, 240.0f, 300.0f };
-				for (int i = 0; i < 6; ++i)
+				D2D1_GRADIENT_STOP stops[7]{};
+				// Cyclic brush: 360 is the same colour as 0, so a sliding window has no seam.
+				const float hues[7] = { 0.0f, 60.0f, 120.0f, 180.0f, 240.0f, 300.0f, 360.0f };
+				for (int i = 0; i < 7; ++i)
 				{
-					stops[i].position = static_cast<float>(i) / 5.0f;
+					stops[i].position = static_cast<float>(i) / 6.0f;
 					stops[i].color = ColorOf(Hsv2Rgb(hues[i], 0.85f, 1.0f), 1.0f);
 				}
 				ID2D1GradientStopCollection* coll = nullptr;
-				if (SUCCEEDED(m_target->CreateGradientStopCollection(stops, 6, &coll)) && coll)
+				if (SUCCEEDED(m_target->CreateGradientStopCollection(stops, 7, &coll)) && coll)
 				{
 					m_target->CreateLinearGradientBrush(D2D1::LinearGradientBrushProperties(D2D1::Point2F(textX, 0.0f), D2D1::Point2F(textX + 150.0f, 0.0f)), coll, &m_titleBrush);
 					coll->Release();
