@@ -797,13 +797,18 @@ namespace Zen2D
 				if (SUCCEEDED(m_titleLayout->GetClusterMetrics(metrics, 32, &nCount)))
 				{
 					const wchar_t* wszTitle = L"ZenWare.cc";
+					// Full spectrum across the word: the last letter meets the first, so the sweep has no edge.
+					const float flSpan = (nCount > 1) ? (360.0f / static_cast<float>(nCount)) : 0.0f;
 					float cx = textX;
 
 					for (UINT32 i = 0; i < nCount; ++i)
 					{
 						wchar_t ch[2] = { wszTitle[i], 0 };
-						Text(ch, RectF(cx, 14.0f, cx + metrics[i].width + 2.0f, 54.0f),
-							Hsv2Rgb(hue + static_cast<float>(i) * 5.0f, 0.85f, 1.0f),
+						// Travelling brightness wave: keeps the word alive between full sweeps.
+const float flLetter = hue + static_cast<float>(i) * flSpan;
+const float flRipple = 0.78f + 0.22f * sinf((flLetter + hue * 2.0f) * 0.0174533f);
+Text(ch, RectF(cx, 14.0f, cx + metrics[i].width + 2.0f, 54.0f),
+							Hsv2Rgb(hue + static_cast<float>(i) * flSpan, 0.82f, flRipple),
 							DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_TEXT_ALIGNMENT_LEADING, pulse);
 						cx += metrics[i].width;
 					}

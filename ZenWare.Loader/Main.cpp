@@ -169,6 +169,8 @@ void DrawRgbLogo(HDC dc, int x, int y){
  s_flHue+=flDelta/38.0f;
  while(s_flHue>=360.0f) s_flHue-=360.0f;
  const float hue=s_flHue;
+ // Ten letters in "ZenWare.cc": a full spectrum across the word closes on itself.
+ const float flSpan=360.0f/10.0f;
  // glow: 8 offset copies around, dark rainbow color
  for(int dx=-2;dx<=2;dx+=2) for(int dy=-2;dy<=2;dy+=2){
   if(!dx&&!dy) continue;
@@ -179,7 +181,9 @@ void DrawRgbLogo(HDC dc, int x, int y){
  int cx=x;
  for(const wchar_t* p=txt;*p;++p){
   int idx=(int)(p-txt);
-  SetTextColor(dc,Hsv(hue+idx*5.0f,0.85f,1.0f));
+  const float flLetter=hue+idx*flSpan;
+  const float flRipple=0.78f+0.22f*sinf((flLetter+hue*2.0f)*0.0174533f);
+  SetTextColor(dc,Hsv(hue+idx*flSpan,0.82f,flRipple));
   wchar_t ch[2]={*p,0};
   SIZE cs={0,0}; GetTextExtentPoint32W(dc,ch,1,&cs);
   TextOutW(dc,cx,y,ch,1);
