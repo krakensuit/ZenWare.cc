@@ -1,5 +1,6 @@
 #include "Entry.h"
 #include "../Util/Fonts/FontLoader.h"
+#include "../Features/Overlay/Overlay.h"
 
 #include <csignal>
 #include <exception>
@@ -287,6 +288,7 @@ void CGlobal_ModuleEntry::Load()
 	Fonts::LoadAll();
 
 	G::Draw.Init();
+	Overlay::Init(); // game-independent surface, no game hook
 	U::Log.Write("[+] Draw manager ready.");
 
 	U::Log.Write("[*] Installing hooks ...");
