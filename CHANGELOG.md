@@ -3,6 +3,20 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [4.1.0] - 2026-09-16
+
+### Added
+- A real backdrop blur behind the menu panel. While the menu is open the frame region directly under the panel is copied out of the game's render target, averaged down to half resolution (which also swaps the framebuffer's BGRA byte order into the RGBA the surface expects), box blurred twice with a radius of three on the small buffer, uploaded as a procedural texture and drawn 1:1 behind the panel. The panel fill is softened to three quarters of its configured alpha while the blur is active, so the frozen world behind the menu actually reads through.
+  Настоящее размытие за панелью меню. Пока меню открыто, область кадра непосредственно под панелью копируется из render target игры, усредняется до половинного разрешения (заодно порядок байт BGRA фреймбуфера меняется на RGBA, который ждёт поверхность), дважды размывается box-фильтром с радиусом три на маленьком буфере, загружается как процедурная текстура и рисуется 1:1 за панелью. Заливка панели на время активного блюра смягчается до трёх четвертей заданной альфы, чтобы застывший мир за меню действительно проглядывал.
+
+### Safety
+- Every step of the blur is guarded, and when anything is unavailable - no material system, no render context, an allocation failure, a failed texture id - the code falls back to the previous layered scrim, exactly as in 4.0.0. A failure in the blur path degrades the picture; it cannot take the menu or the game down.
+  Каждый шаг размытия защищён, и если что-то недоступно - нет material system, нет render context, не выделилась память, не создался id текстуры - код откатывается на прежнюю слоистую засветку, как в 4.0.0. Сбой в пути размытия ухудшает картинку; уронить меню или игру он не может.
+
+### Note
+- The blur refreshes every frame while the menu is open; at half resolution with two radius-3 passes the CPU cost is around a millisecond per frame on the panel-sized region. If the frozen backdrop ever looks tinted, the BGRA-to-RGBA swap in the downsample loop is the single knob to check.
+  Размытие обновляется каждый кадр, пока меню открыто; на половинном разрешении с двумя проходами радиуса три стоимость на CPU - около миллисекунды на кадр для области панели. Если застывший фон когда-нибудь покажется тонированным, единственный подозреваемый - перестановка BGRA в RGBA в цикле даунсэмплинга.
+
 ## [4.0.0] - 2026-09-16
 
 ### Highlights
