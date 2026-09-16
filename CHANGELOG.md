@@ -3,6 +3,30 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [4.0.0] - 2026-09-16
+
+### Highlights
+- This release closes the whole interface rework and the two bugs that caused the most visible complaints, so the menu no longer looks or behaves like a stock internal cheat. Interface work: custom Inter / JetBrains Mono / Font Awesome faces embedded in the DLL, a style token layer (`Theme.h`) and an 8 px layout grid (`Layout.h`), a 400x560 panel with a 48 px header, pill tabs, a footer and one single definition of the content top, controls rebuilt on those tokens, tab icons, and a frosted backdrop behind the panel.
+  Этот релиз закрывает всю переработку интерфейса и два дефекта, которые вызывали больше всего жалоб, поэтому меню больше не выглядит и не ведёт себя как типовой внутренний чит. По интерфейсу: вшитые в DLL начертания Inter / JetBrains Mono / Font Awesome, слой токенов стиля (`Theme.h`) и сетка 8 px (`Layout.h`), панель 400x560 с шапкой 48 px, вкладки-pill, футер и одно определение верха контента, контролы на этих токенах, иконки вкладок и морозная подложка за панелью.
+- The frame counter is honest now: the menu used to take its timing from the game (`I::GlobalVars->frametime`), and while the game was paused that value is zero, so the old guard substituted 1/60 and the watermark and footer printed a fake "60 fps". The menu now runs on its own clock and shows a frame rate it actually measured.
+  Счётчик кадров теперь честный: меню брало время у игры (`I::GlobalVars->frametime`), а на паузе это значение равно нулю, поэтому старая заглушка подставляла 1/60 и ватермарк с футером печатали фальшивые «60 fps». Теперь меню живёт на своих часах и показывает фреймрейт, который действительно измерило.
+- The rainbow no longer snaps anywhere in the product. Both the loader wordmark and every animated accent used a phase that either grew inside a float (losing resolution with uptime) or was cut by `GetTickCount64() % 100000`, which reset it every 100 seconds. All of them now accumulate a frame delta in a small wrapped phase, so the cycle is endless and seamless.
+  Радуга больше нигде в продукте не срывается. И надпись лоадера, и все анимированные акценты использовали фазу, которая либо росла внутри float (теряя точность с аптаймом), либо обрезалась остатком `GetTickCount64() % 100000`, обнулявшим её каждые 100 секунд. Теперь все они копят дельту кадра в небольшой завёрнутой фазе, поэтому цикл вечный и бесшовный.
+- A game-independent surface exists: a dedicated thread in the DLL owns its own always-on-top, click-through window with its own clock and its own frame rate, without a single game hook, so a pause, a stalled game loop or a fault there cannot freeze it or take the game down. The menu itself still paints inside the game frame; porting its drawing onto this surface is the next stage.
+  Появилась независимая от игры поверхность: отдельный поток в DLL владеет своим окном поверх игры (click-through) со своими часами и своим фреймрейтом, без единого игрового хука, поэтому пауза, зависший игровой цикл или сбой там не могут её заморозить или утащить за собой игру. Само меню пока рисуется в кадре игры; перенос его отрисовки на эту поверхность — следующий этап.
+
+### Fixed
+- The version badge in the menu header was visibly off-centre: the pill and the text were centred from different origins, so the label sat 5 px right and 6 px high. Both now derive from one centre point and line up with the rows and the tab strip.
+  Бейдж версии в шапке меню стоял заметно не по центру: плашка и текст центрировались от разных начал, поэтому подпись уезжала на 5 px вправо и на 6 px вверх. Теперь оба выводятся из одного центра и встают в одну линию со строками и полосой вкладок.
+- Repository integrity: a bare `*.dll` rule in `.gitignore` also matched the `ZenWare.DLL` directory, so every new source file under it - the font loader, the style layer, the layout grid, the font resources and the overlay module - existed only on disk and a fresh clone would not have built. The rule is now path-anchored and all of those sources are tracked.
+  Целостность репозитория: правило `*.dll` в `.gitignore` совпадало и с папкой `ZenWare.DLL`, поэтому все новые исходники внутри неё — загрузчик шрифтов, слой стиля, сетка разметки, ресурсы шрифтов и модуль оверлея — существовали только на диске, и свежий клон не собрался бы. Правило теперь привязано к путям, а все эти исходники отслеживаются.
+
+### Known issues
+- A third-party binary (`l4dx86_[unknowncheats.me]_.dll`) surfaced into the tree when the ignore rule was corrected. It belongs to nobody here and the repository ships sources only; removing it from the index needs an approval that timed out twice, so it is still tracked in the previous commit. Tracked run files are unaffected.
+  Сторонний бинарник (`l4dx86_[unknowncheats.me]_.dll`) всплыл в дереве, когда правило игнорирования исправили. Он здесь ничей, а репозиторий поставляется только исходниками; для удаления из индекса нужно подтверждение, которое дважды ушло в таймаут, поэтому в предыдущем коммите он пока отслеживается. На работу собранных файлов это не влияет.
+- The real blur behind the panel is still an approximation: `ISurface` exposes no UV textured rect, so a true blur needs the material route (`dev/blurfilterx|y` over a copied render target).
+  Настоящее размытие за панелью всё ещё приближение: у `ISurface` нет текстурного прямоугольника с UV, поэтому для реального размытия нужен material-путь (`dev/blurfilterx|y` по скопированному render target).
+
 ## [3.21.5] - 2026-09-16
 
 ### Added
