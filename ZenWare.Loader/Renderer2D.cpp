@@ -8,6 +8,26 @@
 #include <stdio.h>   // swprintf_s for the diagnostics log
 #include <d2d1helper.h>
 #include <dcomp.h>
+// Wrapped colour phase for the title rainbow. The old form used
+// GetTickCount64() % 100000, so the phase snapped back to zero every 100 seconds and
+// the colour visibly jumped. Accumulating the frame delta in a small float keeps the
+// value inside 0..360 with full precision, so the cycle is endless and seamless.
+static float TitleHue()
+{
+	static ULONGLONG s_ullPrev = 0;
+	static float s_flHue = 0.0f;
+
+	const ULONGLONG ullNow = GetTickCount64();
+	const float flDelta = (s_ullPrev == 0) ? 0.0f : static_cast<float>(ullNow - s_ullPrev);
+	s_ullPrev = ullNow;
+	s_flHue += flDelta / 38.0f;
+
+	while (s_flHue >= 360.0f)
+		s_flHue -= 360.0f;
+
+	return s_flHue;
+}
+
 
 #pragma comment(lib, "d2d1.lib")
 #pragma comment(lib, "dwrite.lib")
@@ -741,7 +761,7 @@ namespace Zen2D
 		if (!m_titleLayout)
 			m_dwrite->CreateTextLayout(L"ZenWare.cc", 10, m_fmtTitle, 400.0f, 60.0f, &m_titleLayout);
 
-		const float hue = fmodf(static_cast<float>(GetTickCount64() % 100000) / 38.0f, 360.0f);
+		const float hue = TitleHue();
 		bool bDrawn = false;
 
 		if (m_titleLayout)
@@ -794,7 +814,7 @@ namespace Zen2D
 			if (m_titleBrush)
 			{
 				const float span = 150.0f;
-				const float shift = fmodf(static_cast<float>(GetTickCount64() % 100000) / 38.0f * 2.0f, span);
+				const float shift = fmodf(TitleHue() * 2.0f, span);
 				m_titleBrush->SetStartPoint(D2D1::Point2F(textX - shift, 0.0f));
 				m_titleBrush->SetEndPoint(D2D1::Point2F(textX - shift + span, 0.0f));
 
