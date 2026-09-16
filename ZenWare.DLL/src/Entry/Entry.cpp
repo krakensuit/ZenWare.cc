@@ -108,6 +108,7 @@ namespace
 		//Let in-flight frames drain through the passivating detours first.
 		Sleep(300);
 
+		Overlay::Shutdown(); // stop the overlay thread before hooks come out
 		U::Log.Write("[*] Unload: removing hooks ...");
 		MH_Uninitialize();
 
