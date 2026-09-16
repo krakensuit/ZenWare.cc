@@ -3,6 +3,18 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [4.2.2] - 2026-09-16
+
+### Fixed
+- The game crashed (0xC0000005 inside `Menu::Render`) the moment the menu was opened. The crash was introduced with the read-pixels backdrop in 4.1.0: that pass reads the game's frame through the material system from inside the paint hook, and the confirmed counterfactual is in - with the backdrop disabled the crash is gone, with it enabled the game died within seconds of opening the menu. The backdrop is therefore disabled by default (`Vars::Menu::bEnableBlur = false`) and the panel renders the layered scrim from 4.0.0 instead. The feature stays in the code for a future safe rework; it just does not run by default any more.
+  Игра падала (0xC0000005 внутри `Menu::Render`) в момент открытия меню. Краш внёс бэкдроп на ReadPixels из 4.1.0: этот проход читает кадр игры через material system прямо из хука отрисовки, и контрфактическая проверка сошлась - с выключенным бэкдропом краша нет, а с включённым игра умирала через секунды после открытия меню. Поэтому бэкдроп теперь выключен по умолчанию (`Vars::Menu::bEnableBlur = false`), а панель рисует слоистую засветку из 4.0.0. Функция остаётся в коде для будущей безопасной переделки; просто по умолчанию она больше не выполняется.
+- Fine breadcrumbs were added along the menu render path (`Menu::Render/state`, `/panel`, `/footer`, `/help`), so if anything in the menu crashes again, the log names the exact section instead of the whole renderer.
+  Вдоль пути отрисовки меню добавлены мелкие хлебные крошки (`Menu::Render/state`, `/panel`, `/footer`, `/help`), поэтому если в меню что-то упадёт снова, лог назовёт конкретную секцию, а не весь рендерер.
+
+### Known issues
+- A real blur is still wanted, but it needs a safe implementation first: a throttled copy (not every frame), explicit bounds checks, and skipping the copy while the game is paused. Do not re-enable `bEnableBlur` until that lands.
+  Настоящее размытие по-прежнему нужно, но сперва нужна безопасная реализация: копирование с прореживанием (не каждый кадр), явные проверки границ и пропуск копирования на паузе. Не включай `bEnableBlur`, пока это не сделано.
+
 ## [4.2.0] - 2026-09-16
 
 ### Changed
