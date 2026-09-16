@@ -3,6 +3,12 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [4.1.1] - 2026-09-16
+
+### Fixed
+- The loader title rainbow still snapped to pink mid-cycle. The per-letter colours were already seamless, but the gradient fallback brush used `fmodf(TitleHue() * 2.0f, span)`: taking a remainder by the brush span cuts the continuous phase at an arbitrary point whenever the span does not divide the doubled hue range evenly, so the visible gradient jumped once per sweep - exactly at the pink section. The shift is now accumulated in its own wrapped phase (`TitleShift(span)`) that wraps exactly at the span, so the sweep runs forever without a seam.
+  Радуга заголовка в лоадере всё ещё срывалась в розовый посреди цикла. Цвета букв уже были бесшовными, но градиентная кисть-фолбэк использовала `fmodf(TitleHue() * 2.0f, span)`: остаток по ширине кисти режет непрерывную фазу в произвольной точке, если ширина не делит удвоенный диапазон оттенка нацело, поэтому видимый градиент прыгал раз за проход - ровно на розовом участке. Теперь сдвиг копится в собственной завёрнутой фазе (`TitleShift(span)`), которая оборачивается точно по ширине кисти, поэтому проход идёт вечно без шва.
+
 ## [4.1.0] - 2026-09-16
 
 ### Added
