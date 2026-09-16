@@ -3,6 +3,16 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [4.2.0] - 2026-09-16
+
+### Changed
+- The wordmark animation is no longer a near-uniform colour block. The letters now carry the full spectrum across the word, with the step derived from the letter count (`360 / count`) so the last letter meets the first and the sweep closes on itself instead of ending somewhere in the middle.
+  Анимация ватермарка больше не почти одноцветный блок. Буквы теперь несут полный спектр по слову, а шаг выводится из числа букв (`360 / количество`), поэтому последняя буква смыкается с первой и проход замыкается сам, а не обрывается где-то посередине.
+- A travelling brightness wave rides on top of the sweep (`0.78 + 0.22 * sin(...)`, phase tied to the letter hue and the current sweep), so the word keeps moving between full cycles instead of patiently going through one flat rotation.
+  Поверх прохода идёт бегущая волна яркости (`0.78 + 0.22 * sin(...)`, фаза привязана к оттенку буквы и текущему проходу), поэтому слово живёт и между полными оборотами, а не терпеливо проходит одну ровную ротацию.
+- Saturation was eased from 0.85 to 0.82 and the value is now modulated, which keeps the glow readable while the colours stay vivid, and the same treatment was applied to both renderers - the Direct2D path that normally paints the window and the GDI path - so the wordmark looks the same either way.
+  Насыщенность снижена с 0.85 до 0.82, а яркость теперь модулируется: свечение остаётся читаемым, а цвета - насыщенными. То же самое сделано в обоих рендерерах - в Direct2D, который обычно рисует окно, и в GDI, - поэтому надпись выглядит одинаково в любом случае.
+
 ## [4.1.2] - 2026-09-16
 
 ### Fixed
