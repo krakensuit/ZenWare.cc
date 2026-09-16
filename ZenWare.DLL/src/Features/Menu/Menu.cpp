@@ -273,6 +273,7 @@ void CFeatures_Menu::Render(){
 	//The language default is already system-based (Vars::Menu::bRussian), the config overrides it — do not overwrite.
  // appear animation (fade-in) - does not block the open logic
  static float s_alpha = 0.0f;
+ U::Log.Crumb("Menu::Render/state");
  bool bOpen = HandleOpenState();
  // Own clock: the menu does not borrow the game's frametime any more. While the game
  // is paused frametime is zero, the old clamp substituted 1/60 and the counter printed
@@ -364,6 +365,7 @@ void CFeatures_Menu::Render(){
  G::Draw.Rect(m_rc.nX+5,m_rc.nY+6,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+3,m_rc.nY+4,m_rc.nW,m_rc.nH,CLR_SHADOW);
  G::Draw.Rect(m_rc.nX+1,m_rc.nY+2,m_rc.nW,m_rc.nH,CLR_SHADOW);
+  U::Log.Crumb("Menu::Render/panel");
   DrawPanel(); Tabs(mouse,m_nTab);
   ClampScroll();
   const int nContentTop=m_rc.nY+Layout::kHeaderH+Layout::kTabsH+8; // stage 3: single content top
@@ -575,6 +577,7 @@ void CFeatures_Menu::Render(){
   const float fhue=HuePhase(2,38.0f);
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
+ U::Log.Crumb("Menu::Render/footer");
  char szHint[160]={};
  sprintf_s(szHint,sizeof(szHint),Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(m_flOwnFps + 0.5f));
  static const char* kTabFoot[]={"Visuals","Move","View","Combat","Misc"};
@@ -589,6 +592,7 @@ void CFeatures_Menu::Render(){
   edge.SetColor(edge.r(),edge.g(),edge.b(),epulse);
   G::Draw.OutlinedRect(m_rc.nX+1,m_rc.nY+1,m_rc.nW-2,m_rc.nH-2,edge);
  }
+ U::Log.Crumb("Menu::Render/help");
  DrawHelpPopup(mouse);
  //custom crosshair cursor (OS cursor stays hidden while the menu is open)
  G::Draw.Line(mouse.pt.x-7,mouse.pt.y,mouse.pt.x-2,mouse.pt.y,CLR_ACCENT);

@@ -171,9 +171,9 @@ namespace Vars
 		inline bool bWatermarkFps = true;   // include the fps counter in the watermark
 		inline int nAccentPreset = 0;       // 0..4 preset palette, 5 = custom swatch
 		inline int nPanelAlpha = 244;       // panel opacity, 120..255
-		inline bool bEnableBlur = true;  // stage 6: frosted backdrop behind the panel
+		inline bool bEnableBlur = false; // stage 6/8: read-pixels backdrop - OFF: it runs inside the paint hook and crashed the game on menu open
 		inline bool bOverlayWatermark = true; // stage 1: game-independent overlay window
-		inline constexpr const char* kVersion = "v4.2.1"; // header badge + watermark
+		inline constexpr const char* kVersion = "v4.2.2"; // header badge + watermark
 		// Menu language: 0 EN, 1 RU, 2 DE... English by default
 		// (before Config.Load), stored in the config, switched by button and F7.
 		inline int nLang = 0;
