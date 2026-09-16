@@ -272,9 +272,26 @@ void CFeatures_Menu::Render(){
  // appear animation (fade-in) - does not block the open logic
  static float s_alpha = 0.0f;
  bool bOpen = HandleOpenState();
- float dt = I::GlobalVars ? I::GlobalVars->frametime : 0.016f;
- if(dt <= 0 || dt > 0.1f) dt = 0.016f;
+ // Own clock: the menu does not borrow the game's frametime any more. While the game
+ // is paused frametime is zero, the old clamp substituted 1/60 and the counter printed
+ // a fake "60 fps"; animations also advanced with game time instead of real time.
+ static ULONGLONG s_ullPrevFrame = 0;
+ static ULONGLONG s_ullFpsStart = 0;
+ static int s_nFrames = 0;
+ static float s_flOwnFps = 0.0f;
+ const ULONGLONG ullFrame = GetTickCount64();
+ float dt = (s_ullPrevFrame == 0) ? 0.016f : (float)(ullFrame - s_ullPrevFrame) / 1000.0f;
+ s_ullPrevFrame = ullFrame;
+ if(dt <= 0.0f) dt = 0.0001f;
+ if(dt > 0.1f) dt = 0.1f;
  m_flDt = dt; s_menuDt = dt;
+ if(s_ullFpsStart == 0) s_ullFpsStart = ullFrame;
+ ++s_nFrames;
+ if(ullFrame - s_ullFpsStart >= 500){
+  s_flOwnFps = (float)s_nFrames * 1000.0f / (float)(ullFrame - s_ullFpsStart);
+  s_nFrames = 0; s_ullFpsStart = ullFrame;
+ }
+ m_flOwnFps = s_flOwnFps;
  m_flAnim = s_alpha;
  s_alpha = Anim::Approach(s_alpha, bOpen ? 1.0f : 0.0f, dt, 9.0f);
  //F11 works while the menu is open too (the footer used to lie: polling only happened when closed).
@@ -694,8 +711,8 @@ void CFeatures_Menu::DrawPanel(){
   G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(12,16,14,200),Color(6,8,7,220),false);
  }
  //vignette: thin darkening at the top/bottom of the panel for depth
- G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,4,Color(255,255,255,10));
- G::Draw.Rect(m_rc.nX,(m_rc.nY+m_rc.nH)-4,m_rc.nW,4,Color(0,0,0,40));
+ G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,4,Theme::Clr::rowHover);
+ G::Draw.Rect(m_rc.nX,(m_rc.nY+m_rc.nH)-4,m_rc.nW,4,Theme::Clr::shadow);
  {
 		const int nPanelA=U::Math.Clamp(Vars::Menu::nPanelAlpha,120,255);
 		G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(19,22,21,nPanelA),Color(10,12,11,nPanelA),false);

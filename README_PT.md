@@ -15,7 +15,7 @@
 
 ## Português
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.21.6`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.0.0`
 
 ### Sobre o projeto
 
@@ -259,3 +259,5 @@ Motor de hooks: MinHook (Tsuda Kageyu, estilo BSD) ·
 Ícones: [FontAwesome 6 Free](https://fontawesome.com)
 
 </div>
+
+Latest release: **v4.0.0** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.

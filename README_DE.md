@@ -6,7 +6,7 @@
 
 **Interne + externe Trainingssoftware für Left 4 Dead 2**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.21.6`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.0.0`
 
 [← Zurück zur Haupt-README](README.md)
 
@@ -262,3 +262,5 @@ Hook-Engine: MinHook (Tsuda Kageyu, BSD-style) ·
 Icons: [FontAwesome 6 Free](https://fontawesome.com)
 
 </div>
+
+Latest release: **v4.0.0** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.

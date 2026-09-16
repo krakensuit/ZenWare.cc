@@ -2,7 +2,7 @@
 
 **Left 4 Dead 2 训练用内外挂**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v3.21.6`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.0.0`
 
 > **仅源代码 · 仅学习与本地服务器。**
 > 本仓库与 Releases 中没有预编译的 `.exe` / `.dll` —— 请从源码构建，
@@ -233,3 +233,5 @@ Hook 引擎：MinHook（Tsuda Kageyu，BSD 风格）·
 图标：[FontAwesome 6 Free](https://fontawesome.com)
 
 </div>
+
+Latest release: **v4.0.0** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.
