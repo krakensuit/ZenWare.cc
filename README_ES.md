@@ -2,7 +2,7 @@
 
 **Software interno + externo de entrenamiento para Left 4 Dead 2**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.2.0`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.2.1`
 
 > **Solo código fuente · Solo educación y servidores locales.**
 > Sin `.exe` / `.dll` precompilados en este repo ni en Releases — compila desde el código,
@@ -255,4 +255,4 @@ Iconos: [FontAwesome 6 Free](https://fontawesome.com)
 
 </div>
 
-Latest release: **v4.2.0** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.
+Latest release: **v4.2.1** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.

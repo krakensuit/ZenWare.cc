@@ -2,7 +2,7 @@
 
 **Internal + External софт для тренировок в Left 4 Dead 2**
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.2.0`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.2.1`
 
 > **Только исходники · только обучение и локальный сервер.**
 > Никаких собранных `.exe` / `.dll` в репозитории и релизах — собери сам,
@@ -256,4 +256,4 @@ ZenWare.cc/
 
 </div>
 
-Latest release: **v4.2.0** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.
+Latest release: **v4.2.1** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.
