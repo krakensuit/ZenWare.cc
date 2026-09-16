@@ -3,6 +3,20 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.21.5] - 2026-09-16
+
+### Added
+- Stage 1 of moving the GUI off the game renderer: a real overlay surface that belongs to the DLL alone. A dedicated thread creates its own always-on-top, click-through, non-activating window and repaints it from its own loop with its own clock. There is no game hook anywhere in this path, so a pause, a stalled game loop or a low frame rate cannot freeze this surface, and a fault inside it cannot take the game down with it.
+  Этап 1 переезда интерфейса с игрового рендера: настоящая оверлейная поверхность, принадлежащая только DLL. Отдельный поток создаёт своё окно поверх игры (click-through, без активации) и перерисовывает его из своего цикла со своими часами. В этом пути нет ни одного игрового хука, поэтому пауза, зависший игровой цикл или низкий фреймрейт не могут заморозить эту поверхность, а сбой внутри неё не может утащить за собой игру.
+- The surface currently draws the product watermark and its own measured frame rate, which is the evidence that it is really independent: `ZenWare.cc v3.21.5 | overlay N fps` in the top-left corner, plus a line in `ZenWare.log` every five seconds, `Overlay: own clock N fps (game render loop not involved)`.
+  Сейчас поверхность рисует ватермарк продукта и свой измеренный фреймрейт — это и есть доказательство независимости: `ZenWare.cc v3.21.5 | overlay N fps` в левом верхнем углу и строка в `ZenWare.log` каждые пять секунд, `Overlay: own clock N fps (game render loop not involved)`.
+- The surface can be switched off with `Vars::Menu::bOverlayWatermark` (on by default).
+  Поверхность выключается флагом `Vars::Menu::bOverlayWatermark` (по умолчанию включена).
+
+### Note
+- What is deliberately not done yet: the menu itself is still painted inside the game's render frame (`EngineVGui::Paint`), which is why the frame-rate readout still mirrors the game and why a single-player pause still stalls everything driven from that frame. This release is the foundation - window, thread, clock and the proof of independence. Porting the menu drawing onto this surface and routing its input are the next stages.
+  Что намеренно ещё не сделано: само меню по-прежнему рисуется внутри кадра игры (`EngineVGui::Paint`), поэтому счётчик фреймов всё ещё повторяет игру и пауза в одиночке всё ещё останавливает всё, что привязано к этому кадру. Этот релиз — фундамент: окно, поток, часы и доказательство независимости. Перенос отрисовки меню на эту поверхность и её ввод — следующие этапы.
+
 ## [3.21.4] - 2026-09-16
 
 ### Fixed
