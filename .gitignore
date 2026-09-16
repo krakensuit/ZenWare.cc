@@ -19,7 +19,13 @@ ipch/
 x64/
 out/
 *.exe
-*.dll
+# A bare *.dll also matches the ZenWare.DLL *directory*, which silently kept every
+# new source file under it out of git. Built binaries are covered by the anchored
+# patterns below instead.
+ZenWare.DLL/*.dll
+ZenWare.Loader/*.dll
+ZenWare.External/*.dll
+dist/*.dll
 *.ilk
 *.pdb
 *.obj

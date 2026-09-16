@@ -1,0 +1,7 @@
+// Embedded custom fonts (stage 1 of the menu rework).
+// Numeric ids match Fonts::EResource in src/Util/Fonts/FontLoader.h - keep in sync.
+300 RCDATA "fonts\\Inter-Regular.otf"
+301 RCDATA "fonts\\Inter-Medium.otf"
+302 RCDATA "fonts\\Inter-SemiBold.otf"
+303 RCDATA "fonts\\JetBrainsMono-Regular.ttf"
+304 RCDATA "fonts\\FontAwesome6Free-Solid.ttf"
