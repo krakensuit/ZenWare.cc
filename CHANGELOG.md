@@ -3,6 +3,14 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [4.1.2] - 2026-09-16
+
+### Fixed
+- The loader title rainbow ended at pink and restarted abruptly. This time the fault was in the brush itself, not in the animation: the gradient was built from six stops covering hue 0 to 300 with positions spread across the full 0..1 range, so the brush's own right edge was pink and immediately after it the brush repeated from red. Sliding that window across the text produced exactly the visible seam - the colour reached pink and snapped back. The brush is now cyclic: a seventh stop at hue 360, which is the same colour as hue 0, closes the loop, so the sliding window is continuous everywhere.
+  Радуга заголовка в лоадере заканчивалась на розовом и резко начиналась заново. На этот раз дефект был в самой кисти, а не в анимации: градиент собирался из шести стопов по оттенкам от 0 до 300 с позициями, растянутыми на весь диапазон 0..1, поэтому правый край кисти был розовым, а сразу за ним кисть повторялась с красного. Скольжение такого окна по тексту и давало видимый шов - цвет доходил до розового и срывался назад. Теперь кисть циклическая: седьмой стоп на оттенке 360, то есть того же цвета, что и 0, замыкает петлю, поэтому скользящее окно непрерывно везде.
+- Together with the wrapped shift from 4.1.1 (which now wraps exactly at the brush span) the loader title sweep is fully seamless: the brush is cyclic and the window slides exactly one full cycle.
+  Вместе с завёрнутым сдвигом из 4.1.1 (он теперь оборачивается точно по ширине кисти) проход заголовка лоадера полностью бесшовный: кисть циклическая, а окно сдвигается ровно на один полный цикл.
+
 ## [4.1.1] - 2026-09-16
 
 ### Fixed
