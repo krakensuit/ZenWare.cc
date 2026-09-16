@@ -173,7 +173,7 @@ namespace Vars
 		inline int nPanelAlpha = 244;       // panel opacity, 120..255
 		inline bool bEnableBlur = true;  // stage 6: frosted backdrop behind the panel
 		inline bool bOverlayWatermark = true; // stage 1: game-independent overlay window
-		inline constexpr const char* kVersion = "v4.1.0"; // header badge + watermark
+		inline constexpr const char* kVersion = "v4.1.1"; // header badge + watermark
 		// Menu language: 0 EN, 1 RU, 2 DE... English by default
 		// (before Config.Load), stored in the config, switched by button and F7.
 		inline int nLang = 0;

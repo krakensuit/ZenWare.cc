@@ -12,6 +12,28 @@
 // GetTickCount64() % 100000, so the phase snapped back to zero every 100 seconds and
 // the colour visibly jumped. Accumulating the frame delta in a small float keeps the
 // value inside 0..360 with full precision, so the cycle is endless and seamless.
+// The gradient fallback needs its shift wrapped at the brush span exactly. Reusing
+// TitleHue() here wrapped at 360 and then taking a remainder by span snapped whenever
+// span did not divide the doubled range evenly - the rainbow reset mid-cycle.
+static float TitleShift(const float span)
+{
+	static ULONGLONG s_ullPrev = 0;
+	static float s_flShift = 0.0f;
+
+	const ULONGLONG ullNow = GetTickCount64();
+	const float flDelta = (s_ullPrev == 0) ? 0.0f : static_cast<float>(ullNow - s_ullPrev);
+	s_ullPrev = ullNow;
+	s_flShift += flDelta * (2.0f / 38.0f);
+
+	if (span > 0.0f)
+	{
+		while (s_flShift >= span)
+		s_flShift -= span;
+	}
+
+	return s_flShift;
+}
+
 static float TitleHue()
 {
 	static ULONGLONG s_ullPrev = 0;
@@ -814,7 +836,7 @@ namespace Zen2D
 			if (m_titleBrush)
 			{
 				const float span = 150.0f;
-				const float shift = fmodf(TitleHue() * 2.0f, span);
+				const float shift = TitleShift(span);
 				m_titleBrush->SetStartPoint(D2D1::Point2F(textX - shift, 0.0f));
 				m_titleBrush->SetEndPoint(D2D1::Point2F(textX - shift + span, 0.0f));
 
