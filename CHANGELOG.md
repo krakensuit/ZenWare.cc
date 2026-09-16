@@ -3,6 +3,12 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.21.4] - 2026-09-16
+
+### Fixed
+- The version badge in the menu header was visibly off-centre. The text centre and the pill centre were computed from different origins: the pill started at `nW - 14 - badgeW` while the text was centred on `nW - 9 - badgeW/2`, so the label sat 5 px to the right, and it was also 6 px above the pill centre because the pill started at `+12` while the text was centred on `+15`. Both now derive from one place: the pill is centred in the header band (`(Layout::kHeaderH - 18) / 2`) and the text is centred on the pill centre, with the right margin taken from `Layout::kPadding` so the badge lines up with the rows and the tab strip.
+  Бейдж версии в шапке меню стоял заметно не по центру. Центр текста и центр плашки считались от разных начал: плашка начиналась с `nW - 14 - badgeW`, а текст центрировался по `nW - 9 - badgeW/2`, поэтому подпись уезжала на 5 px вправо, а по вертикали ещё и на 6 px вверх, потому что плашка стартовала с `+12`, а текст центрировался по `+15`. Теперь и то и другое выводится из одного места: плашка центрируется в полосе шапки (`(Layout::kHeaderH - 18) / 2`), текст центрируется по центру плашки, а правый отступ берётся из `Layout::kPadding`, поэтому бейдж встаёт в одну линию со строками и полосой вкладок.
+
 ## [3.21.3] - 2026-09-16
 
 ### Fixed
