@@ -15,7 +15,7 @@
 
 ## Português
 
-`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.0.0`
+`x86` · `C++17` · `Visual Studio 2022` · `MinHook` · `v4.1.0`
 
 ### Sobre o projeto
 
@@ -260,4 +260,4 @@ Motor de hooks: MinHook (Tsuda Kageyu, estilo BSD) ·
 
 </div>
 
-Latest release: **v4.0.0** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.
+Latest release: **v4.1.0** - see [CHANGELOG.md](CHANGELOG.md) for the release notes.

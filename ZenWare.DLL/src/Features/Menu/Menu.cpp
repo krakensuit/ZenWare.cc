@@ -8,8 +8,10 @@
 #include "../../Entry/Entry.h"
 #include "../../Hooks/WndProc/WndProc.h"
 #include "../../Util/Anim/Anim.h"
+#include "../../SDK/L4D2/Interfaces/MaterialSystem.h"
 #include "../../../external/Icons/IconsFontAwesome6.h"
 #include <cmath>
+#include <new>
 #include <map>
 #include <string>
 static const Color CLR_SHADOW = Theme::Clr::shadow;
@@ -700,21 +702,152 @@ void CFeatures_Menu::ColorSwatches(const MouseState_t& mouse,const char* const s
  }
  m_nItemY+=nRowH;
 }
+// Stage 8: a real backdrop blur. The frame under the panel is copied out, averaged
+// down to half resolution, box blurred twice on the CPU and drawn back as a texture.
+// Every step is guarded, and the caller keeps the layered scrim when this returns
+// false, so a failure here can never take the menu or the game down.
+static bool BlurBackdrop(const int nX, const int nY, const int nW, const int nH)
+{
+	if (!I::MaterialSystem || !I::MatSystemSurface || nW < 64 || nH < 64)
+		return false;
+
+	IMatRenderContext* pCtx = I::MaterialSystem->GetRenderContext();
+
+	if (!pCtx)
+		return false;
+
+	const int nHW = (nW / 2) & ~1; // half resolution: cheaper and smoother when scaled up
+	const int nHH = (nH / 2) & ~1;
+
+	static unsigned char* pFull = nullptr;
+	static unsigned char* pHalf = nullptr;
+	static unsigned char* pTmp = nullptr;
+	static int nCapW = 0, nCapH = 0, nTexId = 0;
+
+	if (nCapW != nW || nCapH != nH || !pFull || !pHalf)
+	{
+		delete[] pFull; delete[] pHalf; delete[] pTmp;
+		pFull = new (std::nothrow) unsigned char[(size_t)nW * nH * 4];
+		pHalf = new (std::nothrow) unsigned char[(size_t)nHW * nHH * 4];
+		pTmp = new (std::nothrow) unsigned char[(size_t)nHW * nHH * 4];
+		nCapW = nCapH = 0;
+
+		if (!pFull || !pHalf || !pTmp)
+		{
+			delete[] pFull; delete[] pHalf; delete[] pTmp;
+			pFull = pHalf = pTmp = nullptr;
+			return false;
+		}
+
+		nCapW = nW; nCapH = nH;
+	}
+
+	if (!nTexId)
+	{
+		nTexId = I::MatSystemSurface->CreateNewTextureID(true);
+
+		if (nTexId <= 0)
+		{
+			nTexId = 0;
+			return false;
+		}
+	}
+
+	pCtx->ReadPixels(nX, nY, nW, nH, pFull, IMAGE_FORMAT_BGRA8888);
+
+	// 2x downsample: the framebuffer hands us BGRA, the surface wants RGBA, so the
+	// copy also swaps the channels and fills an opaque alpha.
+	for (int y = 0; y < nHH; ++y)
+	{
+		for (int x = 0; x < nHW; ++x)
+		{
+			const size_t i0 = ((size_t)(y * 2) * nW + x * 2) * 4;
+			const size_t i1 = ((size_t)(y * 2) * nW + x * 2 + 1) * 4;
+			const size_t i2 = ((size_t)(y * 2 + 1) * nW + x * 2) * 4;
+			const size_t i3 = ((size_t)(y * 2 + 1) * nW + x * 2 + 1) * 4;
+			unsigned char* d = pHalf + ((size_t)y * nHW + x) * 4;
+
+			for (int c = 0; c < 3; ++c)
+				d[c] = (unsigned char)((pFull[i0 + (2 - c)] + pFull[i1 + (2 - c)] + pFull[i2 + (2 - c)] + pFull[i3 + (2 - c)]) / 4);
+
+			d[3] = 255;
+		}
+	}
+
+	const int nR = 3;
+
+	for (int y = 0; y < nHH; ++y)
+	{
+		for (int x = 0; x < nHW; ++x)
+		{
+			int aSum[3] = { 0, 0, 0 };
+			int nCnt = 0;
+
+			for (int k = -nR; k <= nR; ++k)
+			{
+				const int sx = x + k;
+
+				if (sx < 0 || sx >= nHW)
+					continue;
+
+				const unsigned char* s = pHalf + ((size_t)y * nHW + sx) * 4;
+				aSum[0] += s[0]; aSum[1] += s[1]; aSum[2] += s[2]; ++nCnt;
+			}
+
+			unsigned char* d = pTmp + ((size_t)y * nHW + x) * 4;
+			d[0] = (unsigned char)(aSum[0] / nCnt); d[1] = (unsigned char)(aSum[1] / nCnt); d[2] = (unsigned char)(aSum[2] / nCnt); d[3] = 255;
+		}
+	}
+
+	for (int y = 0; y < nHH; ++y)
+	{
+		for (int x = 0; x < nHW; ++x)
+		{
+			int aSum[3] = { 0, 0, 0 };
+			int nCnt = 0;
+
+			for (int k = -nR; k <= nR; ++k)
+			{
+				const int sy = y + k;
+
+				if (sy < 0 || sy >= nHH)
+					continue;
+
+				const unsigned char* s = pTmp + ((size_t)sy * nHW + x) * 4;
+				aSum[0] += s[0]; aSum[1] += s[1]; aSum[2] += s[2]; ++nCnt;
+			}
+
+			unsigned char* d = pHalf + ((size_t)y * nHW + x) * 4;
+			d[0] = (unsigned char)(aSum[0] / nCnt); d[1] = (unsigned char)(aSum[1] / nCnt); d[2] = (unsigned char)(aSum[2] / nCnt); d[3] = 255;
+		}
+	}
+
+	I::MatSystemSurface->DrawSetTextureRGBA(nTexId, pHalf, nHW, nHH, 0, true);
+	I::MatSystemSurface->DrawSetColor(Color(255, 255, 255, 255));
+	I::MatSystemSurface->DrawSetTexture(nTexId);
+	I::MatSystemSurface->DrawTexturedRect(nX, nY, nX + nW, nY + nH);
+
+	return true;
+}
 void CFeatures_Menu::DrawPanel(){
 
  // Stage 6: frosted backdrop behind the panel. This is a layered scrim, not a
  // gaussian blur: ISurface has no UV textured rect, so the real blur needs the
  // material route (dev/blurfilterx|y over a copied render target) - still open.
+ bool bBlurred=false;
  if(Vars::Menu::bEnableBlur){
-  for(int i=3;i>=1;--i)
-   G::Draw.Rect(m_rc.nX-i*(Layout::kPadding/2),m_rc.nY-i*(Layout::kPadding/2),m_rc.nW+i*Layout::kPadding,m_rc.nH+i*Layout::kPadding,Color(6,8,7,24+i*14));
-  G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(12,16,14,200),Color(6,8,7,220),false);
+  bBlurred=BlurBackdrop(m_rc.nX,m_rc.nY,m_rc.nW,m_rc.nH);
+  if(!bBlurred){
+   for(int i=3;i>=1;--i)
+    G::Draw.Rect(m_rc.nX-i*(Layout::kPadding/2),m_rc.nY-i*(Layout::kPadding/2),m_rc.nW+i*Layout::kPadding,m_rc.nH+i*Layout::kPadding,Color(6,8,7,24+i*14));
+   G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(12,16,14,200),Color(6,8,7,220),false);
+  }
  }
  //vignette: thin darkening at the top/bottom of the panel for depth
  G::Draw.Rect(m_rc.nX,m_rc.nY,m_rc.nW,4,Theme::Clr::rowHover);
  G::Draw.Rect(m_rc.nX,(m_rc.nY+m_rc.nH)-4,m_rc.nW,4,Theme::Clr::shadow);
  {
-		const int nPanelA=U::Math.Clamp(Vars::Menu::nPanelAlpha,120,255);
+		const int nPanelA=bBlurred?(U::Math.Clamp(Vars::Menu::nPanelAlpha,120,255)*3/4):U::Math.Clamp(Vars::Menu::nPanelAlpha,120,255);
 		G::Draw.GradientRect(m_rc.nX,m_rc.nY,m_rc.nX+m_rc.nW,m_rc.nY+m_rc.nH,Color(19,22,21,nPanelA),Color(10,12,11,nPanelA),false);
 	}
  //thin inner accent frame along the perimeter (premium depth)
