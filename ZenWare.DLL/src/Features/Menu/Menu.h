@@ -61,6 +61,7 @@ private:
 	Layout_t m_rc = { };
 	int m_nItemY = 0;
 	float m_flDt = 0.016f;
+	float m_flOwnFps = 0.0f; // measured from our own clock, never from the game
 	float m_flAnim = 0.0f;
 
 	int m_nPosX = 0;

@@ -286,7 +286,7 @@ void CFeatures_Menu::Render(){
   m_szHelpId=nullptr; m_szHelpTitle=nullptr; m_szHelpText=nullptr;
   if(!Vars::Menu::bOpen && Vars::Menu::bWatermark && G::Draw.m_nScreenW > 0){
     char szWm[80]={};
-    if(Vars::Menu::bWatermarkFps) sprintf_s(szWm,sizeof(szWm),"ZenWare.cc %s | %d fps",Vars::Menu::kVersion,(int)(1.0f/m_flDt));
+    if(Vars::Menu::bWatermarkFps) sprintf_s(szWm,sizeof(szWm),"ZenWare.cc %s | %d fps",Vars::Menu::kVersion,(int)(m_flOwnFps + 0.5f));
     else sprintf_s(szWm,sizeof(szWm),"ZenWare.cc %s",Vars::Menu::kVersion);
     const int nWmW=G::Draw.GetTextWidth(EFonts::MENU_BODY,szWm)+22;
     const int nWmH=G::Draw.GetFontHeight(EFonts::MENU_BODY)+8;
@@ -557,7 +557,7 @@ void CFeatures_Menu::Render(){
  G::Draw.GradientRect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-2,m_rc.nX+m_rc.nW-1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,HsvToColor(fhue,0.85f,1.0f),HsvToColor(fhue+140.0f,0.85f,1.0f),true);
  G::Draw.Rect(m_rc.nX+1,(m_rc.nY+m_rc.nH)-FOOTER_H-1,m_rc.nW-2,FOOTER_H,CLR_FOOTER);
  char szHint[160]={};
- sprintf_s(szHint,sizeof(szHint),Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(1.0f/m_flDt));
+ sprintf_s(szHint,sizeof(szHint),Lang::T("drag header | WASD free | F11 unload | %d fps"),(int)(m_flOwnFps + 0.5f));
  static const char* kTabFoot[]={"Visuals","Move","View","Combat","Misc"};
  char szFoot[200]={};
  sprintf_s(szFoot,sizeof(szFoot),"%s  |  %s",Lang::T(kTabFoot[U::Math.Clamp(m_nTab,0,4)]),szHint);
