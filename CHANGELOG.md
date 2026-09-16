@@ -3,6 +3,18 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [3.21.3] - 2026-09-16
+
+### Fixed
+- The loader title rainbow was still jumping, and the culprit was not the GDI wordmark fixed in 3.21.0 but the Direct2D renderer that actually paints the window. `Renderer2D.cpp` computed the hue as `fmodf(float(GetTickCount64() % 100000) / 38.0f, 360.0f)`: the remainder by 100000 ms resets the counter every 100 seconds, so the phase was thrown from about 110 degrees straight back to 0 and the colour snapped on screen. Both uses (the per-letter title colours and the gradient fallback brush shift) now call a single `TitleHue()` helper that accumulates the frame delta in a small float and wraps it at 360.
+  Радуга заголовка в лоадере всё ещё «срывалась», и виноват был не GDI-логотип, исправленный в 3.21.0, а рендерер Direct2D, который фактически рисует окно. В `Renderer2D.cpp` оттенок считался как `fmodf(float(GetTickCount64() % 100000) / 38.0f, 360.0f)`: остаток по 100000 мс обнуляет счётчик каждые 100 секунд, поэтому фаза выбрасывалась примерно с 110 градусов обратно в 0 и цвет резко менялся на экране. Оба места (цвета букв заголовка и сдвиг градиентной кисти-фолбэка) теперь вызывают один helper `TitleHue()`, который копит дельту кадра в небольшом float и заворачивает её на 360.
+- Deterministic check of the old formula, computed without launching the game: tick 99961 gives hue 110.55, tick 100000 gives hue 0. That 110-degree snap every 100 seconds is exactly the visible symptom.
+  Детерминированная проверка старой формулы, посчитанная без запуска игры: tick 99961 даёт оттенок 110.55, tick 100000 — 0. Этот срыв на 110 градусов каждые 100 секунд и есть видимый симптом.
+
+### Note
+- The single-file build was refreshed: `dist\ZenWare.exe` now reports FileVersion 3.21.3, so the fixed D2D renderer is inside the artifact you actually run.
+  Одиночная сборка обновлена: `dist\ZenWare.exe` теперь сообщает FileVersion 3.21.3, то есть исправленный D2D-рендерер лежит внутри того файла, который ты запускаешь.
+
 ## [3.21.2] - 2026-09-15
 
 ### Fixed
