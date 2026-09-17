@@ -146,13 +146,13 @@ namespace Vars
 
 	namespace Radar
 	{
-		inline bool bEnabled = true;    // 2D radar, top-left
+		inline bool bEnabled = false;   // 2D radar: OFF by default - it drew top-left over the game
 		inline bool bSpectators = true; // spectator list under the radar
 	}
 
 	namespace Alerts
 	{
-		inline bool bEnabled = true; // threat banners
+		inline bool bEnabled = false; // threat banners: OFF by default (it also drew over the game unprompted)
 		inline bool bTank = true;    // tank + distance
 		inline bool bWitch = true;   // witch + distance
 		inline bool bSIList = true;  // list of nearby specials (left)
@@ -173,7 +173,7 @@ namespace Vars
 		inline int nPanelAlpha = 244;       // panel opacity, 120..255
 		inline bool bEnableBlur = false; // stage 6/8: read-pixels backdrop - OFF: it runs inside the paint hook and crashed the game on menu open
 		inline bool bOverlayWatermark = false; // stage 1: overlay window OFF by default - the top-left badge annoyed and its loop cost
-		inline constexpr const char* kVersion = "v4.2.4"; // header badge + watermark
+		inline constexpr const char* kVersion = "v4.2.5"; // header badge + watermark
 		// Menu language: 0 EN, 1 RU, 2 DE... English by default
 		// (before Config.Load), stored in the config, switched by button and F7.
 		inline int nLang = 0;
