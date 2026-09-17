@@ -3,6 +3,26 @@
 All notable changes to ZenWare.cc are documented here.
 Все заметные изменения ZenWare.cc — здесь.
 
+## [4.2.5] - 2026-09-17
+
+### Changed
+- The 2D radar and the threat banners no longer draw over the game out of the box: both were enabled by default and painted in the top-left corner unprompted, which read as clutter rather than as a feature. They are one click away in the Visuals tab when wanted.
+  Двухмерный радар и баннеры угроз больше не рисуются поверх игры «из коробки»: оба были включены по умолчанию и без спроса рисовались в левом верхнем углу, что читалось как мусор, а не как функция. Включить их - один клик во вкладке Visuals.
+
+## [4.2.4] - 2026-09-17
+
+### Fixed
+- JumpBug and the other movement helpers did not work on their own. The whole routine returned early unless the auto-bhop master switch was enabled, and that switch is off by default, so enabling only "Jump Bug" in the menu did nothing at all. Each helper now runs on its own switch, and the master switch only owns the auto-bhop jump itself.
+  JumpBug и остальные помощники движения не работали сами по себе. Вся функция выходила сразу, если не включён мастер-переключатель авто-bhop, а он по умолчанию выключен, поэтому включение одного лишь «Jump Bug» в меню не давало ничего. Теперь каждый помощник работает на своём переключателе, а мастер-переключатель владеет только самим автопрыжком.
+- AutoStrafe was on by default and writes to `cmd->sidemove` every tick, which shook the character the moment you started playing. It is now off by default and stays available in the menu.
+  AutoStrafe был включён по умолчанию и писал в `cmd->sidemove` каждый тик, из-за чего персонажа начинало трясти, как только начинаешь играть. Теперь он выключен по умолчанию и по-прежнему доступен в меню.
+
+## [4.2.3] - 2026-09-17
+
+### Changed
+- The external overlay window is off by default, and when it is enabled it repaints only when its text changes. It used to rebuild a device context and a bitmap on every iteration of a one-millisecond loop - around 650 times a second - which was pure GDI churn, and its badge sat in the top-left corner over the game.
+  Внешнее оверлейное окно выключено по умолчанию, а когда оно включено, перерисовывается только при смене текста. Раньше оно создавало контекст устройства и битмап на каждой итерации цикла в одну миллисекунду - примерно 650 раз в секунду, - что было чистой нагрузкой на GDI, а его плашка висела в левом верхнем углу поверх игры.
+
 ## [4.2.2] - 2026-09-16
 
 ### Fixed
