@@ -8,7 +8,7 @@
 namespace
 {
 	constexpr wchar_t kWndClass[] = L"ZenWareOverlayClass";
-	constexpr int kTickMs = 1;         // loop pace; the rate is measured, not assumed
+	constexpr int kTickMs = 16;        // ~60 Hz: the old 1 ms loop repainted ~650 times a second
 	constexpr int kLogEveryMs = 5000;
 
 	HANDLE g_hThread = nullptr;
@@ -163,7 +163,14 @@ namespace
 			wchar_t wszText[96] = { };
 			swprintf_s(wszText, L"ZenWare.cc %S   |   overlay %d fps", Vars::Menu::kVersion, nFps);
 
-			Paint(hwnd, font, nFps, wszText);
+			// Repaint only when the text actually changes (about twice a second): the old
+			// version rebuilt a DC and a bitmap on every iteration, which was pure GDI churn.
+			static wchar_t wszPrev[96] = { };
+			if (wcscmp(wszPrev, wszText) != 0)
+			{
+				wcscpy_s(wszPrev, wszText);
+				Paint(hwnd, font, nFps, wszText);
+			}
 
 			nFrames++;
 			Sleep(kTickMs);
