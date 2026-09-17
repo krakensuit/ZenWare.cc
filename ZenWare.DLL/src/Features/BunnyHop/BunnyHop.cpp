@@ -13,7 +13,15 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 {
 	U::Log.Crumb("BunnyHop::Run");
 	ZTRACE_FIRST("BunnyHop:run");
-	if (!Vars::BunnyHop::bEnabled || !pLocal || !cmd || !cmd->command_number)
+	// Every helper has its own switch: the master switch only owns the auto-bhop jump
+	// itself. Gating the whole function behind bEnabled made JumpBug / EdgeBug / EdgeJump
+	// silently do nothing when only those were enabled in the menu.
+	const bool bAnyFeature = Vars::BunnyHop::bEnabled || Vars::BunnyHop::bJumpBug
+		|| Vars::BunnyHop::bEdgeBug || Vars::BunnyHop::bEdgeJump || Vars::BunnyHop::bNullMove
+		|| Vars::BunnyHop::bAutoDuck || Vars::BunnyHop::bFastStop
+		|| Vars::BunnyHop::bPrestrafe || Vars::BunnyHop::bLongJumpHelper;
+
+	if (!bAnyFeature || !pLocal || !cmd || !cmd->command_number)
 		return;
 
 	//Statics live here (before the early returns): otherwise death/ladder/spectator
@@ -184,7 +192,7 @@ void CFeatures_BunnyHop::Run(C_TerrorPlayer* pLocal, CUserCmd* cmd)
 	// On ground (FL_ONGROUND) + IN_JUMP in cmd -> keep IN_JUMP (jump).
 	// In air + IN_JUMP held -> clear IN_JUMP (cmd->buttons &= ~IN_JUMP),
 	// so the next landing allows jumping again right away.
-	if (bWantJump)
+	if (Vars::BunnyHop::bEnabled && bWantJump)
 	{
 		if (bOnGround)
 		{
